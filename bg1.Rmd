@@ -1,0 +1,398 @@
+---
+title: "Importance of background gene list for enrichment analysis"
+author: "Mark Ziemann"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    fig_width: 7
+    fig_height: 7
+theme: cosmo
+---
+
+Source: https://github.com/markziemann/background
+
+## Intro
+
+I previously wrote about the importance of a background gene list for
+accurate and correct enrichment analysis.
+
+Here I will demonstrate how important this is, as well as providing a
+guide for how to make your own background gene list.
+
+For this guide I will be using data from a previous analysis, which is
+deposited at NCBI GEO and SRA under accession numbers: GSE109140 and SRP128998.
+
+The data was presented in a [paper by Felisbino et al](https://pubmed.ncbi.nlm.nih.gov/33495488/)
+
+```{r,libs}
+
+library("getDEE2")
+library("DESeq2")
+library("kableExtra")
+library("vioplot")
+library("clusterProfiler")
+library("eulerr")
+
+```
+
+## Fetch data
+
+Using RNAseq data from [DEE2](https://pubmed.ncbi.nlm.nih.gov/30942868/),
+which can be accessed from dee2.io
+
+```{r,fetch}
+
+mdat <- getDEE2Metadata("hsapiens")
+
+# get sample sheet
+ss <- subset(mdat,SRP_accession=="SRP128998")
+
+# fetch the whole set of RNA-seq data
+x <- getDEE2("hsapiens",ss$SRR_accession , metadata=mdat, legacy=TRUE)
+mx <- x$GeneCounts
+rownames(mx) <- paste(rownames(mx),x$GeneInfo$GeneSymbol) 
+
+# vpa subset no filtering
+ss1 <- ss[grep("low",ss$Experiment_title),]
+ss1$vpa <- grepl("VPA",ss1$Experiment_title)
+
+ss1 %>% 
+  kbl(caption="sample sheet for VPA treatment in hepatocytes") %>%
+  kable_paper("hover", full_width = F)
+
+mx1 <- mx[,which(colnames(mx) %in% ss1$SRR_accession)] 
+dim(mx1)
+
+```
+
+## Analysis of read counts
+
+Although I know this data set is good as I was involved in the project,
+it is a good idea to show at least the number of reads for each sample.
+
+```{r,counts1}
+
+par(mar=c(5,7,5,1))
+barplot(rev(colSums(mx1)),horiz=TRUE,las=1,main="number of reads per sample in SRP128998")
+
+```
+
+Now we can have a look at the read count distribution for one of the samples.
+
+```{r,dist1}
+
+# look at the distribution of counts
+l1 <- lapply(1:ncol(mx1),function(i) log10( mx1[,i] +1 ))
+names(l1) <- colnames(mx1)
+l1 <- rev(l1)
+
+hist(l1[[6]],main="Distribution of read counts in SRR6467485",
+  xlab="log10(readcounts+1)",breaks=30)
+
+abline(v=1,col="red",lty=2)
+
+```
+
+We can see that most genes have a very low read count, consistent
+with most genes being undetectable in any sample.
+
+Based on this typical distribution of read counts, I would consider
+any gene with fewer than 10 reads as not detected.
+This could be considered a strict detection threshold.
+Setting a strict threshold like this could be helpful in selecting
+genes that are likely to validate with qRT-PCR.
+
+I will run DESeq2 with and without this threshold to see how
+it impacts the results.
+
+## Differential expression analysis with and without filtering
+
+To see whether this has any effect on downstream analysis, DESeq2 will
+be run on the same dataset without any filtering, with light filtering and with
+strict filtering.
+
+Here I define light filter threshold as the lowest baseline expression level that
+DE genes start to appear.
+I know this contrast will yield thousands of DE genes, so this is a reasonable
+way to set the detection threshold.
+The DE genes with lowest baseline expression showed mean read counts of about 2.
+
+```{r,de1}
+
+# DESeq2 without any fitering
+dds <- DESeqDataSetFromMatrix(countData = mx1 , colData = ss1, design = ~ vpa )
+res <- DESeq(dds)
+z<- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz<-cbind(as.data.frame(z),mx1)
+dge1<-as.data.frame(zz[order(zz$pvalue),])
+
+head(dge1,10) %>% 
+  kbl(caption="Top DE genes for VPA treatment (unfiltered)") %>%
+  kable_paper("hover", full_width = F)
+
+sig1 <- subset(dge1,padj<=0.05)
+message("number of significant genes")
+nrow(sig1)
+
+plot(rowMeans( log10(dge1[,7:12]+1) ),dge1$log2FoldChange,
+  cex=0.6,pch=19,col="darkgray",
+  xlab="log10(mean read count)",ylab="log2(fold change)")
+
+points(rowMeans( log10(sig1[,7:12]+1) ),sig1$log2FoldChange,
+  cex=0.6,pch=19,col="red")
+
+abline(v=1,lty=2)
+
+dge1up <- rownames(subset(dge1,padj<=0.05 & log2FoldChange>0))
+dge1up <- unique(sapply(strsplit(dge1up," "),"[[",2))
+
+dge1dn <- rownames(subset(dge1,padj<=0.05 & log2FoldChange<0))
+dge1dn <- unique(sapply(strsplit(dge1dn," "),"[[",2))
+
+dge1bg <- rownames(dge1)
+dge1bg <- unique(sapply(strsplit(dge1bg," "),"[[",2))
+
+```
+
+look at the lowest basemean genes
+
+```{r,low}
+
+sig1 <- sig1[order(sig1$baseMean),]
+head(sig1,10) %>%
+  kbl(caption="lowest basemean genes") %>%
+  kable_paper("hover", full_width = F)
+
+```
+
+The counts look quite low.
+Not sure that these DEGs could be validated with qRT-PCR.
+
+## Now run DESeq2 with filtering
+
+```{r,de2}
+
+mx2 <- mx1[which(rowMeans(mx1)>=10),]
+dim(mx2)
+dds <- DESeqDataSetFromMatrix(countData = mx2 , colData = ss1, design = ~ vpa )
+res <- DESeq(dds)
+z<- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz<-cbind(as.data.frame(z),mx2)
+dge2<-as.data.frame(zz[order(zz$pvalue),])
+
+head(dge2,10) %>%
+  kbl(caption="Top DE genes for VPA treatment (filtered)") %>%
+  kable_paper("hover", full_width = F)
+
+sig2 <- subset(dge2,padj<=0.05)
+nrow(sig2)
+
+plot(log10(dge2$baseMean),dge2$log2FoldChange,
+  cex=0.6,pch=19,col="darkgray",
+  xlab="log10(base mean)",ylab="log2 fold change",
+  main="strict filter")
+
+points(log10(sig2$baseMean),sig2$log2FoldChange,
+  cex=0.6,pch=19,col="red")
+
+dge2up <- rownames(subset(dge2,padj<=0.05 & log2FoldChange>0))
+dge2up <- unique(sapply(strsplit(dge2up," "),"[[",2))
+
+dge2dn <- rownames(subset(dge2,padj<=0.05 & log2FoldChange<0))
+dge2dn <- unique(sapply(strsplit(dge2dn," "),"[[",2))
+
+dge2bg <- rownames(dge2)
+dge2bg <- unique(sapply(strsplit(dge2bg," "),"[[",2))
+
+```
+
+## Now run ORA based enrichment analysis
+
+I will run enrichment analysis using the correct correct background list,
+and compare the results to the incorrect whole genome background.
+
+```{r,gs}
+
+if (! file.exists("ReactomePathways.gmt")) {
+  download.file("https://reactome.org/download/current/ReactomePathways.gmt.zip", 
+    destfile="ReactomePathways.gmt.zip")
+  unzip("ReactomePathways.gmt.zip")
+}
+
+genesets2 <- read.gmt("ReactomePathways.gmt")
+
+```
+
+
+### ORA with correct background list.
+
+Firstly with the upregulated genes
+
+```{r,ora2up}
+
+ora2_up <- as.data.frame(enricher(gene = dge2up , 
+  universe = dge2bg,  maxGSSize = 5000, TERM2GENE = genesets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora2_up$geneID <- NULL
+ora2_ups <- rownames(subset(ora2_up,p.adjust<0.05))
+
+gr <- as.numeric(sapply(strsplit(ora2_up$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora2_up$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(ora2_up$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora2_up$BgRatio,"/"),"[[",2))
+
+ora2_up$es <- gr/br
+ora2_up <- ora2_up[order(-ora2_up$es),]
+head(ora2_up)
+
+topup2 <- rev(head(ora2_up$es,20))
+names(topup2) <- rev(head(ora2_up$ID,20))
+
+```
+
+Now with the downregulated genes
+
+```{r,ora2dn}
+
+ora2_dn <- as.data.frame(enricher(gene = dge2dn ,
+  universe = dge2bg,  maxGSSize = 5000, TERM2GENE = genesets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora2_dn$geneID <- NULL
+ora2_dns <- rownames(subset(ora2_dn,p.adjust<0.05))
+
+gr <- as.numeric(sapply(strsplit(ora2_dn$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora2_dn$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(ora2_dn$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora2_dn$BgRatio,"/"),"[[",2))
+
+ora2_dn$es <- gr/br
+ora2_dn <- ora2_dn[order(-ora2_dn$es),]
+head(ora2_dn)
+
+topdn2 <- head(ora2_dn$es,20)
+names(topdn2) <- head(ora2_dn$ID,20)
+
+```
+
+Make a barplot
+
+```{r,topbarplot2}
+
+par(mar=c(5,20,5,1))
+
+cols <- c(rep("blue",20),rep("red",20))
+
+barplot(c(topdn2,topup2),
+  horiz=TRUE,las=1,cex.names=0.65,col=cols,
+  main="top DE Reactomes",
+  xlab="ES")
+
+mtext("correct background")
+
+```
+
+### ORA with whole genome background list.
+
+Firstly with the upregulated genes
+
+```{r,ora1up}
+
+ora1_up <- as.data.frame(enricher(gene = dge1up ,
+  universe = dge1bg,  maxGSSize = 5000, TERM2GENE = genesets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora1_up$geneID <- NULL
+ora1_ups <- rownames(subset(ora1_up,p.adjust<0.05))
+
+gr <- as.numeric(sapply(strsplit(ora1_up$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora1_up$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(ora1_up$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora1_up$BgRatio,"/"),"[[",2))
+
+ora1_up$es <- gr/br
+ora1_up <- ora1_up[order(-ora1_up$es),]
+head(ora1_up)
+
+topup1 <- rev(head(ora1_up$es,20))
+names(topup1) <- rev(head(ora1_up$ID,20))
+
+```
+
+Now with the downregulated genes
+
+```{r,ora1dn}
+
+ora1_dn <- as.data.frame(enricher(gene = dge1dn ,
+  universe = dge1bg,  maxGSSize = 5000, TERM2GENE = genesets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora1_dn$geneID <- NULL
+ora1_dns <- rownames(subset(ora1_dn,p.adjust<0.05))
+
+gr <- as.numeric(sapply(strsplit(ora1_dn$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora1_dn$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(ora1_dn$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora1_dn$BgRatio,"/"),"[[",2))
+
+ora1_dn$es <- gr/br
+ora1_dn <- ora1_dn[order(-ora1_dn$es),]
+head(ora1_dn)
+
+topdn1 <- head(ora1_dn$es,20)
+names(topdn1) <- head(ora1_dn$ID,20)
+
+```
+
+Make a barplot
+
+```{r,topbarplot1}
+
+par(mar=c(5,20,5,1))
+
+cols <- c(rep("blue",20),rep("red",20))
+
+barplot(c(topdn1,topup1),
+  horiz=TRUE,las=1,cex.names=0.65,col=cols,
+  main="top DE Reactomes",
+  xlab="ES")
+
+mtext("whole genome background")
+
+```
+
+
+## Compare pathway results
+
+```{r,venn1}
+
+v1 <- list("correct up"=ora2_ups, "wg up"=ora1_ups)
+
+v2 <- list("correct dn"=ora2_dns, "wg dn"=ora1_dns)
+
+par(mar=c(10,10,10,10))
+
+par(mfrow=c(2,1))
+plot(euler(v1),quantities = TRUE)
+plot(euler(v2),quantities = TRUE)
+dev.off()
+
+```
+
+## Session information
+
+```{r,session}
+
+sessionInfo()
+
+```
