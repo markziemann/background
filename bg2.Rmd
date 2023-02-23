@@ -90,7 +90,6 @@ l <- lapply(1:ncol(mx),function(i) log10( mx[,i] +1 ))
 names(l) <- colnames(mx)
 l <- rev(l)
 
-blah()
 hist(l[[6]],main="Distribution of read counts in SRR1171523",
   xlab="log10(readcounts+1)",breaks=30)
 
@@ -131,6 +130,8 @@ z <- results(res)
 vsd <- vst(dds, blind=FALSE)
 zz <- cbind(as.data.frame(z),mx)
 de <- as.data.frame(zz[order(zz$pvalue),])
+
+sig <- subset(de,padj<0.05)
 
 head(de,10) %>%
   kbl(caption="Top DE genes for Aza treatment (unfiltered)") %>%
