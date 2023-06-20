@@ -202,6 +202,20 @@ Background is simply all genes that were detected.
 ```{r,subset1}
 
 defup <- rownames(subset(def,padj<=0.05 & log2FoldChange>0))
+defup <- unique(sapply(strsplit(defup," "),"[[",1))
+
+defdn <- rownames(subset(def,padj<=0.05 & log2FoldChange<0))
+defdn <- unique(sapply(strsplit(defdn," "),"[[",1))
+
+bg <- rownames(def)
+bg <- unique(sapply(strsplit(bg," "),"[[",1))
+
+# write ensembl IDs for DAVID 
+writeLines(text=bg,con="ebg.txt")
+writeLines(text=defup,con="eup.txt")
+writeLines(text=defdn,con="edn.txt")
+
+defup <- rownames(subset(def,padj<=0.05 & log2FoldChange>0))
 defup <- unique(sapply(strsplit(defup," "),"[[",2))
 
 defdn <- rownames(subset(def,padj<=0.05 & log2FoldChange<0))
