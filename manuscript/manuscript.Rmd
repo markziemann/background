@@ -1,0 +1,135 @@
+---
+title: "Importance of using the correct background list for over-representation analysis"
+author: "Mark Ziemann and Anusuiya Bora"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::robobook:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    fig_width: 5
+    fig_height: 5
+bibliography: references.bib
+csl: plos-computational-biology.csl
+---
+
+Alternate title: *Problems in over-representation analysis software*
+
+[Mark Ziemann<sup>1</sup>*](https://orcid.org/0000-0002-7688-6974),
+[Anusuiya Bora<sup>1,2</sup>](https://orcid.org/0009-0006-2908-1352)
+
+**Affiliations**
+
+1. Deakin University, Geelong, Australia, School of Life and Environmental Sciences.
+
+2. Vellore Institute of Technology, Vellore, India.
+
+(*) Corresponding author: m.ziemann@deakin.edu.au
+
+## Abstract
+
+* Over-representation analysis (ORA) is the most common form of functional enrichment and one of the
+most used techniques in computational biology, yet there are common methodological issues that
+undermine its validity.
+
+* These problems are typically ascribed to errors in analysis and reporting by the end-users,
+however software design is another contributor.
+
+* Here, we identify and characterise a potential bug popular ORA software
+package and web tool.
+
+* We show that this bug deleteriously affects the results of ORA tests, and we present a simple
+work-around to circumvent it.
+
+## Introduction
+
+```{r,libs,echo=FALSE}
+
+library("DiagrammeR")
+
+```
+
+Functional enrichment analysis is a family of computational approaches used to interpret large omics
+data.
+The most commonly used method is over-representation analysis (ORA) which involves the selection of
+genes of interest, followed by a statistical test to evaluate whether genes of certain annotated
+categories are over-represented in the set of interest.
+The set of interest may be defined in different ways, such as genes that meet a differential expression
+significance threshold, or those that have been clustered into a group based on co-expression patterns.
+There are various sources of annotated categories, including gene ontologies, protein-coding features,
+gene co-expression and signalling or metabolic pathways.
+Providers of such annotations include but are not limited to the gene ontology consortium, Reactome,
+KEGG, WikiPathways and MSigDB.
+
+Central to ORA tests is the selection of a list of background genes.
+This is also sometimes called the "universe" or the "reference" list.
+These are defined as any gene that is detected robustly, and has a chance at making the set of interest.
+For RNA-seq studies, this could be a threshold detection limit based either on raw counts or counts per
+million.
+
+The first use of ORA-based functional enrichment that we are aware of is a 1999 report that used the
+hypergeometric test to determine the chance probability of observing over-representation of certain
+annotated functions in co-regulated genes in yeast [@Tavazoie1999-kf].
+This general approach is the basis of most ORA-based significance testing and can be represented by the
+following equation:
+
+$$
+P=1-\sum_{i=0}^{k-1}\frac{ {f \choose i} {g-f \choose n-1} }{g \choose n}
+$$
+
+Where (P) is the probability of observing at least (k) genes from a functional category within the
+list of selected genes with size (n).
+Here, (g) is the total number of detected genes, and (f) is the number of detected genes belonging to a
+functional category.
+
+In a hypothetical example, there were 134 genes classified as detected.
+Of these, 38 were defined as upregulated in response to a stimulus based on a differential expression
+test.
+From the 38, 8 genes belonged to the "cytokine signaling pathway" category.
+This category contains 26 genes in total, but only 18 were detected in this study.
+
+So the background can be defined as 18/134 and the foreground as 8/38 and the enrichment score
+expressed as (8/38)/(18/135)=1.58
+
+In this example:
+
+*k*=8
+
+*n*=26
+
+*g*=134
+
+*f*=18
+
+We can calculate the probability of getting exactly 7 members of the set.
+
+$$
+P=\frac{ {18 \choose 7} {134-18 \choose 26-1} }{134 \choose 26}
+$$
+
+$$
+P=\frac{ 480700 * 1.71e29 }{ 3.84e+33 } = 1/21.4 = 0.047
+$$
+
+This needs to be repeated for other values of *i*, namely 6 to 0 and then sum all of these.
+
+```{r,hyperdist}
+res<-unlist(lapply(0:38, function(i) {  (choose(18,i) * choose((134-18),(38-1)) / choose(134,38)) }))
+plot(res,type="b")
+```
+
+
+
+## Acknowledgements
+
+This research was supported by use of the Nectar Research Cloud, a collaborative Australian research
+platform supported by the NCRIS-funded Australian Research Data Commons (ARDC).
+
+## Availability of materials
+
+* Code repository:
+
+* Example Docker image:
+
+## Bibliography
