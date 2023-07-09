@@ -1,6 +1,6 @@
 ---
 title: "Importance of using the correct background list for over-representation analysis"
-author: "Mark Ziemann and Anusuiya Bora"
+author: "Mark Ziemann, Barry Schroeter, Anusuiya Bora"
 date: "`r Sys.Date()`"
 output:
   rmdformats::robobook:
@@ -17,6 +17,7 @@ csl: plos-computational-biology.csl
 Alternate title: *Problems in over-representation analysis software*
 
 [Mark Ziemann<sup>1</sup>*](https://orcid.org/0000-0002-7688-6974),
+[Barry Schroeter<sup>1</sup>]()
 [Anusuiya Bora<sup>1,2</sup>](https://orcid.org/0009-0006-2908-1352)
 
 **Affiliations**
@@ -82,6 +83,49 @@ Where (P) is the probability of observing at least (k) genes from a functional c
 list of selected genes with size (n).
 Here, (g) is the total number of detected genes, and (f) is the number of detected genes belonging to a
 functional category.
+
+The fold enrichment score (ES) is commonly used to express the degree of enrichment and is a ratio-of-ratios.
+The foreground ratio is the number of selected genes belonging a functional class (A) divided by the
+number of detected genes in the functional class (B).
+The background ratio is the number of selected genes not belonging to the functional class (C) divided
+by the number of detected genes not in the functional class (D).
+
+$$
+ES=\frac{ A / B}{ C / D}
+$$
+
+Both equations illustrate that correct definition of the number of background genes is important to
+obtain accurate enrichment scores and significance values.
+A common error in ORA of differential gene expression is to use all genes in the genome as the
+background @Wijesooriya2022-li.
+This leads to a severe over-estimation of the number of background genes as there are ~45k annotated
+genes in the human genome (according to Ensembl v109), but RNA-seq robustly detects only ~15k genes.
+This leads to inflation of p-values and results that share only ~40% similarity with properly conducted
+ORA analysis.
+This issue is even more severe for other omics, where the number of detected genes is lower, for example
+proteomics and single cell RNA-seq where there are only a few thousand detected analytes.
+To address this issue, most major ORA tools allow for a user-provided background list of detected genes.
+
+While testing some of these tools, we observed an unusual behaviour whereby the number of background
+genes reported by the tool varied significantly from the length of the gene list we provided.
+Moreover, this number also varied when we used a different library of gene function annotations.
+Puzzled by this behaviour, we browsed the computational biology forums and were met with other confused
+users wondering why the number of genes in the background list would vary like this.
+The tool developers kindly clarified the situation, by stating that the tool removed genes from the
+entire analysis if they were not members of a functional category.
+We thought this behaviour odd, because it has the potential to significantly alter the test being
+conducted, away from it's original application.
+
+In this paper, we examine the effect of this filtering step on ORA of real RNA-seq data, use simulated
+RNA-seq data to determine the impact upon precision and recall, and provide practical recommendations
+to end users to obtain the most accurate results.
+
+
+
+
+
+
+
 
 In a hypothetical example, there were 134 genes classified as detected.
 Of these, 38 were defined as upregulated in response to a stimulus based on a differential expression
