@@ -1,5 +1,5 @@
 ---
-title: "Examining background gene lists in clusterProfiler"
+title: "Examining background gene lists in clusterProfiler - RNA-seq example"
 author: "Mark Ziemann & Anusuiya Bora"
 date: "`r Sys.Date()`"
 output:
@@ -162,6 +162,15 @@ mtext(HEADER)
 
 ```
 
+```{r,writedata}
+
+write.table(def,file="../data/aza_rnaseq.tsv")
+
+```
+
+
+# KEGG pathway analysis
+
 In the next sections I will run enrichment analysis with over-representation analysis (ORA) test
 and compare it to functional class scoring.
 I will also investigate some strange behviour of the ORA tool clusterprofiler.
@@ -172,7 +181,7 @@ I've compiled a reporting checklist:
 
 | Reporting criteria | Method/resource used |
 | --- | --- |
-| Origin of gene sets | Reactome (2023-03-06) |
+| Origin of gene sets | KEGG (2023-06-16) |
 | Tool used | ClusterProfiler (check version at foot of report) |
 | Statistical test used | hypergeometric test |
 | P-value correction for multiple comparisons | FDR method |
@@ -185,11 +194,12 @@ I've compiled a reporting checklist:
 Here I provide a custom background gene list.
 
 Get the gene sets loaded in R.
+These are KEGG gene sets
 
-```{r,gs}
-# from https://reactome.org/download/current/ReactomePathways.gmt.zip
-genesets2 <- read.gmt("ReactomePathways_2023-03-06.gmt")
-gsets <- gmtPathways("ReactomePathways_2023-03-06.gmt")
+```{r,gs1}
+# from https://www.gsea-msigdb.org/gsea/msigdb/human/collections.jsp 16th June 2023
+genesets2 <- read.gmt("../ref/c2.cp.kegg.v2023.1.Hs.symbols.gmt")
+gsets <- gmtPathways("../ref/c2.cp.kegg.v2023.1.Hs.symbols.gmt")
 
 message(paste("number of genes described in the annotation set:",length(unique(genesets2$gene))))
 
@@ -200,20 +210,6 @@ background.
 Background is simply all genes that were detected.
 
 ```{r,subset1}
-
-defup <- rownames(subset(def,padj<=0.05 & log2FoldChange>0))
-defup <- unique(sapply(strsplit(defup," "),"[[",1))
-
-defdn <- rownames(subset(def,padj<=0.05 & log2FoldChange<0))
-defdn <- unique(sapply(strsplit(defdn," "),"[[",1))
-
-bg <- rownames(def)
-bg <- unique(sapply(strsplit(bg," "),"[[",1))
-
-# write ensembl IDs for DAVID 
-writeLines(text=bg,con="ebg.txt")
-writeLines(text=defup,con="eup.txt")
-writeLines(text=defdn,con="edn.txt")
 
 defup <- rownames(subset(def,padj<=0.05 & log2FoldChange>0))
 defup <- unique(sapply(strsplit(defup," "),"[[",2))
@@ -230,7 +226,9 @@ message(paste("number of genes in background:",length(bg)))
 
 Enrichment firstly with upregulated genes
 
-```{r,oraup}
+```{r,oraup1}
+
+n_pw=10
 
 ora_up <- as.data.frame(enricher(gene = defup ,
   universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
@@ -263,9 +261,7 @@ The reported background size does not match the dataset.
 
 Now repeat with the downregulated genes
 
-```{r,oradn}
-
-n_pw=10
+```{r,oradn1}
 
 ora_dn <- as.data.frame(enricher(gene = defdn ,
   universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
@@ -296,7 +292,7 @@ names(topdn2) <- head(ora_dn$ID,n_pw)
 
 Make a barplot
 
-```{r,topbarplot2}
+```{r,topbarplot1}
 
 par(mar=c(5,20,5,1))
 
@@ -304,7 +300,7 @@ cols <- c(rep("blue",n_pw),rep("red",n_pw))
 
 barplot(c(topdn2,topup2),
   horiz=TRUE,las=1,cex.names=0.65,col=cols,
-  main="top DE Reactomes",
+  main="top DE KEGGs",
   xlab="ES",
   cex.main=0.9)
 
@@ -318,7 +314,7 @@ I've compiled a reporting checklist:
 
 | Reporting criteria | Method/resource used |
 | --- | --- |
-| Origin of gene sets | Reactome (2023-03-06) |
+| Origin of gene sets | KEGG (2023-06-16) |
 | Tool used | ClusterProfiler (check version at foot of report) |
 | Statistical test used | hypergeometric test |
 | P-value correction for multiple comparisons | FDR method |
@@ -326,17 +322,17 @@ I've compiled a reporting checklist:
 | Gene Selection Criteria | DESeq2 FDR<0.05 |
 | ORA directionality | Separate tests for up- and down-regulation |
 | Data availability | via DEE2 at accession SRP038101 (human) |
-| Other parameters | Min gene set size of 10 |
+| Other parameters | Min gene set size of 10 + BUG FIX |
 
 Here I provide a background gene list for cluterprofiler to use, like a user should.
 
-I have also done some modification to the Reactome gene sets, to en
+I have also done some modification to the KEGG gene sets, to en
 
 Now filter the gene names into three lists, up-regulated, down-regulated and
 background.
 Background is simply all genes that were detected.
 
-```{r,subsetfix}
+```{r,subsetfix1}
 
 defup <- rownames(subset(def,padj<=0.05 & log2FoldChange>0))
 defup <- unique(sapply(strsplit(defup," "),"[[",2))
@@ -352,7 +348,7 @@ message(paste("number of genes in background:",length(bg)))
 
 Adding all detected genes to the background appears to improve results!
 
-```{r,gs2fix}
+```{r,gs2fix1}
 
 bgdf <- data.frame("background",bg)
 colnames(bgdf) <- c("term","gene")
@@ -362,7 +358,9 @@ genesets2 <- rbind(genesets2,bgdf)
 
 Enrichment firstly with upregulated genes
 
-```{r,oraupfix}
+```{r,oraupfix1}
+
+n_pw=10
 
 orafix_up <- as.data.frame(enricher(gene = defup ,
   universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
@@ -393,7 +391,275 @@ names(topup2) <- rev(head(orafix_up$ID,10))
 
 Now with the downregulated genes
 
-```{r,oradnfix}
+```{r,oradnfix1}
+
+orafix_dn <- as.data.frame(enricher(gene = defdn ,
+  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+orafix_dn$geneID <- NULL
+orafix_dn <- subset(orafix_dn,p.adjust<0.05 & Count >=10)
+orafix_dns <- rownames(orafix_dn)
+
+gr <- as.numeric(sapply(strsplit(orafix_dn$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(orafix_dn$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(orafix_dn$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(orafix_dn$BgRatio,"/"),"[[",2))
+
+orafix_dn$es <- gr/br
+orafix_dn <- orafix_dn[order(-orafix_dn$es),]
+orafix_dn$Description=NULL
+
+head(orafix_dn,n_pw) %>%
+  kbl(row.names = FALSE, caption="Top downregulated pathways in Aza treatment") %>%
+  kable_paper("hover", full_width = F)
+
+topdn2 <- head(orafix_dn$es,n_pw)
+names(topdn2) <- head(orafix_dn$ID,n_pw)
+
+```
+
+Make a barplot
+
+```{r,topbarplot2fix1}
+
+par(mar=c(5,20,5,1))
+
+cols <- c(rep("blue",n_pw),rep("red",n_pw))
+
+barplot(c(topdn2,topup2),
+  horiz=TRUE,las=1,cex.names=0.65,col=cols,
+  main="top DE KEGGs",
+  xlab="ES",
+  cex.main=0.9)
+
+mtext("ORA fix test")
+
+```
+
+
+## Compare pathway results
+
+```{r,venn1,fig.width=8,fig.height=5}
+
+v1 <- list("ORA up"=ora_ups, "ORA fix up"=orafix_ups)
+v2 <- list("ORA dn"=ora_dns, "ORA fix dn"=orafix_dns)
+v3 <- list("ORA"=union(ora_ups,ora_dns),
+  "ORA fix"=union(orafix_ups,orafix_dns))
+
+par(mar=c(10,10,10,10))
+par(mfrow=c(2,1))
+plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2),main="upregulated KEGG pathways")
+plot(euler(v2),quantities = list(cex = 2), labels = list(cex = 2),main="downregulated KEGG pathways")
+plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated KEGG pathways")
+
+```
+
+Jaccard index comparing ORA and ORA fix.
+
+```{r,jaccard1}
+
+jaccard <- function(a, b) {
+    intersection = length(intersect(a, b))
+    union = length(a) + length(b) - intersection
+    return (intersection/union)
+}
+
+ora <- c(ora_ups,ora_dns)
+orafix <- c(orafix_ups,orafix_dns)
+
+jaccard(ora,orafix)
+
+```
+
+List gene sets identified only in the "fixed" analysis.
+
+```{r,examine1}
+
+ora <- union(ora_ups,ora_dns)
+
+orafix <- union(orafix_ups,orafix_dns)
+
+setdiff(orafix,ora)
+
+```
+
+# Reactome Gene sets
+
+## ORA with Clusterprofiler custom background with otherwise default analysis
+
+I've compiled a reporting checklist:
+
+| Reporting criteria | Method/resource used |
+| --- | --- |
+| Origin of gene sets | Reactome (2023-03-06) |
+| Tool used | ClusterProfiler (check version at foot of report) |
+| Statistical test used | hypergeometric test |
+| P-value correction for multiple comparisons | FDR method |
+| Background list | Genes with >=10 reads per sample on average across all samples |
+| Gene Selection Criteria | DESeq2 FDR<0.05 |
+| ORA directionality | Separate tests for up- and down-regulation |
+| Data availability | via DEE2 at accession SRP038101 (human) |
+| Other parameters | Min gene set size of 10 |
+
+Here I provide a custom background gene list.
+
+Get the gene sets loaded in R.
+These are Reactome gene sets
+
+
+```{r,gs2}
+
+genesets2 <- read.gmt("../ref/ReactomePathways_2023-03-06.gmt")
+gsets <- gmtPathways("../ref/ReactomePathways_2023-03-06.gmt")
+
+message(paste("number of genes described in the annotation set:",length(unique(genesets2$gene))))
+
+```
+
+Enrichment firstly with upregulated genes
+
+```{r,oraup2}
+
+n_pw=10
+
+ora_up <- as.data.frame(enricher(gene = defup ,
+  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora_up$geneID <- NULL
+ora_up <- subset(ora_up,p.adjust<0.05 & Count >=10)
+ora_ups <- rownames(ora_up)
+
+gr <- as.numeric(sapply(strsplit(ora_up$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_up$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(ora_up$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_up$BgRatio,"/"),"[[",2))
+
+ora_up$es <- gr/br
+ora_up <- ora_up[order(-ora_up$es),]
+ora_up$Description=NULL
+
+head(ora_up) %>%
+  kbl(row.names = FALSE, caption="Top upregulated pathways in Aza treatment") %>%
+  kable_paper("hover", full_width = F)
+
+topup2 <- rev(head(ora_up$es,10))
+names(topup2) <- rev(head(ora_up$ID,10))
+
+```
+
+Now repeat with the downregulated genes
+
+```{r,oradn2}
+
+ora_dn <- as.data.frame(enricher(gene = defdn ,
+  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora_dn$geneID <- NULL
+ora_dn <- subset(ora_dn,p.adjust<0.05 & Count >=10)
+ora_dns <- rownames(ora_dn)
+
+gr <- as.numeric(sapply(strsplit(ora_dn$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_dn$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(ora_dn$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_dn$BgRatio,"/"),"[[",2))
+
+ora_dn$es <- gr/br
+ora_dn <- ora_dn[order(-ora_dn$es),]
+ora_dn$Description=NULL
+
+head(ora_dn,n_pw) %>%
+  kbl(row.names = FALSE, caption="Top downregulated pathways in Aza treatment") %>%
+  kable_paper("hover", full_width = F)
+
+topdn2 <- head(ora_dn$es,n_pw)
+names(topdn2) <- head(ora_dn$ID,n_pw)
+
+```
+
+Make a barplot
+
+```{r,topbarplot22}
+
+par(mar=c(5,20,5,1))
+
+cols <- c(rep("blue",n_pw),rep("red",n_pw))
+
+barplot(c(topdn2,topup2),
+  horiz=TRUE,las=1,cex.names=0.65,col=cols,
+  main="top DE Reactomes",
+  xlab="ES",
+  cex.main=0.9)
+
+mtext("ORA test")
+
+```
+
+## ORA with Clusterprofiler with custom background and special gene set list to fix the potential bug
+
+I've compiled a reporting checklist:
+
+| Reporting criteria | Method/resource used |
+| --- | --- |
+| Origin of gene sets | Reactome (2023-03-06) |
+| Tool used | ClusterProfiler (check version at foot of report) |
+| Statistical test used | hypergeometric test |
+| P-value correction for multiple comparisons | FDR method |
+| Background list | Genes with >=10 reads per sample on average across all samples |
+| Gene Selection Criteria | DESeq2 FDR<0.05 |
+| ORA directionality | Separate tests for up- and down-regulation |
+| Data availability | via DEE2 at accession SRP038101 (human) |
+| Other parameters | Min gene set size of 10 + BUG FIX |
+
+Adding all detected genes to the background appears to improve results!
+
+```{r,gs2fix2}
+
+bgdf <- data.frame("background",bg)
+colnames(bgdf) <- c("term","gene")
+genesets2 <- rbind(genesets2,bgdf)
+
+```
+
+Enrichment firstly with upregulated genes
+
+```{r,oraupfix2}
+
+orafix_up <- as.data.frame(enricher(gene = defup ,
+  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+orafix_up$geneID <- NULL
+orafix_up <- subset(orafix_up,p.adjust<0.05 & Count >=10)
+orafix_ups <- rownames(orafix_up)
+
+gr <- as.numeric(sapply(strsplit(orafix_up$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(orafix_up$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(orafix_up$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(orafix_up$BgRatio,"/"),"[[",2))
+
+orafix_up$es <- gr/br
+orafix_up <- orafix_up[order(-orafix_up$es),]
+orafix_up$Description=NULL
+
+head(orafix_up) %>%
+  kbl(row.names = FALSE, caption="Top upregulated pathways in Aza treatment") %>%
+  kable_paper("hover", full_width = F)
+
+topup2 <- rev(head(orafix_up$es,10))
+names(topup2) <- rev(head(orafix_up$ID,10))
+
+```
+
+Now with the downregulated genes
+
+```{r,oradnfix2}
 
 n_pw=10
 
@@ -426,7 +692,7 @@ names(topdn2) <- head(orafix_dn$ID,n_pw)
 
 Make a barplot
 
-```{r,topbarplot2fix}
+```{r,topbarplot2fix2}
 
 par(mar=c(5,20,5,1))
 
@@ -442,109 +708,26 @@ mtext("ORA fix test")
 
 ```
 
-
-## Enrichment analysis with functional class scoring
-
-| Reporting criteria | Method/resource used |
-| --- | --- |
-| Origin of gene sets | Reactome (2023-03-06) |
-| Tool used | FGSEA (check version at foot of report) |
-| Statistical test used | Kolmogorov-Smirnov test |
-| P-value correction for multiple comparisons | FDR method |
-| Background list | Genes with >=10 reads per sample on average across all samples |
-| Gene Selection Criteria | DESeq2 FDR<0.05 |
-| ORA directionality | Separate tests for up- and down-regulation |
-| Data availability | via DEE2 at accession SRP038101 (human) |
-| Other parameters | Min gene set size of 10 |
-
-```{r,fgsea}
-
-def2 <- def
-def2$genename <- sapply(strsplit(rownames(def2)," "),"[[",2)
-def2 <- def2[,c("stat","genename")]
-def2 <- aggregate(. ~ genename, def2, sum)
-stat <- def2$stat
-names(stat) <- def2$genename
-fgseaRes <- fgsea(pathways=gsets, stats=stat, minSize=10, nPermSimple = 10000)
-fgseaRes <- fgseaRes[order(fgseaRes$pval),]
-
-```
-
-
-```{r,fgsea_sig}
-
-fgsea_up <- subset(fgseaRes,padj<0.05 & ES>0)
-fgsea_ups <- fgsea_up$pathway
-fgsea_dn <- subset(fgseaRes,padj<0.05 & ES<0)
-fgsea_dns <- fgsea_dn$pathway
-
-fgsea_up <-  data.frame(fgsea_up[order(-fgsea_up$ES),])
-
-fgsea_dn <-  data.frame(fgsea_dn[order(fgsea_dn$ES),])
-
-head(fgsea_up,n_pw) %>%
-  kbl(row.names = FALSE, caption="FGSEA:Top upregulated pathways in Aza treatment") %>%
-  kable_paper("hover", full_width = F)
-
-
-head(fgsea_dn,n_pw) %>%
-  kbl(row.names = FALSE, caption="FGSEA:Top downregulated pathways in Aza treatment") %>%
-  kable_paper("hover", full_width = F)
-
-fgsea_up <- head(fgsea_up,n_pw)
-fgsea_up_vec <- fgsea_up$ES
-names(fgsea_up_vec) <- fgsea_up$pathway
-fgsea_up_vec <- rev(fgsea_up_vec)
-
-fgsea_dn <- head(fgsea_dn,n_pw)
-fgsea_dn_vec <- fgsea_dn$ES * -1
-names(fgsea_dn_vec) <- fgsea_dn$pathway
-
-```
-
-Make a barplot
-
-```{r,topbarplot3}
-
-par(mar=c(5,20,5,1))
-
-cols <- c(rep("blue",n_pw),rep("red",n_pw))
-
-barplot(c(fgsea_dn_vec,fgsea_up_vec),
-  horiz=TRUE,las=1,cex.names=0.65,col=cols,
-  main="top DE Reactomes",
-  xlab="ES",
-  cex.main=0.9)
-
-mtext("FCS test")
-
-```
-
-
 ## Compare pathway results
 
-```{r,venn1,fig.width=8,fig.height=5}
+```{r,venn2,fig.width=8,fig.height=5}
 
-v1 <- list("ORA up"=ora_ups, "ORA fix up"=orafix_ups, "FCS up"=fgsea_ups)
-v2 <- list("ORA dn"=ora_dns, "ORA fix dn"=orafix_dns, "FCS dn"=fgsea_dns)
+v1 <- list("ORA up"=ora_ups, "ORA fix up"=orafix_ups)
+v2 <- list("ORA dn"=ora_dns, "ORA fix dn"=orafix_dns)
 v3 <- list("ORA"=union(ora_ups,ora_dns),
-  "ORA fix"=union(orafix_ups,orafix_dns),
-  "FCS"=union(fgsea_ups,fgsea_dns))
+  "ORA fix"=union(orafix_ups,orafix_dns))
 
 par(mar=c(10,10,10,10))
 par(mfrow=c(2,1))
-plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2),main="upregulated genes")
-plot(euler(v2),quantities = list(cex = 2), labels = list(cex = 2),main="downregulated genes")
-
-plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated genes")
+plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2),main="upregulated Reactomes")
+plot(euler(v2),quantities = list(cex = 2), labels = list(cex = 2),main="downregulated Reactomes")
+plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated Reactomes")
 
 ```
 
+Jaccard index comparing ORA and ORA fix.
 
-
-Jaccard index comparing ORA and FCS.
-
-```{r,jaccard1}
+```{r,jaccard2}
 
 jaccard <- function(a, b) {
     intersection = length(intersect(a, b))
@@ -553,69 +736,21 @@ jaccard <- function(a, b) {
 }
 
 ora <- c(ora_ups,ora_dns)
-fcs <- c(fgsea_ups,fgsea_dns)
-
-jaccard(ora,fcs)
-
-```
-
-
-Jaccard index comparing ORA and ORA fix.
-
-```{r,jaccard2}
-
-ora <- c(ora_ups,ora_dns)
 orafix <- c(orafix_ups,orafix_dns)
 
 jaccard(ora,orafix)
 
 ```
 
+List gene sets identified only in the "fixed" analysis.
 
-Jaccard index comparing ORA fix and FCS.
+```{r,examine2}
 
-```{r,jaccard3}
+ora <- union(ora_ups,ora_dns)
 
-orafix <- c(orafix_ups,orafix_dns)
-fcs <- c(fgsea_ups,fgsea_dns)
+orafix <- union(orafix_ups,orafix_dns)
 
-jaccard(orafix,fcs)
-
-```
-
-
-## Drill in to a specific pathway 
-
-In this case the top upregulated and downregulated pathways
-
-```{r,eplot}
-
-upname <- head(fgsea_up,1)$pathway
-plotEnrichment(gsets[[upname]], stat, gseaParam = 1, ticksSize = 0.2)
-
-dnname <- head(fgsea_dn,1)$pathway
-plotEnrichment(gsets[[dnname]], stat, gseaParam = 1, ticksSize = 0.2)
-
-```
-
-Now a heatmap of these gene sets.
-
-```{r,heat}
-
-# reads per million normalisation
-rpm <- apply(mxf,2, function(x) { x/sum(x) * 1000000} )
-colnames(rpm) <- c("UNTR1","UNTR2","UNTR3","TRT1","TRT2","TRT3")
-gnames_up <- gsets[[which(names(gsets) == upname)]]
-gnames_dn <- gsets[[which(names(gsets) == dnname)]]
-gene_ids <- rownames(mxf)
-gene_names <- sapply(strsplit(gene_ids," "),"[[",2)
-rpm_up <- rpm[which(gene_names %in% gnames_up),]
-rownames(rpm_up) <- sapply(strsplit(rownames(rpm_up)," "),"[[",2)
-rpm_dn <- rpm[which(gene_names %in% gnames_dn),]
-rownames(rpm_dn) <- sapply(strsplit(rownames(rpm_dn)," "),"[[",2)
-colsidecols <- c("blue","blue","blue","red","red","red")
-heatmap.2(rpm_up,scale="row",trace="none",margins=c(10,15),main=upname,ColSideColors=colsidecols)
-heatmap.2(rpm_dn,scale="row",trace="none",margins=c(10,15),main=dnname,ColSideColors=colsidecols)
+setdiff(orafix,ora)
 
 ```
 
