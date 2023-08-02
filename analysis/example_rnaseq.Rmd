@@ -222,9 +222,9 @@ bg <- unique(sapply(strsplit(bg," "),"[[",2))
 
 message(paste("number of genes in background:",length(bg)))
 
-writeLines(text=defup,con="aza_up.txt")
-writeLines(text=defdn,con="aza_dn.txt")
-writeLines(text=bg,con="aza_bg.txt")
+writeLines(text=unique(defup),con="aza_up.txt")
+writeLines(text=unique(defdn),con="aza_dn.txt")
+writeLines(text=unique(bg),con="aza_bg.txt")
 
 ```
 
