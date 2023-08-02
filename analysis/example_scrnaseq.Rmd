@@ -36,6 +36,58 @@ suppressPackageStartupMessages({
 
 ```
 
+```{r,orafunc}
+
+ora <- function(fg,bg,genesets,n_pw=10,mincount=5) {
+
+ora_res <- as.data.frame(enricher(gene = fg ,
+  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora_res$geneID <- NULL
+ora_res <- subset(ora_res,p.adjust<0.05 & Count >=mincount)
+ora_res_sets <- rownames(ora_res)
+
+gr <- as.numeric(sapply(strsplit(ora_res$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_res$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(ora_res$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_res$BgRatio,"/"),"[[",2))
+
+ora_res$es <- gr/br
+ora_res <- ora_res[order(-ora_res$es),]
+ora_res$Description=NULL
+return(ora_res)
+}
+
+orafix <- function(fg,bg,genesets,n_pw=10,mincount=5) {
+
+bgdf <- data.frame("background",bg)
+colnames(bgdf) <- c("term","gene")
+genesets_fix <- rbind(genesets,bgdf)
+
+ora_res <- as.data.frame(enricher(gene = fg ,
+  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets_fix,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora_res$geneID <- NULL
+ora_res <- subset(ora_res,p.adjust<0.05 & Count >=mincount)
+ora_res_sets <- rownames(ora_res)
+
+gr <- as.numeric(sapply(strsplit(ora_res$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_res$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(ora_res$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_res$BgRatio,"/"),"[[",2))
+
+ora_res$es <- gr/br
+ora_res <- ora_res[order(-ora_res$es),]
+ora_res$Description=NULL
+return(ora_res)
+}
+
+```
+
 For this report I will use a SingleCellExperiment (SCE) containing 10x droplet-based
 scRNA-seq PBCM data from 8 Lupus patients obtained before and after 6h-treatment with IFN-β
  (Kang et al. 2018).
@@ -63,9 +115,6 @@ lapply(tbl, function(x) {
 head(tbl[["CD4 T cells"]])  %>%
   kbl(caption="Example of muscat dataset. Control vs IFN-beta treatment") %>%
   kable_paper("hover", full_width = F)
-
-
-def <- tbl[["CD4 T cells"]]
 
 ```
 
@@ -111,13 +160,14 @@ Background is simply all genes that were detected.
 
 ```{r,subset1}
 
-defup <- subset(def,p_adj.loc<=0.05 & logFC>0)$gene
+def <- lapply(tbl , function(x) {
+  bg <- unique(x$gene)
+  up <- unique(subset(x,p_adj.loc<0.05&logFC>0)$gene)
+  dn <- unique(subset(x,p_adj.loc<0.05&logFC<0)$gene)
+  return(list("bg"=bg,"up"=up,"dn"=dn))
+} )
 
-defdn <- subset(def,p_adj.loc<=0.05 & logFC<0)$gene
-
-bg <- unique(def$gene)
-
-message(paste("number of genes in background:",length(bg)))
+str(def)
 
 ```
 
@@ -125,83 +175,37 @@ Enrichment firstly with upregulated genes
 
 ```{r,oraup1}
 
-n_pw=10
+ups <- lapply(1:length(def),function(i) {
+  ora(def[[i]]$up,def[[i]]$bg,genesets=genesets2)
+})
 
-ora_up <- as.data.frame(enricher(gene = defup ,
-  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
-  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+up_sets <- unlist(lapply(1:length(ups) , function(i) {
+  nm <- names(def)[[i]]
+  sets <- ups[[i]]$ID
+  if ( length(sets) >0 ) { paste(nm,sets) }
+} ) )
 
-ora_up$geneID <- NULL
-ora_up <- subset(ora_up,p.adjust<0.05 & Count >=5)
-ora_ups <- rownames(ora_up)
-
-gr <- as.numeric(sapply(strsplit(ora_up$GeneRatio,"/"),"[[",1)) /
-  as.numeric(sapply(strsplit(ora_up$GeneRatio,"/"),"[[",2))
-
-br <- as.numeric(sapply(strsplit(ora_up$BgRatio,"/"),"[[",1)) /
-  as.numeric(sapply(strsplit(ora_up$BgRatio,"/"),"[[",2))
-
-ora_up$es <- gr/br
-ora_up <- ora_up[order(-ora_up$es),]
-ora_up$Description=NULL
-
-head(ora_up) %>%
-  kbl(row.names = FALSE, caption="Top upregulated pathways in IFNB treatment") %>%
-  kable_paper("hover", full_width = F)
-
-topup2 <- rev(head(ora_up$es,10))
-names(topup2) <- rev(head(ora_up$ID,10))
+length(up_sets)
+up_sets
 
 ```
-
-The reported background size does not match the dataset.
 
 Now repeat with the downregulated genes
 
 ```{r,oradn1}
 
-ora_dn <- as.data.frame(enricher(gene = defdn ,
-  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
-  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+dns <- lapply(1:length(def),function(i) {
+  ora(def[[i]]$dn,def[[i]]$bg,genesets=genesets2)
+})
 
-ora_dn$geneID <- NULL
-ora_dn <- subset(ora_dn,p.adjust<0.05 & Count >=10)
-ora_dns <- rownames(ora_dn)
+dn_sets <- unlist(lapply(1:length(dns) , function(i) {
+  nm <- names(def)[[i]]
+  sets <- dns[[i]]$ID
+  if ( length(sets) >0 ) { paste(nm,sets) }
+} ) )
 
-gr <- as.numeric(sapply(strsplit(ora_dn$GeneRatio,"/"),"[[",1)) /
-  as.numeric(sapply(strsplit(ora_dn$GeneRatio,"/"),"[[",2))
-
-br <- as.numeric(sapply(strsplit(ora_dn$BgRatio,"/"),"[[",1)) /
-  as.numeric(sapply(strsplit(ora_dn$BgRatio,"/"),"[[",2))
-
-ora_dn$es <- gr/br
-ora_dn <- ora_dn[order(-ora_dn$es),]
-ora_dn$Description=NULL
-
-head(ora_dn,n_pw) %>%
-  kbl(row.names = FALSE, caption="Top downregulated pathways in IFNB treatment") %>%
-  kable_paper("hover", full_width = F)
-
-topdn2 <- head(ora_dn$es,n_pw)
-names(topdn2) <- head(ora_dn$ID,n_pw)
-
-```
-
-Make a barplot
-
-```{r,topbarplot1}
-
-par(mar=c(5,20,5,1))
-
-cols <- c(rep("blue",n_pw),rep("red",n_pw))
-
-barplot(c(topdn2,topup2),
-  horiz=TRUE,las=1,cex.names=0.65,col=cols,
-  main="top DE KEGGs",
-  xlab="ES",
-  cex.main=0.9)
-
-mtext("ORA test")
+length(dn_sets)
+dn_sets
 
 ```
 
@@ -229,118 +233,52 @@ Now filter the gene names into three lists, up-regulated, down-regulated and
 background.
 Background is simply all genes that were detected.
 
-```{r,subsetfix1}
-
-defup <- unique(subset(def,p_adj.loc<=0.05 & logFC>0)$gene)
-
-defdn <- unique(subset(def,p_adj.loc<=0.05 & logFC<0)$gene)
-
-bg <- unique(def$gene)
-message(paste("number of genes in background:",length(bg)))
-
-```
-
-Adding all detected genes to the background appears to improve results!
-
-```{r,gs2fix1}
-
-bgdf <- data.frame("background",bg)
-colnames(bgdf) <- c("term","gene")
-genesets2 <- rbind(genesets2,bgdf)
-
-```
-
 Enrichment firstly with upregulated genes
 
-```{r,oraupfix1}
+```{r,orafixup1}
 
-n_pw=10
+fixups <- lapply(1:length(def),function(i) {
+  orafix(def[[i]]$up,def[[i]]$bg,genesets=genesets2)
+})
 
-orafix_up <- as.data.frame(enricher(gene = defup ,
-  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
-  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+fixup_sets <- unlist(lapply(1:length(fixups) , function(i) {
+  nm <- names(def)[[i]]
+  sets <- fixups[[i]]$ID
+  if ( length(sets) >0 ) { paste(nm,sets) }
+} ) )
 
-orafix_up$geneID <- NULL
-orafix_up <- subset(orafix_up,p.adjust<0.05 & Count >=10)
-orafix_ups <- rownames(orafix_up)
-
-gr <- as.numeric(sapply(strsplit(orafix_up$GeneRatio,"/"),"[[",1)) /
-  as.numeric(sapply(strsplit(orafix_up$GeneRatio,"/"),"[[",2))
-
-br <- as.numeric(sapply(strsplit(orafix_up$BgRatio,"/"),"[[",1)) /
-  as.numeric(sapply(strsplit(orafix_up$BgRatio,"/"),"[[",2))
-
-orafix_up$es <- gr/br
-orafix_up <- orafix_up[order(-orafix_up$es),]
-orafix_up$Description=NULL
-
-head(orafix_up) %>%
-  kbl(row.names = FALSE, caption="Top upregulated pathways in IFNB treatment") %>%
-  kable_paper("hover", full_width = F)
-
-topup2 <- rev(head(orafix_up$es,10))
-names(topup2) <- rev(head(orafix_up$ID,10))
+length(fixup_sets)
+fixup_sets
 
 ```
 
-Now with the downregulated genes
+Now repeat with the downregulated genes
 
-```{r,oradnfix1}
+```{r,orafixdn1}
 
-orafix_dn <- as.data.frame(enricher(gene = defdn ,
-  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
-  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+fixdns <- lapply(1:length(def),function(i) {
+  orafix(def[[i]]$dn,def[[i]]$bg,genesets=genesets2)
+})
 
-orafix_dn$geneID <- NULL
-orafix_dn <- subset(orafix_dn,p.adjust<0.05 & Count >=10)
-orafix_dns <- rownames(orafix_dn)
+fixdn_sets <- unlist(lapply(1:length(fixdns) , function(i) {
+  nm <- names(def)[[i]]
+  sets <- fixdns[[i]]$ID
+  if ( length(sets) >0 ) { paste(nm,sets) }
+} ) )
 
-gr <- as.numeric(sapply(strsplit(orafix_dn$GeneRatio,"/"),"[[",1)) /
-  as.numeric(sapply(strsplit(orafix_dn$GeneRatio,"/"),"[[",2))
-
-br <- as.numeric(sapply(strsplit(orafix_dn$BgRatio,"/"),"[[",1)) /
-  as.numeric(sapply(strsplit(orafix_dn$BgRatio,"/"),"[[",2))
-
-orafix_dn$es <- gr/br
-orafix_dn <- orafix_dn[order(-orafix_dn$es),]
-orafix_dn$Description=NULL
-
-head(orafix_dn,n_pw) %>%
-  kbl(row.names = FALSE, caption="Top downregulated pathways in IFNB treatment") %>%
-  kable_paper("hover", full_width = F)
-
-topdn2 <- head(orafix_dn$es,n_pw)
-names(topdn2) <- head(orafix_dn$ID,n_pw)
+length(fixdn_sets)
+fixdn_sets
 
 ```
-
-Make a barplot
-
-```{r,topbarplot2fix1}
-
-par(mar=c(5,20,5,1))
-
-cols <- c(rep("blue",n_pw),rep("red",n_pw))
-
-barplot(c(topdn2,topup2),
-  horiz=TRUE,las=1,cex.names=0.65,col=cols,
-  main="top DE KEGGs",
-  xlab="ES",
-  cex.main=0.9)
-
-mtext("ORA fix test")
-
-```
-
 
 ## Compare pathway results
 
 ```{r,venn1,fig.width=8,fig.height=5}
 
-v1 <- list("ORA up"=ora_ups, "ORA fix up"=orafix_ups)
-v2 <- list("ORA dn"=ora_dns, "ORA fix dn"=orafix_dns)
-v3 <- list("ORA"=union(ora_ups,ora_dns),
-  "ORA fix"=union(orafix_ups,orafix_dns))
+v1 <- list("ORA up"=up_sets, "ORA fix up"=fixup_sets)
+v2 <- list("ORA dn"=dn_sets, "ORA fix dn"=fixdn_sets)
+v3 <- list("ORA"=union(up_sets,dn_sets),
+  "ORA fix"=union(fixup_sets,fixdn_sets))
 
 par(mar=c(10,10,10,10))
 par(mfrow=c(2,1))
@@ -360,22 +298,10 @@ jaccard <- function(a, b) {
     return (intersection/union)
 }
 
-ora <- c(ora_ups,ora_dns)
-orafix <- c(orafix_ups,orafix_dns)
+ora <- c(up_sets,dn_sets)
+orafix <- c(fixup_sets,fixdn_sets)
 
 jaccard(ora,orafix)
-
-```
-
-List gene sets identified only in the "fixed" analysis.
-
-```{r,examine1}
-
-ora <- union(ora_ups,ora_dns)
-
-orafix <- union(orafix_ups,orafix_dns)
-
-setdiff(orafix,ora)
 
 ```
 
@@ -416,32 +342,18 @@ Enrichment firstly with upregulated genes
 
 ```{r,oraup2}
 
-n_pw=10
+ups <- lapply(1:length(def),function(i) {
+  ora(def[[i]]$up,def[[i]]$bg,genesets=genesets2)
+})
 
-ora_up <- as.data.frame(enricher(gene = defup ,
-  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
-  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+up_sets <- unlist(lapply(1:length(ups) , function(i) {
+  nm <- names(def)[[i]]
+  sets <- ups[[i]]$ID
+  if ( length(sets) >0 ) { paste(nm,sets) }
+} ) )
 
-ora_up$geneID <- NULL
-ora_up <- subset(ora_up,p.adjust<0.05 & Count >=5)
-ora_ups <- rownames(ora_up)
-
-gr <- as.numeric(sapply(strsplit(ora_up$GeneRatio,"/"),"[[",1)) /
-  as.numeric(sapply(strsplit(ora_up$GeneRatio,"/"),"[[",2))
-
-br <- as.numeric(sapply(strsplit(ora_up$BgRatio,"/"),"[[",1)) /
-  as.numeric(sapply(strsplit(ora_up$BgRatio,"/"),"[[",2))
-
-ora_up$es <- gr/br
-ora_up <- ora_up[order(-ora_up$es),]
-ora_up$Description=NULL
-
-head(ora_up) %>%
-  kbl(row.names = FALSE, caption="Top upregulated pathways in IFNB treatment") %>%
-  kable_paper("hover", full_width = F)
-
-topup2 <- rev(head(ora_up$es,10))
-names(topup2) <- rev(head(ora_up$ID,10))
+length(up_sets)
+up_sets
 
 ```
 
@@ -449,48 +361,18 @@ Now repeat with the downregulated genes
 
 ```{r,oradn2}
 
-ora_dn <- as.data.frame(enricher(gene = defdn ,
-  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
-  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+dns <- lapply(1:length(def),function(i) {
+  ora(def[[i]]$dn,def[[i]]$bg,genesets=genesets2)
+})
 
-ora_dn$geneID <- NULL
-ora_dn <- subset(ora_dn,p.adjust<0.05 & Count >=10)
-ora_dns <- rownames(ora_dn)
+dn_sets <- unlist(lapply(1:length(dns) , function(i) {
+  nm <- names(def)[[i]]
+  sets <- dns[[i]]$ID
+  if ( length(sets) >0 ) { paste(nm,sets) }
+} ) )
 
-gr <- as.numeric(sapply(strsplit(ora_dn$GeneRatio,"/"),"[[",1)) /
-  as.numeric(sapply(strsplit(ora_dn$GeneRatio,"/"),"[[",2))
-
-br <- as.numeric(sapply(strsplit(ora_dn$BgRatio,"/"),"[[",1)) /
-  as.numeric(sapply(strsplit(ora_dn$BgRatio,"/"),"[[",2))
-
-ora_dn$es <- gr/br
-ora_dn <- ora_dn[order(-ora_dn$es),]
-ora_dn$Description=NULL
-
-head(ora_dn,n_pw) %>%
-  kbl(row.names = FALSE, caption="Top downregulated pathways in IFNB treatment") %>%
-  kable_paper("hover", full_width = F)
-
-topdn2 <- head(ora_dn$es,n_pw)
-names(topdn2) <- head(ora_dn$ID,n_pw)
-
-```
-
-Make a barplot
-
-```{r,topbarplot22}
-
-par(mar=c(5,20,5,1))
-
-cols <- c(rep("blue",n_pw),rep("red",n_pw))
-
-barplot(c(topdn2,topup2),
-  horiz=TRUE,las=1,cex.names=0.65,col=cols,
-  main="top DE Reactomes",
-  xlab="ES",
-  cex.main=0.9)
-
-mtext("ORA test")
+length(dn_sets)
+dn_sets
 
 ```
 
@@ -510,97 +392,39 @@ I've compiled a reporting checklist:
 | Data availability | R/Experiment hub "Kang" or GSE96583. |
 | Other parameters | Min gene set size of 10 + BUG FIX |
 
-Adding all detected genes to the background appears to improve results!
+```{r,orafixup2}
 
-```{r,gs2fix2}
+fixups <- lapply(1:length(def),function(i) {
+  orafix(def[[i]]$up,def[[i]]$bg,genesets=genesets2)
+})
 
-bgdf <- data.frame("background",bg)
-colnames(bgdf) <- c("term","gene")
-genesets2 <- rbind(genesets2,bgdf)
+fixup_sets <- unlist(lapply(1:length(fixups) , function(i) {
+  nm <- names(def)[[i]]
+  sets <- fixups[[i]]$ID
+  if ( length(sets) >0 ) { paste(nm,sets) }
+} ) )
 
-```
-
-Enrichment firstly with upregulated genes
-
-```{r,oraupfix2}
-
-n_pw=10
-
-orafix_up <- as.data.frame(enricher(gene = defup ,
-  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
-  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
-
-orafix_up$geneID <- NULL
-orafix_up <- subset(orafix_up,p.adjust<0.05 & Count >=10)
-orafix_ups <- rownames(orafix_up)
-
-gr <- as.numeric(sapply(strsplit(orafix_up$GeneRatio,"/"),"[[",1)) /
-  as.numeric(sapply(strsplit(orafix_up$GeneRatio,"/"),"[[",2))
-
-br <- as.numeric(sapply(strsplit(orafix_up$BgRatio,"/"),"[[",1)) /
-  as.numeric(sapply(strsplit(orafix_up$BgRatio,"/"),"[[",2))
-
-orafix_up$es <- gr/br
-orafix_up <- orafix_up[order(-orafix_up$es),]
-orafix_up$Description=NULL
-
-head(orafix_up) %>%
-  kbl(row.names = FALSE, caption="Top upregulated pathways in IFNB treatment") %>%
-  kable_paper("hover", full_width = F)
-
-topup2 <- rev(head(orafix_up$es,10))
-names(topup2) <- rev(head(orafix_up$ID,10))
+length(fixup_sets)
+fixup_sets
 
 ```
 
-Now with the downregulated genes
+Now repeat with the downregulated genes
 
-```{r,oradnfix2}
+```{r,orafixdn2}
 
-n_pw=10
+fixdns <- lapply(1:length(def),function(i) {
+  orafix(def[[i]]$dn,def[[i]]$bg,genesets=genesets2)
+})
 
-orafix_dn <- as.data.frame(enricher(gene = defdn ,
-  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
-  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+fixdn_sets <- unlist(lapply(1:length(fixdns) , function(i) {
+  nm <- names(def)[[i]]
+  sets <- fixdns[[i]]$ID
+  if ( length(sets) >0 ) { paste(nm,sets) }
+} ) )
 
-orafix_dn$geneID <- NULL
-orafix_dn <- subset(orafix_dn,p.adjust<0.05 & Count >=10)
-orafix_dns <- rownames(orafix_dn)
-
-gr <- as.numeric(sapply(strsplit(orafix_dn$GeneRatio,"/"),"[[",1)) /
-  as.numeric(sapply(strsplit(orafix_dn$GeneRatio,"/"),"[[",2))
-
-br <- as.numeric(sapply(strsplit(orafix_dn$BgRatio,"/"),"[[",1)) /
-  as.numeric(sapply(strsplit(orafix_dn$BgRatio,"/"),"[[",2))
-
-orafix_dn$es <- gr/br
-orafix_dn <- orafix_dn[order(-orafix_dn$es),]
-orafix_dn$Description=NULL
-
-head(orafix_dn,n_pw) %>%
-  kbl(row.names = FALSE, caption="Top downregulated pathways in IFNB treatment") %>%
-  kable_paper("hover", full_width = F)
-
-topdn2 <- head(orafix_dn$es,n_pw)
-names(topdn2) <- head(orafix_dn$ID,n_pw)
-
-```
-
-Make a barplot
-
-```{r,topbarplot2fix2}
-
-par(mar=c(5,20,5,1))
-
-cols <- c(rep("blue",n_pw),rep("red",n_pw))
-
-barplot(c(topdn2,topup2),
-  horiz=TRUE,las=1,cex.names=0.65,col=cols,
-  main="top DE Reactomes",
-  xlab="ES",
-  cex.main=0.9)
-
-mtext("ORA fix test")
+length(fixdn_sets)
+fixdn_sets
 
 ```
 
@@ -608,10 +432,10 @@ mtext("ORA fix test")
 
 ```{r,venn2,fig.width=8,fig.height=5}
 
-v1 <- list("ORA up"=ora_ups, "ORA fix up"=orafix_ups)
-v2 <- list("ORA dn"=ora_dns, "ORA fix dn"=orafix_dns)
-v3 <- list("ORA"=union(ora_ups,ora_dns),
-  "ORA fix"=union(orafix_ups,orafix_dns))
+v1 <- list("ORA up"=up_sets, "ORA fix up"=fixup_sets)
+v2 <- list("ORA dn"=dn_sets, "ORA fix dn"=fixdn_sets)
+v3 <- list("ORA"=union(up_sets,dn_sets),
+  "ORA fix"=union(fixup_sets,fixdn_sets))
 
 par(mar=c(10,10,10,10))
 par(mfrow=c(2,1))
@@ -631,8 +455,8 @@ jaccard <- function(a, b) {
     return (intersection/union)
 }
 
-ora <- c(ora_ups,ora_dns)
-orafix <- c(orafix_ups,orafix_dns)
+ora <- c(up_sets,dn_sets)
+orafix <- c(fixup_sets,fixdn_sets)
 
 jaccard(ora,orafix)
 

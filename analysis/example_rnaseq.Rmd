@@ -222,6 +222,10 @@ bg <- unique(sapply(strsplit(bg," "),"[[",2))
 
 message(paste("number of genes in background:",length(bg)))
 
+writeLines(text=defup,con="aza_up.txt")
+writeLines(text=defdn,con="aza_dn.txt")
+writeLines(text=bg,con="aza_bg.txt")
+
 ```
 
 Enrichment firstly with upregulated genes
@@ -235,7 +239,7 @@ ora_up <- as.data.frame(enricher(gene = defup ,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 ora_up$geneID <- NULL
-ora_up <- subset(ora_up,p.adjust<0.05 & Count >=10)
+ora_up <- subset(ora_up,p.adjust<0.05 & Count >=5)
 ora_ups <- rownames(ora_up)
 
 gr <- as.numeric(sapply(strsplit(ora_up$GeneRatio,"/"),"[[",1)) /
@@ -268,7 +272,7 @@ ora_dn <- as.data.frame(enricher(gene = defdn ,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 ora_dn$geneID <- NULL
-ora_dn <- subset(ora_dn,p.adjust<0.05 & Count >=10)
+ora_dn <- subset(ora_dn,p.adjust<0.05 & Count >=5)
 ora_dns <- rownames(ora_dn)
 
 gr <- as.numeric(sapply(strsplit(ora_dn$GeneRatio,"/"),"[[",1)) /
@@ -367,7 +371,7 @@ orafix_up <- as.data.frame(enricher(gene = defup ,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 orafix_up$geneID <- NULL
-orafix_up <- subset(orafix_up,p.adjust<0.05 & Count >=10)
+orafix_up <- subset(orafix_up,p.adjust<0.05 & Count >=5)
 orafix_ups <- rownames(orafix_up)
 
 gr <- as.numeric(sapply(strsplit(orafix_up$GeneRatio,"/"),"[[",1)) /
@@ -398,7 +402,7 @@ orafix_dn <- as.data.frame(enricher(gene = defdn ,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 orafix_dn$geneID <- NULL
-orafix_dn <- subset(orafix_dn,p.adjust<0.05 & Count >=10)
+orafix_dn <- subset(orafix_dn,p.adjust<0.05 & Count >=5)
 orafix_dns <- rownames(orafix_dn)
 
 gr <- as.numeric(sapply(strsplit(orafix_dn$GeneRatio,"/"),"[[",1)) /
@@ -437,7 +441,6 @@ barplot(c(topdn2,topup2),
 mtext("ORA fix test")
 
 ```
-
 
 ## Compare pathway results
 
@@ -529,7 +532,7 @@ ora_up <- as.data.frame(enricher(gene = defup ,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 ora_up$geneID <- NULL
-ora_up <- subset(ora_up,p.adjust<0.05 & Count >=10)
+ora_up <- subset(ora_up,p.adjust<0.05 & Count >=5)
 ora_ups <- rownames(ora_up)
 
 gr <- as.numeric(sapply(strsplit(ora_up$GeneRatio,"/"),"[[",1)) /
@@ -560,7 +563,7 @@ ora_dn <- as.data.frame(enricher(gene = defdn ,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 ora_dn$geneID <- NULL
-ora_dn <- subset(ora_dn,p.adjust<0.05 & Count >=10)
+ora_dn <- subset(ora_dn,p.adjust<0.05 & Count >=5)
 ora_dns <- rownames(ora_dn)
 
 gr <- as.numeric(sapply(strsplit(ora_dn$GeneRatio,"/"),"[[",1)) /
@@ -635,7 +638,7 @@ orafix_up <- as.data.frame(enricher(gene = defup ,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 orafix_up$geneID <- NULL
-orafix_up <- subset(orafix_up,p.adjust<0.05 & Count >=10)
+orafix_up <- subset(orafix_up,p.adjust<0.05 & Count >=5)
 orafix_ups <- rownames(orafix_up)
 
 gr <- as.numeric(sapply(strsplit(orafix_up$GeneRatio,"/"),"[[",1)) /
@@ -668,7 +671,7 @@ orafix_dn <- as.data.frame(enricher(gene = defdn ,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 orafix_dn$geneID <- NULL
-orafix_dn <- subset(orafix_dn,p.adjust<0.05 & Count >=10)
+orafix_dn <- subset(orafix_dn,p.adjust<0.05 & Count >=5)
 orafix_dns <- rownames(orafix_dn)
 
 gr <- as.numeric(sapply(strsplit(orafix_dn$GeneRatio,"/"),"[[",1)) /
