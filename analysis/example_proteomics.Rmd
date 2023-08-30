@@ -40,14 +40,19 @@ suppressPackageStartupMessages({
 
 ```
 
-For this report I will be using proteomics data from Mackmull et al (2015) where they looked at the
-effect of HDACi on protein expression in nuclear and cytosolic compartments.
-Here I am using the data from the TSA treated nuclear fractions after 48 hrs exposure.
-The data were obtained from Supplementary Table 2 and saved to the /data folder.
+For this report I will be using proteomics data from Stukalov et al (https://pubmed.ncbi.nlm.nih.gov/33845483/),
+who profiled the effect of SARS-COV2 infection on A549 cells.
+
+Here we used the 24hr profile, as there were relatively more changes found.
+
+Probable contaminants were removed, as well as viral proteins.
+This left 5825 proteins, including 165 downregulated and 44 upregulated.
+
+The data were obtained from Supplementary Table 5 and saved to the /data folder.
 
 ```{r,fetch}
 
-def <- read.table("../data/tsa_48hr_nuclear_frac.tsv",sep="\t",header=TRUE)
+def <- read.table("../data/sarscov2_prot.tsv",sep="\t",header=TRUE)
 
 ```
 
@@ -70,7 +75,7 @@ I've compiled a reporting checklist:
 | Background list | Genes with >=10 reads per sample on average across all samples |
 | Gene Selection Criteria | DESeq2 FDR<0.05 |
 | ORA directionality | Separate tests for up- and down-regulation |
-| Data availability | Mackmull et al (2015) |
+| Data availability | Stukalov et al 2021: PMID 33845483 |
 | Other parameters | Min gene set size of 10 |
 
 Here I provide a custom background gene list.
@@ -93,11 +98,11 @@ Background is simply all genes that were detected.
 
 ```{r,subset1}
 
-defup <- unique(subset(def,adj.P.Val<=0.05 & logFC>0)$GN)
+defup <- unique(subset(def,change.SARS_CoV2.24h_vs_mock.24h=="+")$gene_name)
 
-defdn <- unique(subset(def,adj.P.Val<=0.05 & logFC<0)$GN)
+defdn <- unique(subset(def,change.SARS_CoV2.24h_vs_mock.24h=="-")$gene_name)
 
-bg <- unique(def$GN)
+bg <- unique(def$gene_name)
 
 message(paste("number of proteins in background:",length(bg)))
 
@@ -203,7 +208,7 @@ I've compiled a reporting checklist:
 | Background list | Genes with >=10 reads per sample on average across all samples |
 | Gene Selection Criteria | DESeq2 FDR<0.05 |
 | ORA directionality | Separate tests for up- and down-regulation |
-| Data availability | Mackmull et al (2015) |
+| Data availability | Data availability | Stukalov et al 2021: PMID 33845483 |
 | Other parameters | Min gene set size of 10 + BUG FIX |
 
 Here I provide a background gene list for cluterprofiler to use, like a user should.
@@ -375,7 +380,7 @@ I've compiled a reporting checklist:
 | Background list | Genes with >=10 reads per sample on average across all samples |
 | Gene Selection Criteria | DESeq2 FDR<0.05 |
 | ORA directionality | Separate tests for up- and down-regulation |
-| Data availability | Mackmull et al (2015) |
+| Data availability | Data availability | Stukalov et al 2021: PMID 33845483 |
 | Other parameters | Min gene set size of 10 |
 
 Here I provide a custom background gene list.
@@ -491,7 +496,7 @@ I've compiled a reporting checklist:
 | Background list | Genes with >=10 reads per sample on average across all samples |
 | Gene Selection Criteria | DESeq2 FDR<0.05 |
 | ORA directionality | Separate tests for up- and down-regulation |
-| Data availability | Mackmull et al (2015) |
+| Data availability | Data availability | Stukalov et al 2021: PMID 33845483 |
 | Other parameters | Min gene set size of 10 + BUG FIX |
 
 Adding all detected genes to the background appears to improve results!

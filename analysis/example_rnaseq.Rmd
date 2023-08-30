@@ -463,7 +463,7 @@ plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2),main="upregula
 plot(euler(v2),quantities = list(cex = 2), labels = list(cex = 2),main="downregulated KEGG pathways")
 plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated KEGG pathways")
 
-png("rna_kegg_euler")
+png("rna_kegg_euler.png")
 plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated KEGG pathways")
 dev.off()
 
@@ -741,7 +741,7 @@ plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2),main="upregula
 plot(euler(v2),quantities = list(cex = 2), labels = list(cex = 2),main="downregulated Reactomes")
 plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated Reactomes")
 
-png("rna_reactome_euler")
+png("rna_reactome_euler.png")
 plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated Reactomes")
 dev.off()
 
