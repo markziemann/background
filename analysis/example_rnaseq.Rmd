@@ -302,13 +302,16 @@ par(mar=c(5,20,5,1))
 
 cols <- c(rep("blue",n_pw),rep("red",n_pw))
 
-barplot(c(topdn2,topup2),
-  horiz=TRUE,las=1,cex.names=0.65,col=cols,
-  main="top DE KEGGs",
-  xlab="ES",
-  cex.main=0.9)
+top <- c(topdn2,topup2)
 
-mtext("ORA test")
+if ( length(top) > 1 ) {
+  barplot(c(top),
+    horiz=TRUE,las=1,cex.names=0.65,col=cols,
+    main="top DE KEGGs",
+    xlab="ES",
+    cex.main=0.9)
+  mtext("ORA test")
+}
 
 ```
 
@@ -432,13 +435,16 @@ par(mar=c(5,20,5,1))
 
 cols <- c(rep("blue",n_pw),rep("red",n_pw))
 
-barplot(c(topdn2,topup2),
-  horiz=TRUE,las=1,cex.names=0.65,col=cols,
-  main="top DE KEGGs",
-  xlab="ES",
-  cex.main=0.9)
+top <- c(topdn2,topup2)
 
-mtext("ORA fix test")
+if ( length(top) > 1 ) {
+  barplot(c(top),
+    horiz=TRUE,las=1,cex.names=0.65,col=cols,
+    main="top DE KEGGs",
+    xlab="ES",
+    cex.main=0.9)
+  mtext("ORA fix")
+}
 
 ```
 
@@ -456,6 +462,10 @@ par(mfrow=c(2,1))
 plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2),main="upregulated KEGG pathways")
 plot(euler(v2),quantities = list(cex = 2), labels = list(cex = 2),main="downregulated KEGG pathways")
 plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated KEGG pathways")
+
+png("rna_kegg_euler")
+plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated KEGG pathways")
+dev.off()
 
 ```
 
@@ -593,13 +603,16 @@ par(mar=c(5,20,5,1))
 
 cols <- c(rep("blue",n_pw),rep("red",n_pw))
 
-barplot(c(topdn2,topup2),
-  horiz=TRUE,las=1,cex.names=0.65,col=cols,
-  main="top DE Reactomes",
-  xlab="ES",
-  cex.main=0.9)
+top <- c(topdn2,topup2)
 
-mtext("ORA test")
+if ( length(top) > 1 ) {
+  barplot(c(top),
+    horiz=TRUE,las=1,cex.names=0.65,col=cols,
+    main="top DE Reactomes",
+    xlab="ES",
+    cex.main=0.9)
+  mtext("ORA test")
+}
 
 ```
 
@@ -701,14 +714,16 @@ par(mar=c(5,20,5,1))
 
 cols <- c(rep("blue",n_pw),rep("red",n_pw))
 
-barplot(c(topdn2,topup2),
-  horiz=TRUE,las=1,cex.names=0.65,col=cols,
-  main="top DE Reactomes",
-  xlab="ES",
-  cex.main=0.9)
+top <- c(topdn2,topup2)
 
-mtext("ORA fix test")
-
+if ( length(top) > 1 ) {
+  barplot(c(top),
+    horiz=TRUE,las=1,cex.names=0.65,col=cols,
+    main="top DE Reactomes",
+    xlab="ES",
+    cex.main=0.9)
+  mtext("ORA fix")
+}
 ```
 
 ## Compare pathway results
@@ -725,6 +740,10 @@ par(mfrow=c(2,1))
 plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2),main="upregulated Reactomes")
 plot(euler(v2),quantities = list(cex = 2), labels = list(cex = 2),main="downregulated Reactomes")
 plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated Reactomes")
+
+png("rna_reactome_euler")
+plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated Reactomes")
+dev.off()
 
 ```
 

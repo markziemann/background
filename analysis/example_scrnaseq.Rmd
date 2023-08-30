@@ -294,6 +294,10 @@ plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2),main="upregula
 plot(euler(v2),quantities = list(cex = 2), labels = list(cex = 2),main="downregulated KEGG pathways")
 plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated KEGG pathways")
 
+png("scrna_kegg_euler.png")
+plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated KEGG pathways")
+dev.off()
+
 ```
 
 Jaccard index comparing ORA and ORA fix.
@@ -451,6 +455,10 @@ plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2),main="upregula
 plot(euler(v2),quantities = list(cex = 2), labels = list(cex = 2),main="downregulated Reactomes")
 plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated Reactomes")
 
+png("scrna_reactome_euler.png")
+plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated Reactomes")
+dev.off()
+
 ```
 
 Jaccard index comparing ORA and ORA fix.
@@ -474,11 +482,7 @@ List gene sets identified only in the "fixed" analysis.
 
 ```{r,examine2}
 
-orasets <- union(ora_ups,ora_dns)
-
-orafixsets <- union(orafix_ups,orafix_dns)
-
-setdiff(orafixsets,orasets)
+setdiff(orafix,ora)
 
 ```
 
