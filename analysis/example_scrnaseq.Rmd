@@ -44,6 +44,8 @@ ora_res <- as.data.frame(enricher(gene = fg ,
   universe = bg,  maxGSSize = 5000, TERM2GENE = genesets,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
+if ( nrow(ora_res > 1 ) ) {
+
 ora_res$geneID <- NULL
 ora_res <- subset(ora_res,p.adjust<0.05 & Count >=mincount)
 ora_res_sets <- rownames(ora_res)
@@ -60,6 +62,8 @@ ora_res$Description=NULL
 return(ora_res)
 }
 
+}
+
 orafix <- function(fg,bg,genesets,n_pw=10,mincount=5) {
 
 bgdf <- data.frame("background",bg)
@@ -69,6 +73,8 @@ genesets_fix <- rbind(genesets,bgdf)
 ora_res <- as.data.frame(enricher(gene = fg ,
   universe = bg,  maxGSSize = 5000, TERM2GENE = genesets_fix,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+if ( nrow(ora_res > 1 ) ) {
 
 ora_res$geneID <- NULL
 ora_res <- subset(ora_res,p.adjust<0.05 & Count >=mincount)
@@ -84,6 +90,8 @@ ora_res$es <- gr/br
 ora_res <- ora_res[order(-ora_res$es),]
 ora_res$Description=NULL
 return(ora_res)
+}
+
 }
 
 ```
@@ -298,10 +306,10 @@ jaccard <- function(a, b) {
     return (intersection/union)
 }
 
-ora <- c(up_sets,dn_sets)
-orafix <- c(fixup_sets,fixdn_sets)
+orasets <- c(up_sets,dn_sets)
+orafixsets <- c(fixup_sets,fixdn_sets)
 
-jaccard(ora,orafix)
+jaccard(orasets,orafixsets)
 
 ```
 
@@ -466,11 +474,11 @@ List gene sets identified only in the "fixed" analysis.
 
 ```{r,examine2}
 
-ora <- union(ora_ups,ora_dns)
+orasets <- union(ora_ups,ora_dns)
 
-orafix <- union(orafix_ups,orafix_dns)
+orafixsets <- union(orafix_ups,orafix_dns)
 
-setdiff(orafix,ora)
+setdiff(orafixsets,orasets)
 
 ```
 
