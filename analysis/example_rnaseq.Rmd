@@ -12,7 +12,7 @@ output:
 theme: cosmo
 ---
 
-Source: https://github.com/markziemann/enrichment_recipe
+Source: https://github.com/markziemann/background
 
 ## Introduction
 
@@ -235,7 +235,7 @@ Enrichment firstly with upregulated genes
 n_pw=10
 
 ora_up <- as.data.frame(enricher(gene = defup ,
-  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets2,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 ora_up$geneID <- NULL
@@ -268,7 +268,7 @@ Now repeat with the downregulated genes
 ```{r,oradn1}
 
 ora_dn <- as.data.frame(enricher(gene = defdn ,
-  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets2,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 ora_dn$geneID <- NULL
@@ -370,7 +370,7 @@ Enrichment firstly with upregulated genes
 n_pw=10
 
 orafix_up <- as.data.frame(enricher(gene = defup ,
-  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets2,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 orafix_up$geneID <- NULL
@@ -401,7 +401,7 @@ Now with the downregulated genes
 ```{r,oradnfix1}
 
 orafix_dn <- as.data.frame(enricher(gene = defdn ,
-  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets2,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 orafix_dn$geneID <- NULL
@@ -463,7 +463,7 @@ plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2),main="upregula
 plot(euler(v2),quantities = list(cex = 2), labels = list(cex = 2),main="downregulated KEGG pathways")
 plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated KEGG pathways")
 
-png("rna_kegg_euler.png")
+svg("rna_kegg_euler.svg")
 plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated KEGG pathways")
 dev.off()
 
@@ -538,7 +538,7 @@ Enrichment firstly with upregulated genes
 n_pw=10
 
 ora_up <- as.data.frame(enricher(gene = defup ,
-  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets2,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 ora_up$geneID <- NULL
@@ -569,7 +569,7 @@ Now repeat with the downregulated genes
 ```{r,oradn2}
 
 ora_dn <- as.data.frame(enricher(gene = defdn ,
-  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets2,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 ora_dn$geneID <- NULL
@@ -647,7 +647,7 @@ Enrichment firstly with upregulated genes
 ```{r,oraupfix2}
 
 orafix_up <- as.data.frame(enricher(gene = defup ,
-  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets2,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 orafix_up$geneID <- NULL
@@ -680,7 +680,7 @@ Now with the downregulated genes
 n_pw=10
 
 orafix_dn <- as.data.frame(enricher(gene = defdn ,
-  universe = bg,  maxGSSize = 5000, TERM2GENE = genesets2,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets2,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 orafix_dn$geneID <- NULL
@@ -741,7 +741,7 @@ plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2),main="upregula
 plot(euler(v2),quantities = list(cex = 2), labels = list(cex = 2),main="downregulated Reactomes")
 plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated Reactomes")
 
-png("rna_reactome_euler.png")
+svg("rna_reactome_euler.svg")
 plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated Reactomes")
 dev.off()
 

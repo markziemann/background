@@ -120,13 +120,6 @@ In this paper, we examine the effect of this filtering step on ORA of real RNA-s
 RNA-seq data to determine the impact upon precision and recall, and provide practical recommendations
 to end users to obtain the most accurate results.
 
-
-
-
-
-
-
-
 In a hypothetical example, there were 134 genes classified as detected.
 Of these, 38 were defined as upregulated in response to a stimulus based on a differential expression
 test.
@@ -162,6 +155,68 @@ This needs to be repeated for other values of *i*, namely 6 to 0 and then sum al
 res<-unlist(lapply(0:38, function(i) {  (choose(18,i) * choose((134-18),(38-1)) / choose(134,38)) }))
 plot(res,type="b")
 ```
+
+## Methods
+
+### Demonstrating the impact of the problem
+
+To demonstrate the impact of this problem on real omics data, we conducted enrichment analysis of
+four different types of data.
+We obtained differential proteomics data from Stukalov et al (https://pubmed.ncbi.nlm.nih.gov/33845483/),
+who profiled the effect of SARS-COV2 infection on A549 cells.
+At 24 hrs infection with SARS-CoV2, Stukalov et al reported the detection of 5825 proteins, including
+165 downregulated and 44 upregulated (FDR<0.05).
+For bulk RNA-seq, we obtained count data from DEE2.io (Ziemann et al, 2019) for control and azacitidine
+exposed AML3 cells (SRA accession SRP038101) (Lund et al, 2014, PMID:25315154).
+Genes with fewer than 10 reads per sample on average were considered not detected and were omitted from
+downstream analysis.
+DESeq2 was used to compare treatment groups and genes with FDR<0.05 were selected (Love 2014).
+For single cell RNA-seq 10X Genomics droplet-based, scRNA-seq PBMC data from 8 Lupus patients obtained
+before and after 6h-treatment with IFN-β (Kang et al. 2018).
+The complete raw data, as well as gene and cell metadata is available through the NCBI GEO,
+accession number GSE96583.
+Analysis of this data set  was done using a pseudobulk approach according to the Muscat package vignette
+(Crowell et al, 2020), yielding lists of detected genes for each cell state as well as up- and
+down-regulated gene lists (FDR<0.05).
+Infinium 450K BeadChip based Epigenenome Wise Association Study (EWAS) data was obtained from
+Joehanes et al (PMID:27651444), a meta-analysis investigating the DNA methylation differences between
+smokers and non-smokers.
+Data was downloaded from EWAS Catalog at the link (http://ewascatalog.org/?study=27651444_smoking_current_vs_never_smoking).
+As a background gene list, all genes represented by probes on the 450K array were listed.
+For all of the above analyses, up- and down-regulated genes were partitioned into separate lists,
+for separate enrichment analysis.
+These gene lists were loaded into R and were subject to ClusterProfiler analysis along with the
+respective background gene set.
+KEGG (REF) or Reactome (REF) pathway annotations were used (GMT format).
+KEGG pathway annotations v2023.1 were obtained from MSigDB (REF), while Reactome pathways were downloaded
+from the Reactome website (2023-03-06).
+Pathways (gene sets) with fewer than 10 detected genes were not included in the analysis.
+In addition to the default ClusterProfiler analysis, a modification was made to circumvent the
+background filtering problem.
+To do this, the list of detected genes was appended as a new "pathway" to the KEGG or Reactome annotation
+set.
+The results of this "fixed" analysis was compared those using the default algorithm using an Euler
+diagram.
+
+### Examining the breadth of the problem
+
+Next, we investigated the behaviour of many different ORA tools to find out whether they suffered from
+the same problem or not.
+We analysed the 20 most popular ORA tools as described by Xie et al, 2021 (PMID:33858350).
+To understand whether the background list filtering problem was apparent, we used the gene lists from
+the bulk RNA-seq dataset, with various pathway /gene set databases.
+If the tool reported the number of genes in the background list, we used this as evidence to classify
+the tool's behaviour.
+If not, then we undertook forensic investigation of the enrichment results to infer the program's
+behaviour.
+
+
+## Results
+
+### Background list filtering biases ORA results
+
+
+### Inappropriate background list filtering is widespread
 
 
 

@@ -20,9 +20,7 @@ Load libraries and dataset.
 
 ```{r,libs}
 
-load("muscat_vignette.RData")
-
-ls()
+tbl <- readRDS("scDEres.Rds")
 
 suppressPackageStartupMessages({
   library("getDEE2")
@@ -103,9 +101,8 @@ scRNA-seq PBCM data from 8 Lupus patients obtained before and after 6h-treatment
 The complete raw data, as well as gene and cell metadata is available through the NCBI GEO,
 accession number GSE96583.
 
-Downstream analysis was done according to the Muscat vignette.
-
-Focusing on CD4 T-cells.
+Downstream analysis was done according to the vignette from Seurat.
+Link: https://satijalab.org/seurat/archive/v3.1/immune_alignment.html
 
 ```{r,fetch}
 
@@ -113,12 +110,27 @@ names(tbl)
 
 message("Total detected genes in each cluster and differentially expressed")
 
-lapply(tbl, function(x) {
-  nsig <- nrow(subset(x,p_adj.loc<0.05))
+x <- lapply(tbl, function(x) {
+  nsig <- nrow(subset(x,p_val_adj<0.05))
   ntot <- nrow(x)
   c(ntot,nsig)
 } )
 
+x
+
+x <- do.call(rbind,x)
+colnames(x) <- c("ngenes","nsig")
+x <- as.data.frame(x)
+
+x <- subset(x,ngenes>=800 & nsig>=100)
+
+x
+
+x <- rownames(x)
+
+tbl <- tbl[names(tbl) %in% x]
+
+str(tbl)
 
 head(tbl[["CD4 T cells"]])  %>%
   kbl(caption="Example of muscat dataset. Control vs IFN-beta treatment") %>%
@@ -143,9 +155,9 @@ I've compiled a reporting checklist:
 | Statistical test used | hypergeometric test |
 | P-value correction for multiple comparisons | FDR method |
 | Background list | As defined by Seurat |
-| Gene Selection Criteria | Muscat FDR<0.05 |
+| Gene Selection Criteria | Seurat FDR<0.05 |
 | ORA directionality | Separate tests for up- and down-regulation |
-| Data availability | R/Experiment hub "Kang" or GSE96583. |
+| Data availability | SeuratData ifnb |
 | Other parameters | Min gene set size of 5 |
 
 Here I provide a custom background gene list.
@@ -169,9 +181,9 @@ Background is simply all genes that were detected.
 ```{r,subset1}
 
 def <- lapply(tbl , function(x) {
-  bg <- unique(x$gene)
-  up <- unique(subset(x,p_adj.loc<0.05&logFC>0)$gene)
-  dn <- unique(subset(x,p_adj.loc<0.05&logFC<0)$gene)
+  bg <- unique(rownames(x))
+  up <- unique(rownames(subset(x,p_val_adj<0.05 & avg_log2FC>0)))
+  dn <- unique(rownames(subset(x,p_val_adj<0.05 & avg_log2FC<0)))
   return(list("bg"=bg,"up"=up,"dn"=dn))
 } )
 
@@ -228,9 +240,9 @@ I've compiled a reporting checklist:
 | Statistical test used | hypergeometric test |
 | P-value correction for multiple comparisons | FDR method |
 | Background list | As defined by Seurat |
-| Gene Selection Criteria | Muscat FDR<0.05 |
+| Gene Selection Criteria | Seurat FDR<0.05 |
 | ORA directionality | Separate tests for up- and down-regulation |
-| Data availability | R/Experiment hub "Kang" or GSE96583. |
+| Data availability | SeuratData ifnb |
 | Other parameters | Min gene set size of 10 + BUG FIX |
 
 Here I provide a background gene list for cluterprofiler to use, like a user should.
@@ -294,7 +306,7 @@ plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2),main="upregula
 plot(euler(v2),quantities = list(cex = 2), labels = list(cex = 2),main="downregulated KEGG pathways")
 plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated KEGG pathways")
 
-svg("scrna_kegg_euler.svg")
+svg("scrna2_kegg_euler.svg")
 plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated KEGG pathways")
 dev.off()
 
@@ -329,10 +341,10 @@ I've compiled a reporting checklist:
 | Tool used | ClusterProfiler (check version at foot of report) |
 | Statistical test used | hypergeometric test |
 | P-value correction for multiple comparisons | FDR method |
-| Background list | As defined by Seurat |
-| Gene Selection Criteria | Muscat FDR<0.05 |
+| Background list |  As defined by Seurat |
+| Gene Selection Criteria | Seurat FDR<0.05 |
 | ORA directionality | Separate tests for up- and down-regulation |
-| Data availability | R/Experiment hub "Kang" or GSE96583. |
+| Data availability | SeuratData ifnb |
 | Other parameters | Min gene set size of 10 |
 
 Here I provide a custom background gene list.
@@ -399,9 +411,9 @@ I've compiled a reporting checklist:
 | Statistical test used | hypergeometric test |
 | P-value correction for multiple comparisons | FDR method |
 | Background list | As defined by Seurat |
-| Gene Selection Criteria | Muscat FDR<0.05 |
+| Gene Selection Criteria | Seurat FDR<0.05 |
 | ORA directionality | Separate tests for up- and down-regulation |
-| Data availability | R/Experiment hub "Kang" or GSE96583. |
+| Data availability | SeuratData ifnb |
 | Other parameters | Min gene set size of 10 + BUG FIX |
 
 ```{r,orafixup2}
@@ -455,7 +467,7 @@ plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2),main="upregula
 plot(euler(v2),quantities = list(cex = 2), labels = list(cex = 2),main="downregulated Reactomes")
 plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated Reactomes")
 
-svg("scrna_reactome_euler.svg")
+svg("scrna2_reactome_euler.svg")
 plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated Reactomes")
 dev.off()
 
