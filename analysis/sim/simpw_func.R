@@ -6,6 +6,7 @@ library("limma")
 library("stringi")
 library("mitch")
 library("fgsea")
+library("clusterProfiler")
 
 ########################################
 # get some counts
@@ -57,7 +58,7 @@ for (k in paste0("data",1:(N_REPS*2)))  {
 gsets_sub<-which(unlist( lapply(gsets,function(x) { length(which(rownames(a) %in% as.character(unlist(x)))) >10 }  ) ) )
 gsets<-gsets[which(names(gsets) %in% names(gsets_sub))]
 
-#Number of differential genes
+#Number of differential gene sets
 NDIF=round(length(gsets)*FRAC_DE)
 
 if (VARIANCE>0) {
@@ -83,13 +84,13 @@ if (NDIF>0) {
 
   # now find a list of genes inside the pathways
   UP_DE<-unique(unlist(unname(UP_LIST)))
+
   # select the ones that are also in the profile
   UP_DE<-UP_DE[which(UP_DE %in% row.names(df))]
 
   # same for down genes
   DN_DE<-unique(unlist(unname(DN_LIST)))
   DN_DE<-DN_DE[which(DN_DE %in% row.names(df))]
-
 
   ITX<-intersect(UP_DE,DN_DE)
   # need to eliminate the overlapping ones for simplicity
@@ -288,16 +289,18 @@ x
 ##################################
 # clusterprofiler default function
 ##################################
-run_clusterprofiler_default <-function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS){
+# Note that clusterprofiler requires different gene set format
+run_clusterprofiler_default <-function(x,DGE_FUNC,gsets2,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS){
 
-dge<-sapply(x,"[",6)
+dge <- sapply(x,"[",6)
 
-ups<-lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange > 0)) } )
-dns<-lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange < 0)) } )
+ups <- lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange > 0)) } )
+dns <- lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange < 0)) } )
+bgs <- lapply(dge, function(x) { rownames(x) } )
 
-l_ups<-sapply(ups,length)
-l_dns<-sapply(dns,length)
-geneset_sizes<-sapply( gsets , length )
+l_ups <- sapply(ups,length)
+l_dns <- sapply(dns,length)
+geneset_sizes <- sapply( gsets2 , length )
 
 # calculate number of genes in sets that are up and downregulated
 n_dns=n_ups=p_ups=p_dns=obs_up=obs_dn=NULL
@@ -306,27 +309,26 @@ n_dns=n_ups=p_ups=p_dns=obs_up=obs_dn=list()
 for (d in 1:length(dge)) {
 
 # clusterprofiler UP
-ora_up <- as.data.frame(enricher(gene = ups[d] ,
-  universe = bg,  maxGSSize = 500000, TERM2GENE = gsets,
+ora_up <- as.data.frame(enricher(gene = ups[[d]] ,
+  universe = bgs[[d]],  maxGSSize = 500000, TERM2GENE = gsets2,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 ora_up$geneID <- NULL
 ora_up <- subset(ora_up,p.adjust<0.05 & Count >=10)
 ora_ups <- rownames(ora_up)
-obs_up[d] <- ora_ups
+obs_up[[d]] <- ora_ups
 
 # clusterprofiler DOWN
-ora_dn <- as.data.frame(enricher(gene = dns[d] ,
-  universe = bg,  maxGSSize = 500000, TERM2GENE = gsets,
+ora_dn <- as.data.frame(enricher(gene = dns[[d]] ,
+  universe = bgs[[d]],  maxGSSize = 500000, TERM2GENE = gsets2,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 ora_dn$geneID <- NULL
 ora_dn <- subset(ora_dn,p.adjust<0.05 & Count >=10)
 ora_dns <- rownames(ora_dn)
-obs_dn[d] <- ora_dns
+obs_dn[[d]] <- ora_dns
 
 }
-
 
 #ground truth comparison
 gt_up<-sapply(x,"[",4)
@@ -366,7 +368,7 @@ dge<-sapply(x,"[",6)
 xx<-lapply( dge , function(x) { 
  s<-x$stat
  names(s)<-rownames(x)
- p<-as.data.frame(fgsea(pathways=gsets, stats=s, nperm=1000))
+ p<-as.data.frame(fgsea(pathways=gsets, stats=s ))
  p
 } )
 
@@ -469,14 +471,16 @@ agg_dge<-function(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,gsets) {
 
 #TEST# N_REPS=5 ; SUM_COUNT=50000000 ; VARIANCE=0.5 ; FRAC_DE=0.05 ; FC=1 ; SIMS=20 ; DGE_FUNC="deseq2" ; gsets=gsets
 
-xxx<-RepParallel(SIMS,simrna(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,gsets), simplify=F, mc.cores = 8 )
+xxx <- RepParallel(SIMS,simrna(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,gsets), simplify=F, mc.cores = 8 )
 
 # run deseq2
-xxx<-mclapply(xxx , DGE_FUNC , mc.cores = 8 )
+xxx <- mclapply(xxx , DGE_FUNC , mc.cores = 8 )
 
 # run clusterprofiler default
-library("clusterProfiler")
-xxx<-run_clusterprofiler_default(xxx,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS)
+writeGmtPathways(pathways=gsets,gmt.file="mypathways.gmt")
+gsets2 <- read.gmt("mypathways.gmt")
+#x,DGE_FUNC,gsets2,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS
+xxx <- run_clusterprofiler_default(x=xxx,DGE_FUNC,gsets2,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS)
 
 # run phyper
 xxx<-run_hypergeometric(xxx,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS)
