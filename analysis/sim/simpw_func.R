@@ -32,8 +32,8 @@ a
 ########################################
 # generate some gene sets
 ########################################
-randomGeneSets<-function(a){
-gsets<-sapply( rep(50,1000) , function(x) {list(as.character(sample(rownames(a),x))) } )
+randomGeneSets<-function(a,setsize,nsets){
+gsets<-sapply( rep(setsize,nsets) , function(x) {list(as.character(sample(rownames(a),x))) } )
 names(gsets)<-stri_rand_strings(length(gsets), 15, pattern = "[A-Za-z]")
 gsets
 }
@@ -359,6 +359,78 @@ x
 }
 
 ##################################
+# clusterprofiler fixed function
+##################################
+# Note that clusterprofiler requires different gene set format
+run_clusterprofiler_fixed <-function(x,DGE_FUNC,gsets2,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS){
+
+dge <- sapply(x,"[",6)
+
+ups <- lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange > 0)) } )
+dns <- lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange < 0)) } )
+bgs <- lapply(dge, function(x) { rownames(x) } )
+
+l_ups <- sapply(ups,length)
+l_dns <- sapply(dns,length)
+geneset_sizes <- sapply( gsets2 , length )
+
+# calculate number of genes in sets that are up and downregulated
+n_dns=n_ups=p_ups=p_dns=obs_up=obs_dn=NULL
+n_dns=n_ups=p_ups=p_dns=obs_up=obs_dn=list()
+
+for (d in 1:length(dge)) {
+
+# clusterprofiler UP
+ora_up <- as.data.frame(enricher(gene = ups[[d]] ,
+  universe = bgs[[d]],  maxGSSize = 500000, TERM2GENE = gsets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora_up$geneID <- NULL
+ora_up <- subset(ora_up,p.adjust<0.05 & Count >=10)
+ora_ups <- rownames(ora_up)
+obs_up[[d]] <- ora_ups
+
+# clusterprofiler DOWN
+ora_dn <- as.data.frame(enricher(gene = dns[[d]] ,
+  universe = bgs[[d]],  maxGSSize = 500000, TERM2GENE = gsets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora_dn$geneID <- NULL
+ora_dn <- subset(ora_dn,p.adjust<0.05 & Count >=10)
+ora_dns <- rownames(ora_dn)
+obs_dn[[d]] <- ora_dns
+
+}
+
+#ground truth comparison
+gt_up<-sapply(x,"[",4)
+gt_up<-lapply( gt_up , names)
+gt_dn<-sapply(x,"[",5)
+gt_dn<-lapply( gt_dn , names)
+
+true_pos_up<-as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_up ,  gt_up ))
+true_pos_dn<-as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_dn ,  gt_dn ))
+false_pos_up<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_up ,  gt_up ))
+false_pos_dn<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_dn , gt_dn ))
+false_neg_up<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_up ,  obs_up ))
+false_neg_dn<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_dn ,  obs_dn ))
+
+true_pos<-mean(true_pos_up+true_pos_dn)
+false_pos<-mean(false_pos_up+false_pos_dn)
+false_neg<-mean(false_neg_up+false_neg_dn)
+nrows<-as.numeric(lapply( sapply(x,"[",1 ), nrow))
+true_neg<-mean(nrows-(true_pos+false_pos+false_neg))
+
+p<-true_pos/(true_pos+false_pos)
+r<-true_pos/(true_pos+false_neg)
+f<-2*p*r/(p+r)
+
+attr(x,'clusterprofiler_fixed') <-data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,true_pos,false_pos,true_neg,false_neg,p,r,f)
+x
+
+}
+
+##################################
 # FGSEA function
 ##################################
 run_fgsea<-function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS){
@@ -479,8 +551,10 @@ xxx <- mclapply(xxx , DGE_FUNC , mc.cores = 8 )
 # run clusterprofiler default
 writeGmtPathways(pathways=gsets,gmt.file="mypathways.gmt")
 gsets2 <- read.gmt("mypathways.gmt")
-#x,DGE_FUNC,gsets2,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS
 xxx <- run_clusterprofiler_default(x=xxx,DGE_FUNC,gsets2,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS)
+
+# run clusterprofiler fixed
+xxx <- run_clusterprofiler_fixed(x=xxx,DGE_FUNC,gsets2,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS)
 
 # run phyper
 xxx<-run_hypergeometric(xxx,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS)
