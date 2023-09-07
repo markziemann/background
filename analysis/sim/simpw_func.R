@@ -310,23 +310,26 @@ for (d in 1:length(dge)) {
 
 # clusterprofiler UP
 ora_up <- as.data.frame(enricher(gene = ups[[d]] ,
-  universe = bgs[[d]],  maxGSSize = 500000, TERM2GENE = gsets2,
+  universe = bgs[[d]],  minGSSize=2, maxGSSize = 500000, TERM2GENE = gsets2,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 ora_up$geneID <- NULL
-ora_up <- subset(ora_up,p.adjust<0.05 & Count >=10)
+ora_up <- subset(ora_up,p.adjust<0.05 )
 ora_ups <- rownames(ora_up)
 obs_up[[d]] <- ora_ups
 
 # clusterprofiler DOWN
 ora_dn <- as.data.frame(enricher(gene = dns[[d]] ,
-  universe = bgs[[d]],  maxGSSize = 500000, TERM2GENE = gsets2,
+  universe = bgs[[d]],  minGSSize=2, maxGSSize = 500000, TERM2GENE = gsets2,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 ora_dn$geneID <- NULL
-ora_dn <- subset(ora_dn,p.adjust<0.05 & Count >=10)
+ora_dn <- subset(ora_dn,p.adjust<0.05 )
 ora_dns <- rownames(ora_dn)
 obs_dn[[d]] <- ora_dns
+
+x[[d]][[13]] <- ora_ups
+x[[d]][[14]] <- ora_dns
 
 }
 
@@ -382,7 +385,7 @@ for (d in 1:length(dge)) {
 
 # clusterprofiler UP
 ora_up <- as.data.frame(enricher(gene = ups[[d]] ,
-  universe = bgs[[d]],  maxGSSize = 500000, TERM2GENE = gsets2,
+  universe = bgs[[d]],  minGSSize=2, maxGSSize = 500000, TERM2GENE = gsets2,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 ora_up$geneID <- NULL
@@ -392,13 +395,16 @@ obs_up[[d]] <- ora_ups
 
 # clusterprofiler DOWN
 ora_dn <- as.data.frame(enricher(gene = dns[[d]] ,
-  universe = bgs[[d]],  maxGSSize = 500000, TERM2GENE = gsets2,
+  universe = bgs[[d]],  minGSSize=2, maxGSSize = 500000, TERM2GENE = gsets2,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 ora_dn$geneID <- NULL
 ora_dn <- subset(ora_dn,p.adjust<0.05 & Count >=10)
 ora_dns <- rownames(ora_dn)
 obs_dn[[d]] <- ora_dns
+
+x[[d]][[15]] <- ora_ups
+x[[d]][[16]] <- ora_dns
 
 }
 
@@ -448,8 +454,8 @@ obs_up<-lapply(xx, function(x) { subset(x,padj<0.05 & ES>0)[,1] } )
 obs_dn<-lapply(xx, function(x) { subset(x,padj<0.05 & ES<0)[,1] } )
 
 for (d in 1:length(dge)) {
-  x[[d]][[13]]<-obs_up[[d]]
-  x[[d]][[14]]<-obs_dn[[d]]
+  x[[d]][[9]]<-obs_up[[d]]
+  x[[d]][[10]]<-obs_dn[[d]]
 }
 
 gt_up<-sapply(x,"[",4)
