@@ -389,7 +389,7 @@ ora_up <- as.data.frame(enricher(gene = ups[[d]] ,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 ora_up$geneID <- NULL
-ora_up <- subset(ora_up,p.adjust<0.05 & Count >=10)
+ora_up <- subset(ora_up,p.adjust<0.05 & Count)
 ora_ups <- rownames(ora_up)
 obs_up[[d]] <- ora_ups
 
@@ -399,7 +399,7 @@ ora_dn <- as.data.frame(enricher(gene = dns[[d]] ,
   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
 ora_dn$geneID <- NULL
-ora_dn <- subset(ora_dn,p.adjust<0.05 & Count >=10)
+ora_dn <- subset(ora_dn,p.adjust<0.05 & Count)
 ora_dns <- rownames(ora_dn)
 obs_dn[[d]] <- ora_dns
 
