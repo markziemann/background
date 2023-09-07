@@ -30,4 +30,8 @@ xxx object slots
 
 15. clusterprofiler_fixed up gene sets
 
-16. clusterprofiler_fixed up gene sets
+16. clusterprofiler_fixed down gene sets
+
+17. fisher up gene sets
+
+18. fisher down gene sets
