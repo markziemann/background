@@ -336,12 +336,12 @@ for (d in 1:length(dge)) {
     fres$p
   })
 
-  x[[d]][[17]]<-names(gsets[which(p.adjust(p_ups[[d]],method="fdr")<0.05)])
-  x[[d]][[18]]<-names(gsets[which(p.adjust(p_dns[[d]],method="fdr")<0.05)])
+  x[[d]][[19]]<-names(gsets[which(p.adjust(p_ups[[d]],method="fdr")<0.05)])
+  x[[d]][[20]]<-names(gsets[which(p.adjust(p_dns[[d]],method="fdr")<0.05)])
 }
 
-obs_up<-sapply(x,"[",17)
-obs_dn<-sapply(x,"[",18)
+obs_up<-sapply(x,"[",19)
+obs_dn<-sapply(x,"[",20)
 
 gt_up<-sapply(x,"[",4)
 gt_up<-lapply( gt_up , names)
@@ -369,7 +369,6 @@ attr(x,'fisher_res') <-data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_
 x
 
 }
-
 
 ##################################
 # clusterprofiler default function
@@ -475,7 +474,7 @@ gsets3 <- rbind(gsets2,bgdf)
 # clusterprofiler UP
 ora_up <- as.data.frame(enricher(gene = ups[[d]] ,
   universe = bgs[[d]],  minGSSize=2, maxGSSize = 500000, TERM2GENE = gsets3,
-  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1 ))
 
 ora_up$geneID <- NULL
 ora_up <- subset(ora_up,p.adjust<0.05 & Count)
@@ -485,7 +484,7 @@ obs_up[[d]] <- ora_ups
 # clusterprofiler DOWN
 ora_dn <- as.data.frame(enricher(gene = dns[[d]] ,
   universe = bgs[[d]],  minGSSize=2, maxGSSize = 500000, TERM2GENE = gsets3,
-  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1 ))
 
 ora_dn$geneID <- NULL
 ora_dn <- subset(ora_dn,p.adjust<0.05 & Count)
@@ -521,6 +520,414 @@ r<-true_pos/(true_pos+false_neg)
 f<-2*p*r/(p+r)
 
 attr(x,'clusterprofiler_fixed') <-data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,true_pos,false_pos,true_neg,false_neg,p,r,f)
+x
+
+}
+
+
+##################################
+# clusterprofiler nobg
+##################################
+run_clusterprofiler_nobg <-function(x,DGE_FUNC,gsets2,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS){
+
+dge <- sapply(x,"[",6)
+
+ups <- lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange > 0)) } )
+dns <- lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange < 0)) } )
+bgs <- lapply(dge, function(x) { rownames(x) } )
+
+l_ups <- sapply(ups,length)
+l_dns <- sapply(dns,length)
+geneset_sizes <- sapply( gsets2 , length )
+
+# calculate number of genes in sets that are up and downregulated
+n_dns=n_ups=p_ups=p_dns=obs_up=obs_dn=NULL
+n_dns=n_ups=p_ups=p_dns=obs_up=obs_dn=list()
+
+for (d in 1:length(dge)) {
+
+# clusterprofiler UP
+ora_up <- as.data.frame(enricher(gene = ups[[d]] ,
+  universe = NULL,  minGSSize=2, maxGSSize = 500000, TERM2GENE = gsets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora_up$geneID <- NULL
+ora_up <- subset(ora_up,p.adjust<0.05 )
+ora_ups <- rownames(ora_up)
+obs_up[[d]] <- ora_ups
+
+# clusterprofiler DOWN
+ora_dn <- as.data.frame(enricher(gene = dns[[d]] ,
+  universe = NULL,  minGSSize=2, maxGSSize = 500000, TERM2GENE = gsets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora_dn$geneID <- NULL
+ora_dn <- subset(ora_dn,p.adjust<0.05 )
+ora_dns <- rownames(ora_dn)
+obs_dn[[d]] <- ora_dns
+
+x[[d]][[17]] <- ora_ups
+x[[d]][[18]] <- ora_dns
+
+}
+
+#ground truth comparison
+gt_up<-sapply(x,"[",4)
+gt_up<-lapply( gt_up , names)
+gt_dn<-sapply(x,"[",5)
+gt_dn<-lapply( gt_dn , names)
+
+true_pos_up<-as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_up ,  gt_up ))
+true_pos_dn<-as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_dn ,  gt_dn ))
+false_pos_up<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_up ,  gt_up ))
+false_pos_dn<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_dn , gt_dn ))
+false_neg_up<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_up ,  obs_up ))
+false_neg_dn<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_dn ,  obs_dn ))
+
+true_pos<-mean(true_pos_up+true_pos_dn)
+false_pos<-mean(false_pos_up+false_pos_dn)
+false_neg<-mean(false_neg_up+false_neg_dn)
+nrows<-as.numeric(lapply( sapply(x,"[",1 ), nrow))
+true_neg<-mean(nrows-(true_pos+false_pos+false_neg))
+
+p<-true_pos/(true_pos+false_pos)
+r<-true_pos/(true_pos+false_neg)
+f<-2*p*r/(p+r)
+
+attr(x,'clusterprofiler_nobg') <-data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,true_pos,false_pos,true_neg,false_neg,p,r,f)
+x
+
+}
+
+##################################
+# DOSE enrich internal
+##################################
+EXTID2TERMID <- function(gene, USER_DATA) {
+    if (inherits(USER_DATA, "environment")) { 
+        EXTID2PATHID <- get("EXTID2PATHID", envir = USER_DATA)
+
+        qExtID2Path <- EXTID2PATHID[gene]
+    } else if (inherits(USER_DATA, "GSON")) {
+        gsid2gene <- USER_DATA@gsid2gene
+        qExtID2Path <- setNames(lapply(gene, function(x) {
+            subset(gsid2gene, gsid2gene$gene == x)[["gsid"]]
+        }), gene)
+    } else {
+        stop("not supported")
+    }
+
+    len <- sapply(qExtID2Path, length)
+    notZero.idx <- len != 0
+    qExtID2Path <- qExtID2Path[notZero.idx]
+
+    return(qExtID2Path)
+}
+
+ALLEXTID <- function(USER_DATA) {
+    if (inherits(USER_DATA, "environment")) { 
+        PATHID2EXTID <- get("PATHID2EXTID", envir = USER_DATA)
+        res <- unique(unlist(PATHID2EXTID))
+    } else if (inherits(USER_DATA, "GSON")) {
+        gsid2gene <- USER_DATA@gsid2gene
+        res <- unique(gsid2gene$gene)
+    } else {
+        stop("not supported")
+    }
+
+    return(res)
+}
+
+TERMID2EXTID <- function(term, USER_DATA) {
+    if (inherits(USER_DATA, "environment")) { 
+        PATHID2EXTID <- get("PATHID2EXTID", envir = USER_DATA)
+        res <- PATHID2EXTID[term]
+    } else if (inherits(USER_DATA, "GSON")) {
+        gsid2gene <- USER_DATA@gsid2gene
+        res <- setNames(lapply(term, function(x) {
+            subset(gsid2gene, gsid2gene$gsid == x)[["gene"]]
+        }), term)
+    } else {
+        stop("not supported")
+    }    
+
+    return(res)
+}
+
+get_geneSet_index <- function(geneSets, minGSSize, maxGSSize) {
+    if (is.na(minGSSize) || is.null(minGSSize))
+        minGSSize <- 1
+    if (is.na(maxGSSize) || is.null(maxGSSize))
+        maxGSSize <- Inf #.Machine$integer.max
+
+    ## index of geneSets in used.
+    ## logical
+    geneSet_size <- sapply(geneSets, length)
+    idx <-  minGSSize <= geneSet_size & geneSet_size <= maxGSSize
+    return(idx)
+}
+
+TERM2NAME <- function(term, USER_DATA) {
+    if (inherits(USER_DATA, "environment")) { 
+        PATHID2NAME <- get("PATHID2NAME", envir = USER_DATA)
+        #if (is.null(PATHID2NAME) || is.na(PATHID2NAME)) {
+        if (is.null(PATHID2NAME) || all(is.na(PATHID2NAME))) {
+            return(as.character(term))
+        }
+        return(PATHID2NAME[term])
+    } else if (inherits(USER_DATA, "GSON")) {
+        gsid2name <- USER_DATA@gsid2name
+        res <- setNames(vapply(term, function(x) {
+            subset(gsid2name, gsid2name$gsid == x)[["name"]]
+        }, character(1)), term)
+        return(res)
+    } 
+
+    return(as.character(term)) 
+}
+
+enricher_internal <- function(gene,
+                              pvalueCutoff,
+                              pAdjustMethod="BH",
+                              universe = NULL,
+                              minGSSize=10,
+                              maxGSSize=500,
+                              qvalueCutoff=0.2,
+                              USER_DATA){
+
+    ## query external ID to Term ID
+    gene <- as.character(unique(gene))
+    qExtID2TermID <- EXTID2TERMID(gene, USER_DATA)
+    qTermID <- unlist(qExtID2TermID)
+    if (is.null(qTermID)) {
+        message("--> No gene can be mapped....")
+        if (inherits(USER_DATA, "environment")) {
+            p2e <- get("PATHID2EXTID", envir=USER_DATA)
+            sg <- unique(unlist(p2e[1:10]))
+        } else {
+            sg <- unique(USER_DATA@gsid2gene$gene[1:100])
+        }
+        sg <- sample(sg, min(length(sg), 6))
+        message("--> Expected input gene ID: ", paste0(sg, collapse=','))
+
+        message("--> return NULL...")
+        return(NULL)
+    }
+
+    ## Term ID -- query external ID association list.
+    qExtID2TermID.df <- data.frame(extID=rep(names(qExtID2TermID),
+                                             times=lapply(qExtID2TermID, length)),
+                                   termID=qTermID)
+    qExtID2TermID.df <- unique(qExtID2TermID.df)
+
+    qTermID2ExtID <- with(qExtID2TermID.df,
+                          split(as.character(extID), as.character(termID)))
+
+    extID <- ALLEXTID(USER_DATA)
+    if (missing(universe))
+        universe <- NULL
+    if(!is.null(universe)) {
+        if (is.character(universe)) {
+            force_universe <- getOption("enrichment_force_universe", FALSE)
+            if (!force_universe) {
+                extID <- intersect(extID, universe)
+            }
+        } else {
+            ## https://github.com/YuLab-SMU/clusterProfiler/issues/217
+            message("`universe` is not in character and will be ignored...")
+        }
+    }
+
+    qTermID2ExtID <- lapply(qTermID2ExtID, intersect, extID)
+
+    ## Term ID annotate query external ID
+    qTermID <- unique(names(qTermID2ExtID))
+
+
+    termID2ExtID <- TERMID2EXTID(qTermID, USER_DATA)
+    termID2ExtID <- lapply(termID2ExtID, intersect, extID)
+
+    geneSets <- termID2ExtID
+
+    idx <- get_geneSet_index(termID2ExtID, minGSSize, maxGSSize)
+
+    if (sum(idx) == 0) {
+        msg <- paste("No gene sets have size between", minGSSize, "and", maxGSSize, "...")
+        message(msg)
+        message("--> return NULL...")
+        return (NULL)
+    }
+
+    termID2ExtID <- termID2ExtID[idx]
+    qTermID2ExtID <- qTermID2ExtID[idx]
+    qTermID <- unique(names(qTermID2ExtID))
+
+    ## prepare parameter for hypergeometric test
+    k <- sapply(qTermID2ExtID, length)
+    k <- k[qTermID]
+    M <- sapply(termID2ExtID, length)
+    M <- M[qTermID]
+
+    N <- rep(length(extID), length(M))
+    ## n <- rep(length(gene), length(M)) ## those genes that have no annotation should drop.
+    n <- rep(length(qExtID2TermID), length(M))
+    args.df <- data.frame(numWdrawn=k-1, ## White balls drawn
+                          numW=M,        ## White balls
+                          numB=N-M,      ## Black balls
+                          numDrawn=n)    ## balls drawn
+
+
+    ## calcute pvalues based on hypergeometric model
+    pvalues <- apply(args.df, 1, function(n)
+                     phyper(n[1], n[2], n[3], n[4], lower.tail=FALSE)
+                     )
+
+    ## gene ratio and background ratio
+    GeneRatio <- apply(data.frame(a=k, b=n), 1, function(x)
+                       paste(x[1], "/", x[2], sep="", collapse="")
+                       )
+    BgRatio <- apply(data.frame(a=M, b=N), 1, function(x)
+                     paste(x[1], "/", x[2], sep="", collapse="")
+                     )
+
+
+    Over <- data.frame(ID = as.character(qTermID),
+                       GeneRatio = GeneRatio,
+                       BgRatio = BgRatio,
+                       pvalue = pvalues,
+                       stringsAsFactors = FALSE)
+
+    p.adj <- p.adjust(Over$pvalue, method=pAdjustMethod)
+    qobj <- tryCatch(qvalue(p=Over$pvalue, lambda=0.05, pi0.method="bootstrap"), error=function(e) NULL)
+
+    # if (class(qobj) == "qvalue") {
+    if (inherits(qobj, "qvalue")) {
+        qvalues <- qobj$qvalues
+    } else {
+        qvalues <- NA
+    }
+
+    geneID <- sapply(qTermID2ExtID, function(i) paste(i, collapse="/"))
+    geneID <- geneID[qTermID]
+    Over <- data.frame(Over,
+                       p.adjust = p.adj,
+                       qvalue = qvalues,
+                       geneID = geneID,
+                       Count = k,
+                       stringsAsFactors = FALSE)
+
+    Description <- TERM2NAME(qTermID, USER_DATA)
+
+    if (length(qTermID) != length(Description)) {
+        idx <- qTermID %in% names(Description)
+        Over <- Over[idx,]
+    }
+    Over$Description <- Description
+    nc <- ncol(Over)
+    Over <- Over[, c(1,nc, 2:(nc-1))]
+
+
+    Over <- Over[order(pvalues),]
+
+
+    Over$ID <- as.character(Over$ID)
+    Over$Description <- as.character(Over$Description)
+
+    row.names(Over) <- as.character(Over$ID)
+
+    x <- new("enrichResult",
+             result         = Over,
+             pvalueCutoff   = pvalueCutoff,
+             pAdjustMethod  = pAdjustMethod,
+             qvalueCutoff   = qvalueCutoff,
+             gene           = as.character(gene),
+             universe       = extID,
+             geneSets       = geneSets,
+             organism       = "UNKNOWN",
+             keytype        = "UNKNOWN",
+             ontology       = "UNKNOWN",
+             readable       = FALSE
+             )
+    if (inherits(USER_DATA, "GSON")) {
+        if (!is.null(USER_DATA@keytype)) {
+            x@keytype <- USER_DATA@keytype
+        }
+        if (!is.null(USER_DATA@species)) {
+            x@organism <- USER_DATA@species
+        } 
+        if (!is.null(USER_DATA@gsname)) {
+            x@ontology <- gsub(".*;", "", USER_DATA@gsname)
+        }
+    }
+    return (x)
+}
+
+run_dose <-function(x,DGE_FUNC,gsets2,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS){
+
+dge <- sapply(x,"[",6)
+
+ups <- lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange > 0)) } )
+dns <- lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange < 0)) } )
+bgs <- lapply(dge, function(x) { rownames(x) } )
+
+l_ups <- sapply(ups,length)
+l_dns <- sapply(dns,length)
+geneset_sizes <- sapply( gsets2 , length )
+
+# calculate number of genes in sets that are up and downregulated
+n_dns=n_ups=p_ups=p_dns=obs_up=obs_dn=NULL
+n_dns=n_ups=p_ups=p_dns=obs_up=obs_dn=list()
+
+for (d in 1:length(dge)) {
+
+# DOSE UP
+ora_up <- as.data.frame(enricher_internal(gene = ups[[d]] ,
+  universe = NULL,  minGSSize=2, maxGSSize = 500000, USER_DATA = gsets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora_up$geneID <- NULL
+ora_up <- subset(ora_up,p.adjust<0.05 )
+ora_ups <- rownames(ora_up)
+obs_up[[d]] <- ora_ups
+
+# DOSE DOWN
+ora_dn <- as.data.frame(enricher_internal(gene = dns[[d]] ,
+  universe = NULL,  minGSSize=2, maxGSSize = 500000, USER_DATA = gsets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora_dn$geneID <- NULL
+ora_dn <- subset(ora_dn,p.adjust<0.05 )
+ora_dns <- rownames(ora_dn)
+obs_dn[[d]] <- ora_dns
+
+x[[d]][[21]] <- ora_ups
+x[[d]][[22]] <- ora_dns
+
+}
+
+#ground truth comparison
+gt_up<-sapply(x,"[",4)
+gt_up<-lapply( gt_up , names)
+gt_dn<-sapply(x,"[",5)
+gt_dn<-lapply( gt_dn , names)
+
+true_pos_up<-as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_up ,  gt_up ))
+true_pos_dn<-as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_dn ,  gt_dn ))
+false_pos_up<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_up ,  gt_up ))
+false_pos_dn<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_dn , gt_dn ))
+false_neg_up<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_up ,  obs_up ))
+false_neg_dn<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_dn ,  obs_dn ))
+
+true_pos<-mean(true_pos_up+true_pos_dn)
+false_pos<-mean(false_pos_up+false_pos_dn)
+false_neg<-mean(false_neg_up+false_neg_dn)
+nrows<-as.numeric(lapply( sapply(x,"[",1 ), nrow))
+true_neg<-mean(nrows-(true_pos+false_pos+false_neg))
+
+p<-true_pos/(true_pos+false_pos)
+r<-true_pos/(true_pos+false_neg)
+f<-2*p*r/(p+r)
+
+attr(x,'dose_enricher') <-data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,true_pos,false_pos,true_neg,false_neg,p,r,f)
 x
 
 }
@@ -601,8 +1008,8 @@ for (d in 1:length(dge)) {
   x[[d]][[16]]<-names(which(mygst[[d]][,1]<0.05 & mygst[[d]][,2]<0))
 }
 
-obs_up<-sapply(x,"[",15)
-obs_dn<-sapply(x,"[",16)
+obs_up<-sapply(x,"[",9)
+obs_dn<-sapply(x,"[",10)
 
 gt_up<-sapply(x,"[",4)
 gt_up<-lapply( gt_up , names)
@@ -650,6 +1057,12 @@ xxx <- run_clusterprofiler_default(x=xxx,DGE_FUNC,gsets2,N_REPS=N_REPS,SUM_COUNT
 
 # run clusterprofiler fixed
 xxx <- run_clusterprofiler_fixed(x=xxx,DGE_FUNC,gsets2,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS)
+
+# run clusterprofiler nobg
+xxx <- run_clusterprofiler_nobg(x=xxx,DGE_FUNC,gsets2,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS)
+
+# run dose
+#xxx <- run_dose(x=xxx,DGE_FUNC,gsets2,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS)
 
 # run phyper
 xxx<-run_hypergeometric(xxx,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS)

@@ -31,9 +31,56 @@ source("simpw_func.R")
 
 TODO
 
+
+xxx object slots
+
+1. expression counts
+
+2. ground truth up genes
+
+3. ground truth down genes
+
+4. ground truth up gene sets
+
+5. ground truth down gene sets
+
+6. DE result (DESeq2)
+
+7. DE genes up observed
+
+8. DE genes down observed
+
+9. fgsea up gene sets
+
+10. fgsea down gene sets
+
+11. phyper up gene sets
+
+12. phyper down gene sets
+
+13. clusterprofiler_default up gene sets
+
+14. clusterprofiler_default down gene sets
+
+15. clusterprofiler_fixed up gene sets
+
+16. clusterprofiler_fixed down gene sets
+
+17. clusterprofiler_nobg up gene sets
+
+18. clusterprofiler_nobg down gene sets
+
+19. fisher up gene sets
+
+20. fisher down gene sets
+
+21. DOSE up gene sets
+
+22. DOSE down gene sets
+
 # Get count data
 
-```{r,getcounts}
+```{r,getcounts,warning=FALSE}
 
 a<-countData()
 
@@ -51,7 +98,7 @@ gsets<-randomGeneSets(a,setsize=50,nsets=500)
 
 ```{r,setparameters}
 
-SIMS=16
+SIMS=8
 FRAC_DE=0.05
 FC=1
 N_REPS=4
@@ -80,6 +127,8 @@ res <- lapply(1:nrow(mygrid), function(i) {
   x <- agg_dge(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,gsets)
   as.data.frame(do.call(rbind, x))
 })
+
+res <- do.call(rbind,res)
 
 ```
 
