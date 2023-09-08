@@ -1,0 +1,101 @@
+---
+title: "Examining background gene lists using simulation - comparison of different enrichment techniques"
+author: "Mark Ziemann & Anusuiya Bora"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    fig_width: 5
+    fig_height: 5
+theme: cosmo
+---
+
+Source: https://github.com/markziemann/background
+
+```{r,libs}
+
+library("tidyverse")
+library("parallel")
+library("edgeR")
+library("DESeq2")
+library("limma")
+library("stringi")
+library("kableExtra")
+source("simpw_func.R")
+
+```
+
+# Intro
+
+TODO
+
+# Get count data
+
+```{r,getcounts}
+
+a<-countData()
+
+```
+
+# Generate gene sets
+
+```{r,genesetgeneration}
+
+gsets<-randomGeneSets(a,setsize=50,nsets=500)
+
+```
+
+# run simulations over a range of parameters
+
+```{r,setparameters}
+
+SIMS=16
+FRAC_DE=0.05
+FC=1
+N_REPS=4
+DGE_FUNC="deseq2"
+SUM_COUNT=3e7
+VARIANCE=c(0.25,0.3,0.35,0.4,0.45)
+
+mygrid <- expand.grid(FRAC_DE,FC,N_REPS,DGE_FUNC,SUM_COUNT,VARIANCE)
+colnames(mygrid) <- c("FRAC_DE","FC","N_REPS","DGE_FUNC","SUM_COUNT","VARIANCE")
+
+mygrid
+
+```
+
+Now run the analysis.
+
+```{r,sims}
+
+res <- lapply(1:nrow(mygrid), function(i) {
+  FRAC_DE=mygrid[i,"FRAC_DE"]
+  FC=mygrid[i,"FC"]
+  N_REPS=mygrid[i,"N_REPS"]
+  DGE_FUNC=as.character(mygrid[i,"DGE_FUNC"])
+  SUM_COUNT=mygrid[i,"SUM_COUNT"]
+  VARIANCE=mygrid[i,"VARIANCE"]
+  x <- agg_dge(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,gsets)
+  as.data.frame(do.call(rbind, x))
+})
+
+```
+
+Now show the results.
+
+```{r,results}
+
+res %>% kbl(caption="simulation_results") %>% kable_paper("hover", full_width = F)
+
+```
+
+# Session information
+
+
+```{r,session}
+
+sessionInfo()
+
+```

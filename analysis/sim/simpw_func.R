@@ -303,34 +303,35 @@ geneset_sizes<-sapply( gsets , length )
 # calculate number of genes in sets that are up and downregulated
 upreg_incat=gsdet=unreg_incat=upreg_not_incat=unreg_not_incat=NULL
 upreg_incat=gsdet=unreg_incat=upreg_not_incat=unreg_not_incat=list()
-
 dnreg_incat=gsdet=unreg_incat=dnreg_not_incat=unreg_not_incat=NULL
 dnreg_incat=gsdet=unreg_incat=dnreg_not_incat=unreg_not_incat=list()
-
+p_ups=p_dns=NULL
+p_ups=p_dns=list()
 
 for (d in 1:length(dge)) {
   universe =length(rownames(dge[[d]]))
 
-  upreg_incat[[d]]<-sapply( 1:length(gsets),function(x){length(which(gsets[[x]] %in% ups[[d]] ))} )
-  gsdet[[d]] <- sapply( 1:length(gsets),function(x){length(which(gsets[[x]] %in% bgs[[d]] ))} )
+  upreg_incat[[d]]<-sapply( 1:length(gsets),function(y){length(which(gsets[[y]] %in% ups[[d]] ))} )
+  gsdet[[d]] <- sapply( 1:length(gsets),function(y){length(which(gsets[[y]] %in% bgs[[d]] ))} )
   unreg_incat[[d]] <- gsdet[[d]] - upreg_incat[[d]]
-  upreg_not_incat[[d]]<-sapply( 1:length(gsets),function(x){length(which(!ups[[d]] %in% gsets[[x]] ))} )
+  upreg_not_incat[[d]]<-sapply( 1:length(gsets),function(y){length(which(!ups[[d]] %in% gsets[[y]] ))} )
   unreg_not_incat[[d]] <- universe - upreg_incat[[d]] - unreg_incat[[d]] - upreg_not_incat[[d]]
 
-  p_ups[[d]] <- sapply( 1:length(gsets),function(x){
-    mx <- matrix(c(unreg_incat[[d]][[x]],unreg_not_incat[[d]][[x]],upreg_incat[[d]][[x]] ,upreg_not_incat[[d]][[x]]),ncol=2)
+  p_ups[[d]] <- sapply( 1:length(gsets),function(y){
+    mx <- matrix(c( upreg_incat[[d]][[y]] , unreg_incat[[d]][[y]], upreg_not_incat[[d]][[y]], unreg_not_incat[[d]][[y]]),ncol=2)
+
     fres <- fisher.test(mx,alternative = "greater")
     fres$p
   })
 
-  dnreg_incat[[d]]<-sapply( 1:length(gsets),function(x){length(which(gsets[[x]] %in% dns[[d]] ))} )
-  gsdet[[d]] <- sapply( 1:length(gsets),function(x){length(which(gsets[[x]] %in% bgs[[d]] ))} )
+  dnreg_incat[[d]]<-sapply( 1:length(gsets),function(y){length(which(gsets[[y]] %in% dns[[d]] ))} )
+  gsdet[[d]] <- sapply( 1:length(gsets),function(y){length(which(gsets[[y]] %in% bgs[[d]] ))} )
   unreg_incat[[d]] <- gsdet[[d]] - dnreg_incat[[d]]
-  dnreg_not_incat[[d]]<-sapply( 1:length(gsets),function(x){length(which(!dns[[d]] %in% gsets[[x]] ))} )
+  dnreg_not_incat[[d]]<-sapply( 1:length(gsets),function(y){length(which(!dns[[d]] %in% gsets[[y]] ))} )
   unreg_not_incat[[d]] <- universe - dnreg_incat[[d]] - unreg_incat[[d]] - dnreg_not_incat[[d]]
 
-  p_dns[[d]] <- sapply( 1:length(gsets),function(x){
-    mx <- matrix(c(unreg_incat[[d]][[x]],unreg_not_incat[[d]][[x]],dnreg_incat[[d]][[x]] ,dnreg_not_incat[[d]][[x]]),ncol=2)
+  p_dns[[d]] <- sapply( 1:length(gsets),function(y){
+    mx <- matrix(c( dnreg_incat[[d]][[y]] , unreg_incat[[d]][[y]], dnreg_not_incat[[d]][[y]], unreg_not_incat[[d]][[y]] ),ncol=2)
     fres <- fisher.test(mx,alternative = "greater")
     fres$p
   })
@@ -635,7 +636,7 @@ x
 ##################################
 agg_dge<-function(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,gsets) {
 
-#TEST# N_REPS=5 ; SUM_COUNT=30000000 ; VARIANCE=0.5 ; FRAC_DE=0.05 ; FC=1 ; SIMS=8 ; DGE_FUNC="deseq2" ; gsets=gsets
+#TEST# N_REPS=5 ; SUM_COUNT=30000000 ; VARIANCE=0.2 ; FRAC_DE=0.05 ; FC=1 ; SIMS=8 ; DGE_FUNC="deseq2" ; gsets=gsets
 
 xxx <- RepParallel(SIMS,simrna(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,gsets), simplify=F, mc.cores = 8 )
 
