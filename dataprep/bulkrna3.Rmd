@@ -1,0 +1,175 @@
+---
+title: "Example bulk RNA-seq analysis 3"
+author: "Mark Ziemann"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    fig_width: 7
+    fig_height: 5
+theme: cosmo
+---
+
+Source: https://github.com/markziemann/background
+
+## Intro
+
+Here we are performing an analysis of some gene expression data to demonstrate the difference between ORA and FCS methods and to highlight the differences caused by improper background gene set use.
+
+The dataset being used is SRP096178 and we are comparing the cells grown in normal condition (control) to those grown with addition of SAHA (case).
+
+Data are obtained from http://dee2.io/
+
+```{r,begin}
+
+suppressPackageStartupMessages({
+  library("getDEE2")
+  library("DESeq2")
+  library("clusterProfiler")
+  library("mitch")
+  library("kableExtra")
+  library("eulerr")
+  library("biomaRt")
+})
+
+```
+
+## Get expression data and make an MDS plot
+
+```{r,getdata}
+
+name = "SRP037718"
+mdat <- getDEE2Metadata("hsapiens")
+samplesheet <- mdat[grep("SRP037718",mdat$SRP_accession),]
+samplesheet <- samplesheet[order(samplesheet$SRR_accession),]
+
+samplesheet$trt <- as.factor(c(1,1,1,0,0,0))
+s1 <- samplesheet
+
+s1 %>% kbl(caption = "sample sheet") %>% kable_paper("hover", full_width = F)
+
+w <- getDEE2("hsapiens",s1$SRR_accession,metadata=mdat,legacy = TRUE)
+x <- Tx2Gene(w)
+x <- x$Tx2Gene
+
+# save the genetable for later
+gt <- w$GeneInfo[,1,drop=FALSE]
+gt$accession <- rownames(gt)
+
+# counts 
+x1 <- x[,which(colnames(x) %in% samplesheet$SRR_accession)]
+
+```
+
+Here show the number of genes in the annotation set, and those detected above the detection threshold.
+
+```{r,filter}
+
+# filter out lowly expressed genes
+x1 <- x1[which(rowSums(x1)/ncol(x1)>=(10)),]
+nrow(x)
+nrow(x1)
+
+```
+
+Now multidimensional scaling (MDS) plot to show the correlation between the datasets.
+If the control and case datasets are clustered separately, then it is likely that there will be many differentially expressed genes with FDR<0.05.
+
+```{r,mds}
+
+plot(cmdscale(dist(t(x1))), xlab="Coordinate 1", ylab="Coordinate 2", pch=19, col=s1$trt, main="MDS")
+
+```
+
+## Differential expression
+
+Now run DESeq2 for control vs case.
+
+```{r,deseq2}
+
+y <- DESeqDataSetFromMatrix(countData = round(x1), colData = s1, design = ~ trt)
+y <- DESeq(y)
+de <- results(y)
+de <- as.data.frame(de[order(de$pvalue),])
+rownames(de) <- sapply(strsplit(rownames(de),"\\."),"[[",1)
+head(de) %>% kbl() %>% kable_paper("hover", full_width = F)
+
+```
+
+Now let's have a look at some of the charts showing differential expression.
+In particular, an MA plot and volcano plot.
+
+```{r,deplots,fig.width=7,fig.height=7}
+
+maplot <- function(de,contrast_name) {
+  sig <-subset(de, padj < 0.05 )
+  up <-rownames(subset(de, padj < 0.05 & log2FoldChange > 0))
+  dn <-rownames(subset(de, padj < 0.05 & log2FoldChange < 0))
+  GENESUP <- length(up)
+  GENESDN <- length(dn)
+  DET=nrow(de)
+  SUBHEADER = paste(GENESUP, "up, ", GENESDN, "down", DET, "detected")
+  ns <-subset(de, padj > 0.05 )
+  plot(log2(de$baseMean),de$log2FoldChange, 
+       xlab="log2 basemean", ylab="log2 foldchange",
+       pch=19, cex=0.5, col="dark gray",
+       main=contrast_name, cex.main=0.7)
+  points(log2(sig$baseMean),sig$log2FoldChange,
+         pch=19, cex=0.5, col="red")
+  mtext(SUBHEADER,cex = 0.7)
+}
+
+make_volcano <- function(de,name) {
+    sig <- subset(de,padj<0.05)
+    N_SIG=nrow(sig)
+    N_UP=nrow(subset(sig,log2FoldChange>0))
+    N_DN=nrow(subset(sig,log2FoldChange<0))
+    DET=nrow(de)
+    HEADER=paste(N_SIG,"@5%FDR,", N_UP, "up", N_DN, "dn", DET, "detected")
+    plot(de$log2FoldChange,-log10(de$padj),cex=0.5,pch=19,col="darkgray",
+        main=name, xlab="log2 FC", ylab="-log10 pval", xlim=c(-6,6))
+    mtext(HEADER)
+    grid()
+    points(sig$log2FoldChange,-log10(sig$padj),cex=0.5,pch=19,col="red")
+}
+
+maplot(de,name)
+make_volcano(de,name)
+
+```
+
+## Need to add gene symbol
+
+```{r,symbol}
+
+mart <- useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
+
+genes <- getBM(filters= "ensembl_gene_id",
+  attributes= c("ensembl_gene_id","hgnc_symbol"),
+  values=rownames(de), mart= mart)
+
+m <- merge(de,genes,by.x=0,by.y="ensembl_gene_id")
+rownames(m) <- paste(m$Row.names,m$hgnc_symbol)
+m$Row.names = m$hgnc_symbol = NULL
+dim(de)
+dim(m)
+
+```
+
+## Save table
+
+```{r,save}
+
+saveRDS(m,"bulkrna3.Rds")
+
+```
+
+## Session information
+
+```{r,session}
+
+sessionInfo()
+
+```
