@@ -59,3 +59,17 @@ This may not be a problem when running enrichment analysis on a gene list
 with 3000 members, but it might be serious when it is small, like <200
 members.
 This results in adjusted p-values being slightly smaller than they should be.
+
+## Work plan
+
+The overall aim of this work is to determine the impact of such problems on
+typical enrichment analyses.
+
+The approach we will take is to collect several molecular profile datasets
+and several gene set databases, and systematically determine the effect of
+these two problems on all the combinations.
+
+This will be conducted for RNA-seq expression and then replicated for other
+omics such as DNA methylation, proteomics analysis and genomics (SNPs,GWAS).
+
+Finally, the article will give practical steps to mitigate this problem.
