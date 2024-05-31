@@ -101,7 +101,7 @@ Genes that are not annotated as having any gene set category are discarded.
 
 # gs = gene sets
 # gs format is list of symbols
-orabad <- function( df, gs ) {
+orabad <- function( df, gs, ngenes=2000 ) {
 
   def <- df
 
@@ -109,25 +109,13 @@ orabad <- function( df, gs ) {
   colnames(gs1) <- c("gene","term")
   gs1 <- gs1[,c(2,1)]
 
-  defup <- rownames(subset(def,padj<=0.05 & log2FoldChange>0))
+  defup <- head(rownames(subset(def,log2FoldChange>0)),ngenes)
   defup <- defup[lapply(strsplit(defup," "),length)==2]
   defup <- unique(sapply(strsplit(defup," "),"[[",2))
 
-  if ( length(defup)<250 ) {
-    defup <- head(rownames(subset(def,log2FoldChange>0)),250)
-    defup <- defup[lapply(strsplit(defup," "),length)==2]
-    defup <- unique(sapply(strsplit(defup," "),"[[",2))
-  }
-
-  defdn <- rownames(subset(def,padj<=0.05 & log2FoldChange<0))
+  defdn <- head(rownames(subset(def,log2FoldChange<0)),ngenes)
   defdn <- defdn[lapply(strsplit(defdn," "),length)==2]
   defdn <- unique(sapply(strsplit(defdn," "),"[[",2))
-
-  if ( length(defdn)<250 ) {
-    defdn <- head(rownames(subset(def,log2FoldChange<0)),250)
-    defdn <- defdn[lapply(strsplit(defdn," "),length)==2]
-    defdn <- unique(sapply(strsplit(defdn," "),"[[",2))
-  }
 
   bg <- rownames(def)
   bg <- bg[lapply(strsplit(bg," "),length)==2]
@@ -177,7 +165,7 @@ This function fixes the problem with not inlcuding sets for FDR correction.
 
 ```{r,oragood}
 
-oragood <- function( df, gs ) {
+oragood <- function( df, gs, ngenes=2000 ) {
 
   def <- df
 
@@ -185,25 +173,13 @@ oragood <- function( df, gs ) {
   colnames(gs1) <- c("gene","term")
   gs1 <- gs1[,c(2,1)]
 
-  defup <- rownames(subset(def,padj<=0.05 & log2FoldChange>0))
+  defup <- head(rownames(subset(def,log2FoldChange>0)),ngenes)
   defup <- defup[lapply(strsplit(defup," "),length)==2]
   defup <- unique(sapply(strsplit(defup," "),"[[",2))
 
-  if ( length(defup)<250 ) {
-    defup <- head(rownames(subset(def,log2FoldChange>0)),250)
-    defup <- defup[lapply(strsplit(defup," "),length)==2]
-    defup <- unique(sapply(strsplit(defup," "),"[[",2))
-  }
-
-  defdn <- rownames(subset(def,padj<=0.05 & log2FoldChange<0))
+  defdn <- head(rownames(subset(def,log2FoldChange<0)),ngenes)
   defdn <- defdn[lapply(strsplit(defdn," "),length)==2]
   defdn <- unique(sapply(strsplit(defdn," "),"[[",2))
-
-  if ( length(defdn)<250 ) {
-    defdn <- head(rownames(subset(def,log2FoldChange<0)),250)
-    defdn <- defdn[lapply(strsplit(defdn," "),length)==2]
-    defdn <- unique(sapply(strsplit(defdn," "),"[[",2))
-  }
 
   bg <- rownames(def)
   bg <- bg[lapply(strsplit(bg," "),length)==2]
@@ -421,6 +397,137 @@ oa %>%
 
 ```
 
+Now run an exhaustive analysis, changing the gene list length from 125 to 2000.
+
+```{r,run2}
+
+ngenes <- c(125,250,500,1000,2000)
+params <- expand.grid(1:length(d),1:length(gs),ngenes)
+params2 <- expand.grid(names(d),names(gs),ngenes)
+
+colnames(params) <- c("d","gs","ngenes")
+
+ora_dat <- mclapply(1:nrow(params), function(i) {
+  j=params[i,1]
+  k=params[i,2]
+  l=params[i,3]
+  bad <- orabad(d[[j]],gs[[k]],l)
+  good <- oragood(d[[j]],gs[[k]],l)
+  res <- compare_ora(bad,good)
+  return(res)
+} , mc.cores=8)
+
+ora_dat <- do.call(rbind,ora_dat)
+
+res1 <- cbind(params2,ora_dat)
+
+res1 %>%
+  kbl(row.names = TRUE, caption="all results") %>%
+  kable_paper("hover", full_width = F)
+
+summary(res1$nsig_bad)
+summary(res1$nsig_good)
+summary(res1$jaccard)
+
+lapply(ngenes, function(n) {
+  res2 <- subset(res1,Var3==n) ; summary(res2$nsig_bad)
+} )
+
+lapply(ngenes, function(n) {
+  res2 <- subset(res1,Var3==n) ; summary(res2$nsig_good)
+} )
+
+lapply(ngenes, function(n) {
+  res2 <- subset(res1,Var3==n) ; summary(res2$jaccard)
+} )
+
+# NUMBER OF SIGNIFICANT SETS
+
+ns1 <- lapply(ngenes ,function(n) {
+  res2 <- subset(res1,Var3==n)
+  ns <- matrix( res2$nsig_bad , ncol=9 )
+  rownames(ns) <- names(d)
+  colnames(ns) <- names(gs)
+  return(ns)
+} )
+
+names(ns1) <- ngenes
+
+ns1
+
+ns1 <- lapply(ns1,function(y) {
+  res <- apply(y,2,function(x) {
+    x <- x[!is.na(x)]
+    x <- x[is.finite(x)]
+    mean(x)
+  } )
+  return(res)
+})
+
+ns1
+
+ns2 <- lapply(ngenes ,function(n) {
+  res2 <- subset(res1,Var3==n)
+  ns <- matrix( res2$nsig_good , ncol=9 )
+  rownames(ns) <- names(d)
+  colnames(ns) <- names(gs)
+  return(ns)
+} )
+
+names(ns2) <- ngenes
+
+ns2
+
+ns2 <- lapply(ns2,function(y) {
+  res <- apply(y,2,function(x) {
+    x <- x[!is.na(x)]
+    x <- x[is.finite(x)]
+    mean(x)
+  } )
+  return(res)
+})
+
+ns2
+
+# JACCARD
+jac <- lapply(ngenes ,function(n) {
+  res2 <- subset(res1,Var3==n)
+  ns <- matrix( res2$jaccard , ncol=9 )
+  rownames(ns) <- names(d)
+  colnames(ns) <- names(gs)
+  return(ns)
+} )
+names(jac) <- ngenes
+
+jac
+
+jac <- lapply(jac,function(y) {
+  res <- apply(y,2,function(x) {
+    x <- x[!is.na(x)]
+    x <- x[is.finite(x)]
+    mean(x)
+  } )
+  return(res)
+})
+
+jac
+
+jac <- do.call(rbind,jac)
+
+plot(jac[,"c5.go"],type="b", pch=19,cex=1.5,lwd=2,
+  xaxt = "n",ylim=c(0,1),ylab="jaccard",xlab="no. genes selected")
+axis(1, at = seq(1, 5, by = 1),
+     labels = ngenes)
+points(jac[,"c2.cp.reactome"],type="b",col="red",pch=19,cex=1.5,lwd=2)
+points(jac[,"c8.all"],type="b",col="blue",pch=19,cex=1.5,lwd=2)
+points(jac[,"c3.tft.gtrd"],type="b",col="gray50",pch=19,cex=1.5,lwd=2)
+mtext("impact of gene list length on severity of FDR problem")
+
+legend("bottomright", legend=c("GO","Reactome", "Markers", "TFT"),
+       col=c("black", "red", "blue", "gray50"), lty=1, cex=1.2,lwd=3,pch=19)
+
+```
+
 ## Make charts showing changes in pvalues
 
 For bulk RNA-seq data set #1, run enrichment with all the gene set libraries.
@@ -430,8 +537,32 @@ For bulk RNA-seq data set #1, run enrichment with all the gene set libraries.
 names(gs)
 
 lapply(1:length(gs), function(i) {
-  bad <- orabad(d[[1]],gs[[i]])
-  good <- oragood(d[[1]],gs[[i]])
+  bad <- orabad(d[[1]],gs[[i]],ngenes=125)
+  good <- oragood(d[[1]],gs[[i]],ngenes=125)
+  compare_ora_plots(bad,good)
+} )
+
+lapply(1:length(gs), function(i) {
+  bad <- orabad(d[[1]],gs[[i]],ngenes=250)
+  good <- oragood(d[[1]],gs[[i]],ngenes=250)
+  compare_ora_plots(bad,good)
+} )
+
+lapply(1:length(gs), function(i) {
+  bad <- orabad(d[[1]],gs[[i]],ngenes=500)
+  good <- oragood(d[[1]],gs[[i]],ngenes=500)
+  compare_ora_plots(bad,good)
+} )
+
+lapply(1:length(gs), function(i) {
+  bad <- orabad(d[[1]],gs[[i]],ngenes=1000)
+  good <- oragood(d[[1]],gs[[i]],ngenes=1000)
+  compare_ora_plots(bad,good)
+} )
+
+lapply(1:length(gs), function(i) {
+  bad <- orabad(d[[1]],gs[[i]],ngenes=2000)
+  good <- oragood(d[[1]],gs[[i]],ngenes=2000)
   compare_ora_plots(bad,good)
 } )
 
