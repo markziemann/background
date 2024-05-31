@@ -403,7 +403,7 @@ jac2 <- apply(jac,2,function(x) { x <- x[!is.na(x)] ; x <- x[is.finite(x)] ;  me
 jac2
 
 barplot(sort(jac2),horiz=TRUE,las=1,xlim=c(0,1),
-  main="Jaccard similarity Corrected:Original",xlab="fold increase")
+  main="Jaccard similarity Corrected:Original",xlab="Jaccard index")
 
 ```
 
