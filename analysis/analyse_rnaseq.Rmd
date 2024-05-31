@@ -335,6 +335,10 @@ ora_dat <- do.call(rbind,ora_dat)
 
 res1 <- cbind(params2,ora_dat)
 
+res1 %>%
+  kbl(row.names = TRUE, caption="all results") %>%
+  kable_paper("hover", full_width = F)
+
 summary(res1$nsig_bad)
 summary(res1$nsig_good)
 summary(res1$jaccard)
@@ -400,6 +404,22 @@ jac2
 
 barplot(sort(jac2),horiz=TRUE,las=1,xlim=c(0,1),
   main="Jaccard similarity Corrected:Original",xlab="fold increase")
+
+```
+
+## Make charts showing changes in pvalues
+
+For bulk RNA-seq data set #1, run enrichment with all the gene set libraries.
+
+```{r,charts1}
+
+names(gs)
+
+lapply(1:length(gs), function(i) {
+  bad <- orabad(d[[1]],gs[[i]])
+  good <- oragood(d[[1]],gs[[i]])
+  compare_ora_plots(bad,good)
+} )
 
 ```
 
