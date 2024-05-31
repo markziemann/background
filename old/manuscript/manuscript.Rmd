@@ -1,0 +1,234 @@
+---
+title: "Importance of using the correct background list for over-representation analysis"
+author: "Mark Ziemann, Barry Schroeter, Anusuiya Bora"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::robobook:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    fig_width: 5
+    fig_height: 5
+bibliography: references.bib
+csl: plos-computational-biology.csl
+---
+
+Alternate title: *Problems in over-representation analysis software*
+
+[Mark Ziemann<sup>1</sup>*](https://orcid.org/0000-0002-7688-6974),
+[Barry Schroeter<sup>1</sup>]()
+[Anusuiya Bora<sup>1,2</sup>](https://orcid.org/0009-0006-2908-1352)
+
+**Affiliations**
+
+1. Deakin University, Geelong, Australia, School of Life and Environmental Sciences.
+
+2. Vellore Institute of Technology, Vellore, India.
+
+(*) Corresponding author: m.ziemann@deakin.edu.au
+
+## Abstract
+
+* Over-representation analysis (ORA) is the most common form of functional enrichment and one of the
+most used techniques in computational biology, yet there are common methodological issues that
+undermine its validity.
+
+* These problems are typically ascribed to errors in analysis and reporting by the end-users,
+however software design is another contributor.
+
+* Here, we identify and characterise a potential bug popular ORA software
+package and web tool.
+
+* We show that this bug deleteriously affects the results of ORA tests, and we present a simple
+work-around to circumvent it.
+
+## Introduction
+
+```{r,libs,echo=FALSE}
+
+library("DiagrammeR")
+
+```
+
+Functional enrichment analysis is a family of computational approaches used to interpret large omics
+data.
+The most commonly used method is over-representation analysis (ORA) which involves the selection of
+genes of interest, followed by a statistical test to evaluate whether genes of certain annotated
+categories are over-represented in the set of interest.
+The set of interest may be defined in different ways, such as genes that meet a differential expression
+significance threshold, or those that have been clustered into a group based on co-expression patterns.
+There are various sources of annotated categories, including gene ontologies, protein-coding features,
+gene co-expression and signalling or metabolic pathways.
+Providers of such annotations include but are not limited to the gene ontology consortium, Reactome,
+KEGG, WikiPathways and MSigDB.
+
+Central to ORA tests is the selection of a list of background genes.
+This is also sometimes called the "universe" or the "reference" list.
+These are defined as any gene that is detected robustly, and has a chance at making the set of interest.
+For RNA-seq studies, this could be a threshold detection limit based either on raw counts or counts per
+million.
+
+The first use of ORA-based functional enrichment that we are aware of is a 1999 report that used the
+hypergeometric test to determine the chance probability of observing over-representation of certain
+annotated functions in co-regulated genes in yeast [@Tavazoie1999-kf].
+This general approach is the basis of most ORA-based significance testing and can be represented by the
+following equation:
+
+$$
+P=1-\sum_{i=0}^{k-1}\frac{ {f \choose i} {g-f \choose n-1} }{g \choose n}
+$$
+
+Where (P) is the probability of observing at least (k) genes from a functional category within the
+list of selected genes with size (n).
+Here, (g) is the total number of detected genes, and (f) is the number of detected genes belonging to a
+functional category.
+
+The fold enrichment score (ES) is commonly used to express the degree of enrichment and is a ratio-of-ratios.
+The foreground ratio is the number of selected genes belonging a functional class (A) divided by the
+number of detected genes in the functional class (B).
+The background ratio is the number of selected genes not belonging to the functional class (C) divided
+by the number of detected genes not in the functional class (D).
+
+$$
+ES=\frac{ A / B}{ C / D}
+$$
+
+Both equations illustrate that correct definition of the number of background genes is important to
+obtain accurate enrichment scores and significance values.
+A common error in ORA of differential gene expression is to use all genes in the genome as the
+background @Wijesooriya2022-li.
+This leads to a severe over-estimation of the number of background genes as there are ~45k annotated
+genes in the human genome (according to Ensembl v109), but RNA-seq robustly detects only ~15k genes.
+This leads to inflation of p-values and results that share only ~40% similarity with properly conducted
+ORA analysis.
+This issue is even more severe for other omics, where the number of detected genes is lower, for example
+proteomics and single cell RNA-seq where there are only a few thousand detected analytes.
+To address this issue, most major ORA tools allow for a user-provided background list of detected genes.
+
+While testing some of these tools, we observed an unusual behaviour whereby the number of background
+genes reported by the tool varied significantly from the length of the gene list we provided.
+Moreover, this number also varied when we used a different library of gene function annotations.
+Puzzled by this behaviour, we browsed the computational biology forums and were met with other confused
+users wondering why the number of genes in the background list would vary like this.
+The tool developers kindly clarified the situation, by stating that the tool removed genes from the
+entire analysis if they were not members of a functional category.
+We thought this behaviour odd, because it has the potential to significantly alter the test being
+conducted, away from it's original application.
+
+In this paper, we examine the effect of this filtering step on ORA of real RNA-seq data, use simulated
+RNA-seq data to determine the impact upon precision and recall, and provide practical recommendations
+to end users to obtain the most accurate results.
+
+In a hypothetical example, there were 134 genes classified as detected.
+Of these, 38 were defined as upregulated in response to a stimulus based on a differential expression
+test.
+From the 38, 8 genes belonged to the "cytokine signaling pathway" category.
+This category contains 26 genes in total, but only 18 were detected in this study.
+
+So the background can be defined as 18/134 and the foreground as 8/38 and the enrichment score
+expressed as (8/38)/(18/135)=1.58
+
+In this example:
+
+*k*=8
+
+*n*=26
+
+*g*=134
+
+*f*=18
+
+We can calculate the probability of getting exactly 7 members of the set.
+
+$$
+P=\frac{ {18 \choose 7} {134-18 \choose 26-1} }{134 \choose 26}
+$$
+
+$$
+P=\frac{ 480700 * 1.71e29 }{ 3.84e+33 } = 1/21.4 = 0.047
+$$
+
+This needs to be repeated for other values of *i*, namely 6 to 0 and then sum all of these.
+
+```{r,hyperdist}
+res<-unlist(lapply(0:38, function(i) {  (choose(18,i) * choose((134-18),(38-1)) / choose(134,38)) }))
+plot(res,type="b")
+```
+
+## Methods
+
+### Demonstrating the impact of the problem
+
+To demonstrate the impact of this problem on real omics data, we conducted enrichment analysis of
+four different types of data.
+We obtained differential proteomics data from Stukalov et al (https://pubmed.ncbi.nlm.nih.gov/33845483/),
+who profiled the effect of SARS-COV2 infection on A549 cells.
+At 24 hrs infection with SARS-CoV2, Stukalov et al reported the detection of 5825 proteins, including
+165 downregulated and 44 upregulated (FDR<0.05).
+For bulk RNA-seq, we obtained count data from DEE2.io (Ziemann et al, 2019) for control and azacitidine
+exposed AML3 cells (SRA accession SRP038101) (Lund et al, 2014, PMID:25315154).
+Genes with fewer than 10 reads per sample on average were considered not detected and were omitted from
+downstream analysis.
+DESeq2 was used to compare treatment groups and genes with FDR<0.05 were selected (Love 2014).
+For single cell RNA-seq 10X Genomics droplet-based, scRNA-seq PBMC data from 8 Lupus patients obtained
+before and after 6h-treatment with IFN-β (Kang et al. 2018).
+The complete raw data, as well as gene and cell metadata is available through the NCBI GEO,
+accession number GSE96583.
+Analysis of this data set  was done using a pseudobulk approach according to the Muscat package vignette
+(Crowell et al, 2020), yielding lists of detected genes for each cell state as well as up- and
+down-regulated gene lists (FDR<0.05).
+Infinium 450K BeadChip based Epigenenome Wise Association Study (EWAS) data was obtained from
+Joehanes et al (PMID:27651444), a meta-analysis investigating the DNA methylation differences between
+smokers and non-smokers.
+Data was downloaded from EWAS Catalog at the link (http://ewascatalog.org/?study=27651444_smoking_current_vs_never_smoking).
+As a background gene list, all genes represented by probes on the 450K array were listed.
+For all of the above analyses, up- and down-regulated genes were partitioned into separate lists,
+for separate enrichment analysis.
+These gene lists were loaded into R and were subject to ClusterProfiler analysis along with the
+respective background gene set.
+KEGG (REF) or Reactome (REF) pathway annotations were used (GMT format).
+KEGG pathway annotations v2023.1 were obtained from MSigDB (REF), while Reactome pathways were downloaded
+from the Reactome website (2023-03-06).
+Pathways (gene sets) with fewer than 10 detected genes were not included in the analysis.
+In addition to the default ClusterProfiler analysis, a modification was made to circumvent the
+background filtering problem.
+To do this, the list of detected genes was appended as a new "pathway" to the KEGG or Reactome annotation
+set.
+The results of this "fixed" analysis was compared those using the default algorithm using an Euler
+diagram.
+
+### Examining the breadth of the problem
+
+Next, we investigated the behaviour of many different ORA tools to find out whether they suffered from
+the same problem or not.
+We analysed the 20 most popular ORA tools as described by Xie et al, 2021 (PMID:33858350).
+To understand whether the background list filtering problem was apparent, we used the gene lists from
+the bulk RNA-seq dataset, with various pathway /gene set databases.
+If the tool reported the number of genes in the background list, we used this as evidence to classify
+the tool's behaviour.
+If not, then we undertook forensic investigation of the enrichment results to infer the program's
+behaviour.
+
+
+## Results
+
+### Background list filtering biases ORA results
+
+
+### Inappropriate background list filtering is widespread
+
+
+
+## Acknowledgements
+
+This research was supported by use of the Nectar Research Cloud, a collaborative Australian research
+platform supported by the NCRIS-funded Australian Research Data Commons (ARDC).
+
+## Availability of materials
+
+* Code repository:
+
+* Example Docker image:
+
+## Bibliography

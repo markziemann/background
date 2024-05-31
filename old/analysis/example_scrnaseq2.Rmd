@@ -1,0 +1,513 @@
+---
+title: "Examining background gene lists in clusterProfiler - scRNA-seq example"
+author: "Mark Ziemann & Anusuiya Bora"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    fig_width: 5
+    fig_height: 5
+theme: cosmo
+---
+
+Source: https://github.com/markziemann/background
+
+## Introduction
+
+Load libraries and dataset.
+
+```{r,libs}
+
+tbl <- readRDS("scDEres.Rds")
+
+suppressPackageStartupMessages({
+  library("getDEE2")
+  library("DESeq2")
+  library("kableExtra")
+  library("clusterProfiler")
+  library("fgsea")
+  library("eulerr")
+  library("gplots")
+})
+
+```
+
+```{r,orafunc}
+
+ora <- function(fg,bg,genesets,n_pw=10,mincount=5) {
+
+ora_res <- as.data.frame(enricher(gene = fg ,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+if ( nrow(ora_res > 1 ) ) {
+
+ora_res$geneID <- NULL
+ora_res <- subset(ora_res,p.adjust<0.05 & Count >=mincount)
+ora_res_sets <- rownames(ora_res)
+
+gr <- as.numeric(sapply(strsplit(ora_res$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_res$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(ora_res$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_res$BgRatio,"/"),"[[",2))
+
+ora_res$es <- gr/br
+ora_res <- ora_res[order(-ora_res$es),]
+ora_res$Description=NULL
+return(ora_res)
+}
+
+}
+
+orafix <- function(fg,bg,genesets,n_pw=10,mincount=5) {
+
+bgdf <- data.frame("background",bg)
+colnames(bgdf) <- c("term","gene")
+genesets_fix <- rbind(genesets,bgdf)
+
+ora_res <- as.data.frame(enricher(gene = fg ,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets_fix,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+if ( nrow(ora_res > 1 ) ) {
+
+ora_res$geneID <- NULL
+ora_res <- subset(ora_res,p.adjust<0.05 & Count >=mincount)
+ora_res_sets <- rownames(ora_res)
+
+gr <- as.numeric(sapply(strsplit(ora_res$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_res$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(ora_res$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_res$BgRatio,"/"),"[[",2))
+
+ora_res$es <- gr/br
+ora_res <- ora_res[order(-ora_res$es),]
+ora_res$Description=NULL
+return(ora_res)
+}
+
+}
+
+```
+
+For this report I will use a SingleCellExperiment (SCE) containing 10x droplet-based
+scRNA-seq PBCM data from 8 Lupus patients obtained before and after 6h-treatment with IFN-β
+ (Kang et al. 2018).
+
+The complete raw data, as well as gene and cell metadata is available through the NCBI GEO,
+accession number GSE96583.
+
+Downstream analysis was done according to the vignette from Seurat.
+Link: https://satijalab.org/seurat/archive/v3.1/immune_alignment.html
+
+```{r,fetch}
+
+names(tbl)
+
+message("Total detected genes in each cluster and differentially expressed")
+
+x <- lapply(tbl, function(x) {
+  nsig <- nrow(subset(x,p_val_adj<0.05))
+  ntot <- nrow(x)
+  c(ntot,nsig)
+} )
+
+x
+
+x <- do.call(rbind,x)
+colnames(x) <- c("ngenes","nsig")
+x <- as.data.frame(x)
+
+x <- subset(x,ngenes>=800 & nsig>=100)
+
+x
+
+x <- rownames(x)
+
+tbl <- tbl[names(tbl) %in% x]
+
+str(tbl)
+
+head(tbl[["CD4 T cells"]])  %>%
+  kbl(caption="Example of muscat dataset. Control vs IFN-beta treatment") %>%
+  kable_paper("hover", full_width = F)
+
+```
+
+# KEGG pathway analysis
+
+In the next sections I will run enrichment analysis with over-representation analysis (ORA) test
+and compare it to functional class scoring.
+I will also investigate some strange behviour of the ORA tool clusterprofiler.
+
+## ORA with Clusterprofiler custom background with otherwise default analysis
+
+I've compiled a reporting checklist:
+
+| Reporting criteria | Method/resource used |
+| --- | --- |
+| Origin of gene sets | KEGG (2023-06-16) |
+| Tool used | ClusterProfiler (check version at foot of report) |
+| Statistical test used | hypergeometric test |
+| P-value correction for multiple comparisons | FDR method |
+| Background list | As defined by Seurat |
+| Gene Selection Criteria | Seurat FDR<0.05 |
+| ORA directionality | Separate tests for up- and down-regulation |
+| Data availability | SeuratData ifnb |
+| Other parameters | Min gene set size of 5 |
+
+Here I provide a custom background gene list.
+
+Get the gene sets loaded in R.
+These are KEGG gene sets
+
+```{r,gs1}
+# from https://www.gsea-msigdb.org/gsea/msigdb/human/collections.jsp 16th June 2023
+genesets2 <- read.gmt("../ref/c2.cp.kegg.v2023.1.Hs.symbols.gmt")
+gsets <- gmtPathways("../ref/c2.cp.kegg.v2023.1.Hs.symbols.gmt")
+
+message(paste("number of genes described in the annotation set:",length(unique(genesets2$gene))))
+
+```
+
+Now filter the gene names into three lists, up-regulated, down-regulated and
+background.
+Background is simply all genes that were detected.
+
+```{r,subset1}
+
+def <- lapply(tbl , function(x) {
+  bg <- unique(rownames(x))
+  up <- unique(rownames(subset(x,p_val_adj<0.05 & avg_log2FC>0)))
+  dn <- unique(rownames(subset(x,p_val_adj<0.05 & avg_log2FC<0)))
+  return(list("bg"=bg,"up"=up,"dn"=dn))
+} )
+
+str(def)
+
+```
+
+Enrichment firstly with upregulated genes
+
+```{r,oraup1}
+
+ups <- lapply(1:length(def),function(i) {
+  ora(def[[i]]$up,def[[i]]$bg,genesets=genesets2)
+})
+
+up_sets <- unlist(lapply(1:length(ups) , function(i) {
+  nm <- names(def)[[i]]
+  sets <- ups[[i]]$ID
+  if ( length(sets) >0 ) { paste(nm,sets) }
+} ) )
+
+length(up_sets)
+up_sets
+
+```
+
+Now repeat with the downregulated genes
+
+```{r,oradn1}
+
+dns <- lapply(1:length(def),function(i) {
+  ora(def[[i]]$dn,def[[i]]$bg,genesets=genesets2)
+})
+
+dn_sets <- unlist(lapply(1:length(dns) , function(i) {
+  nm <- names(def)[[i]]
+  sets <- dns[[i]]$ID
+  if ( length(sets) >0 ) { paste(nm,sets) }
+} ) )
+
+length(dn_sets)
+dn_sets
+
+```
+
+## ORA with Clusterprofiler with custom background and special gene set list to fix the potential bug
+
+I've compiled a reporting checklist:
+
+| Reporting criteria | Method/resource used |
+| --- | --- |
+| Origin of gene sets | KEGG (2023-06-16) |
+| Tool used | ClusterProfiler (check version at foot of report) |
+| Statistical test used | hypergeometric test |
+| P-value correction for multiple comparisons | FDR method |
+| Background list | As defined by Seurat |
+| Gene Selection Criteria | Seurat FDR<0.05 |
+| ORA directionality | Separate tests for up- and down-regulation |
+| Data availability | SeuratData ifnb |
+| Other parameters | Min gene set size of 10 + BUG FIX |
+
+Here I provide a background gene list for cluterprofiler to use, like a user should.
+
+I have also done some modification to the KEGG gene sets, to en
+
+Now filter the gene names into three lists, up-regulated, down-regulated and
+background.
+Background is simply all genes that were detected.
+
+Enrichment firstly with upregulated genes
+
+```{r,orafixup1}
+
+fixups <- lapply(1:length(def),function(i) {
+  orafix(def[[i]]$up,def[[i]]$bg,genesets=genesets2)
+})
+
+fixup_sets <- unlist(lapply(1:length(fixups) , function(i) {
+  nm <- names(def)[[i]]
+  sets <- fixups[[i]]$ID
+  if ( length(sets) >0 ) { paste(nm,sets) }
+} ) )
+
+length(fixup_sets)
+fixup_sets
+
+```
+
+Now repeat with the downregulated genes
+
+```{r,orafixdn1}
+
+fixdns <- lapply(1:length(def),function(i) {
+  orafix(def[[i]]$dn,def[[i]]$bg,genesets=genesets2)
+})
+
+fixdn_sets <- unlist(lapply(1:length(fixdns) , function(i) {
+  nm <- names(def)[[i]]
+  sets <- fixdns[[i]]$ID
+  if ( length(sets) >0 ) { paste(nm,sets) }
+} ) )
+
+length(fixdn_sets)
+fixdn_sets
+
+```
+
+## Compare pathway results
+
+```{r,venn1,fig.width=8,fig.height=5}
+
+v1 <- list("ORA up"=up_sets, "ORA fix up"=fixup_sets)
+v2 <- list("ORA dn"=dn_sets, "ORA fix dn"=fixdn_sets)
+v3 <- list("ORA"=union(up_sets,dn_sets),
+  "ORA fix"=union(fixup_sets,fixdn_sets))
+
+par(mar=c(10,10,10,10))
+par(mfrow=c(2,1))
+plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2),main="upregulated KEGG pathways")
+plot(euler(v2),quantities = list(cex = 2), labels = list(cex = 2),main="downregulated KEGG pathways")
+plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated KEGG pathways")
+
+svg("scrna2_kegg_euler.svg")
+plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated KEGG pathways")
+dev.off()
+
+```
+
+Jaccard index comparing ORA and ORA fix.
+
+```{r,jaccard1}
+
+jaccard <- function(a, b) {
+    intersection = length(intersect(a, b))
+    union = length(a) + length(b) - intersection
+    return (intersection/union)
+}
+
+orasets <- c(up_sets,dn_sets)
+orafixsets <- c(fixup_sets,fixdn_sets)
+
+jaccard(orasets,orafixsets)
+
+```
+
+# Reactome Gene sets
+
+## ORA with Clusterprofiler custom background with otherwise default analysis
+
+I've compiled a reporting checklist:
+
+| Reporting criteria | Method/resource used |
+| --- | --- |
+| Origin of gene sets | Reactome (2023-03-06) |
+| Tool used | ClusterProfiler (check version at foot of report) |
+| Statistical test used | hypergeometric test |
+| P-value correction for multiple comparisons | FDR method |
+| Background list |  As defined by Seurat |
+| Gene Selection Criteria | Seurat FDR<0.05 |
+| ORA directionality | Separate tests for up- and down-regulation |
+| Data availability | SeuratData ifnb |
+| Other parameters | Min gene set size of 10 |
+
+Here I provide a custom background gene list.
+
+Get the gene sets loaded in R.
+These are Reactome gene sets
+
+
+```{r,gs2}
+
+genesets2 <- read.gmt("../ref/ReactomePathways_2023-03-06.gmt")
+gsets <- gmtPathways("../ref/ReactomePathways_2023-03-06.gmt")
+
+message(paste("number of genes described in the annotation set:",length(unique(genesets2$gene))))
+
+```
+
+Enrichment firstly with upregulated genes
+
+```{r,oraup2}
+
+ups <- lapply(1:length(def),function(i) {
+  ora(def[[i]]$up,def[[i]]$bg,genesets=genesets2)
+})
+
+up_sets <- unlist(lapply(1:length(ups) , function(i) {
+  nm <- names(def)[[i]]
+  sets <- ups[[i]]$ID
+  if ( length(sets) >0 ) { paste(nm,sets) }
+} ) )
+
+length(up_sets)
+up_sets
+
+```
+
+Now repeat with the downregulated genes
+
+```{r,oradn2}
+
+dns <- lapply(1:length(def),function(i) {
+  ora(def[[i]]$dn,def[[i]]$bg,genesets=genesets2)
+})
+
+dn_sets <- unlist(lapply(1:length(dns) , function(i) {
+  nm <- names(def)[[i]]
+  sets <- dns[[i]]$ID
+  if ( length(sets) >0 ) { paste(nm,sets) }
+} ) )
+
+length(dn_sets)
+dn_sets
+
+```
+
+## ORA with Clusterprofiler with custom background and special gene set list to fix the potential bug
+
+I've compiled a reporting checklist:
+
+| Reporting criteria | Method/resource used |
+| --- | --- |
+| Origin of gene sets | Reactome (2023-03-06) |
+| Tool used | ClusterProfiler (check version at foot of report) |
+| Statistical test used | hypergeometric test |
+| P-value correction for multiple comparisons | FDR method |
+| Background list | As defined by Seurat |
+| Gene Selection Criteria | Seurat FDR<0.05 |
+| ORA directionality | Separate tests for up- and down-regulation |
+| Data availability | SeuratData ifnb |
+| Other parameters | Min gene set size of 10 + BUG FIX |
+
+```{r,orafixup2}
+
+fixups <- lapply(1:length(def),function(i) {
+  orafix(def[[i]]$up,def[[i]]$bg,genesets=genesets2)
+})
+
+fixup_sets <- unlist(lapply(1:length(fixups) , function(i) {
+  nm <- names(def)[[i]]
+  sets <- fixups[[i]]$ID
+  if ( length(sets) >0 ) { paste(nm,sets) }
+} ) )
+
+length(fixup_sets)
+fixup_sets
+
+```
+
+Now repeat with the downregulated genes
+
+```{r,orafixdn2}
+
+fixdns <- lapply(1:length(def),function(i) {
+  orafix(def[[i]]$dn,def[[i]]$bg,genesets=genesets2)
+})
+
+fixdn_sets <- unlist(lapply(1:length(fixdns) , function(i) {
+  nm <- names(def)[[i]]
+  sets <- fixdns[[i]]$ID
+  if ( length(sets) >0 ) { paste(nm,sets) }
+} ) )
+
+length(fixdn_sets)
+fixdn_sets
+
+```
+
+## Compare pathway results
+
+```{r,venn2,fig.width=8,fig.height=5}
+
+v1 <- list("ORA up"=up_sets, "ORA fix up"=fixup_sets)
+v2 <- list("ORA dn"=dn_sets, "ORA fix dn"=fixdn_sets)
+v3 <- list("ORA"=union(up_sets,dn_sets),
+  "ORA fix"=union(fixup_sets,fixdn_sets))
+
+par(mar=c(10,10,10,10))
+par(mfrow=c(2,1))
+plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2),main="upregulated Reactomes")
+plot(euler(v2),quantities = list(cex = 2), labels = list(cex = 2),main="downregulated Reactomes")
+plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated Reactomes")
+
+svg("scrna2_reactome_euler.svg")
+plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-regulated Reactomes")
+dev.off()
+
+```
+
+Jaccard index comparing ORA and ORA fix.
+
+```{r,jaccard2}
+
+jaccard <- function(a, b) {
+    intersection = length(intersect(a, b))
+    union = length(a) + length(b) - intersection
+    return (intersection/union)
+}
+
+ora <- c(up_sets,dn_sets)
+orafix <- c(fixup_sets,fixdn_sets)
+
+jaccard(ora,orafix)
+
+```
+
+List gene sets identified only in the "fixed" analysis.
+
+```{r,examine2}
+
+setdiff(orafix,ora)
+
+```
+
+## Session information
+
+For reproducibility
+
+<br><details><summary><b>Click HERE to show session info</b></summary><br><p>
+
+```{r,session}
+
+sessionInfo()
+
+```
+
+</details>

@@ -1,0 +1,663 @@
+---
+title: "Examining background gene lists in clusterProfiler - methylation example"
+author: "Mark Ziemann & Anusuiya Bora"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    fig_width: 5
+    fig_height: 5
+theme: cosmo
+---
+
+Source: https://github.com/markziemann/background
+
+## Introduction
+
+This guide is a Rmarkdown script that conducts differential expression and enrichment analysis,
+which are very popular workflows for transcriptome data.
+
+The goal of this work is to understand how ClusterProfiler manages the background list,
+as we have observed some weird behaviour.
+In particular we see that when we provide a custom background, those genes do not appear in the
+final analysis unless they are also included in the gene list.
+
+In the code chunk below called `libs`, you can add and remove required R library dependancies.
+Check that the libraries listed here match the Dockerfile, otherwise you might get errors.
+
+```{r,libs}
+
+suppressPackageStartupMessages({
+  library("DESeq2")
+  library("kableExtra")
+  library("clusterProfiler")
+  library("fgsea")
+  library("eulerr")
+  library("gplots")
+  library("IlluminaHumanMethylation450kanno.ilmn12.hg19")
+})
+
+```
+
+For this report I will be using Epigenetics data from an epigenome wide study for smokers versus non-smokers.
+PubmedID:27651444
+Data was downloaded from EWAS Catalog:
+http://ewascatalog.org/?study=27651444_smoking_current_vs_never_smoking
+
+```{r,fetch}
+
+x <- read.table("../data/27651444_smoking_current_vs_never_smoking_16938071371108067.tsv",header=TRUE,sep="\t")
+
+```
+
+Get background gene list.
+
+```{r,bg}
+
+anno = getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+bg <- anno$UCSC_RefGene_Name
+bg <- unique(unlist(strsplit(bg,";")))
+length(bg)
+
+```
+
+Get up and down-methylated list.
+
+```{r,dm1}
+
+defup <- subset(x,beta>0)$gene
+defup <- defup[defup!="-"]
+defup <- unique(unlist(strsplit(defup,";")))
+length(defup)
+
+defdn <- subset(x,beta<0)$gene
+defdn <- defdn[defdn!="-"]
+defdn <- unique(unlist(strsplit(defdn,";")))
+length(defdn)
+
+```
+
+Gene sets.
+Get the gene sets loaded in R.
+These are KEGG gene sets
+
+```{r,gs1}
+# from https://www.gsea-msigdb.org/gsea/msigdb/human/collections.jsp 16th June 2023
+genesets2 <- read.gmt("../ref/c2.cp.kegg.v2023.1.Hs.symbols.gmt")
+gsets <- gmtPathways("../ref/c2.cp.kegg.v2023.1.Hs.symbols.gmt")
+
+message(paste("number of genes described in the annotation set:",length(unique(genesets2$gene))))
+
+```
+
+# KEGG pathway analysis
+
+In the next sections I will run enrichment analysis with over-representation analysis (ORA) test
+and compare it to functional class scoring.
+I will also investigate some strange behviour of the ORA tool clusterprofiler.
+
+## ORA with Clusterprofiler custom background with otherwise default analysis
+
+I've compiled a reporting checklist:
+
+| Reporting criteria | Method/resource used |
+| --- | --- |
+| Origin of gene sets | KEGG (2023-06-16) |
+| Tool used | ClusterProfiler (check version at foot of report) |
+| Statistical test used | hypergeometric test |
+| P-value correction for multiple comparisons | FDR method |
+| Background list | Genes with one or more probes on the 450K array |
+| Gene Selection Criteria | Metaanalysis FDR<0.05 |
+| ORA directionality | Separate tests for up- and down-regulation |
+| Data availability | PMID: 27651444 |
+| Other parameters | Min gene set size of 10 |
+
+Here I provide a custom background gene list.
+
+Enrichment firstly with upmethylated genes
+
+```{r,oraup1}
+
+n_pw=10
+
+ora_up <- as.data.frame(enricher(gene = defup ,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora_up$geneID <- NULL
+ora_up <- subset(ora_up,p.adjust<0.05 & Count >=5)
+ora_ups <- rownames(ora_up)
+
+gr <- as.numeric(sapply(strsplit(ora_up$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_up$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(ora_up$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_up$BgRatio,"/"),"[[",2))
+
+ora_up$es <- gr/br
+ora_up <- ora_up[order(-ora_up$es),]
+ora_up$Description=NULL
+
+head(ora_up) %>%
+  kbl(row.names = FALSE, caption="Top up-methylated pathways in LPS treatment") %>%
+  kable_paper("hover", full_width = F)
+
+topup2 <- rev(head(ora_up$es,10))
+names(topup2) <- rev(head(ora_up$ID,10))
+
+```
+
+The reported background size does not match the dataset.
+
+Now repeat with the downmethylated genes
+
+```{r,oradn1}
+
+ora_dn <- as.data.frame(enricher(gene = defdn ,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora_dn$geneID <- NULL
+ora_dn <- subset(ora_dn,p.adjust<0.05 & Count >=5)
+ora_dns <- rownames(ora_dn)
+
+gr <- as.numeric(sapply(strsplit(ora_dn$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_dn$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(ora_dn$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_dn$BgRatio,"/"),"[[",2))
+
+ora_dn$es <- gr/br
+ora_dn <- ora_dn[order(-ora_dn$es),]
+ora_dn$Description=NULL
+
+head(ora_dn,n_pw) %>%
+  kbl(row.names = FALSE, caption="Top downmethylated pathways in LPS treatment") %>%
+  kable_paper("hover", full_width = F)
+
+topdn2 <- head(ora_dn$es,n_pw)
+names(topdn2) <- head(ora_dn$ID,n_pw)
+
+```
+
+Make a barplot
+
+```{r,topbarplot1}
+
+par(mar=c(5,20,5,1))
+
+cols <- c(rep("blue",n_pw),rep("red",n_pw))
+
+top <- c(topdn2,topup2)
+
+if ( length(top) > 1 ) {
+  barplot(c(top),
+    horiz=TRUE,las=1,cex.names=0.65,col=cols,
+    main="top DE KEGGs",
+    xlab="ES",
+    cex.main=0.9)
+  mtext("ORA test")
+}
+
+```
+
+## ORA with Clusterprofiler with custom background and special gene set list to fix the potential bug
+
+I've compiled a reporting checklist:
+
+| Reporting criteria | Method/resource used |
+| --- | --- |
+| Origin of gene sets | KEGG (2023-06-16) |
+| Tool used | ClusterProfiler (check version at foot of report) |
+| Statistical test used | hypergeometric test |
+| P-value correction for multiple comparisons | FDR method |
+| Background list | Genes with one or more probes on the 450K array |
+| Gene Selection Criteria | Metaanalysis FDR<0.05 |
+| ORA directionality | Separate tests for up- and down-regulation |
+| Data availability | Data availability | PMID: 276514443 |
+| Other parameters | Min gene set size of 10 + BUG FIX |
+
+Here I provide a background gene list for cluterprofiler to use, like a user should.
+
+I have also done some modification to the KEGG gene sets, to en
+
+Adding all detected genes to the background appears to improve results!
+
+```{r,gs2fix1}
+
+bgdf <- data.frame("background",bg)
+colnames(bgdf) <- c("term","gene")
+genesets2 <- rbind(genesets2,bgdf)
+
+```
+
+Enrichment firstly with upmethylated genes
+
+```{r,oraupfix1}
+
+n_pw=10
+
+orafix_up <- as.data.frame(enricher(gene = defup ,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+orafix_up$geneID <- NULL
+orafix_up <- subset(orafix_up,p.adjust<0.05 & Count >=5)
+orafix_ups <- rownames(orafix_up)
+
+gr <- as.numeric(sapply(strsplit(orafix_up$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(orafix_up$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(orafix_up$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(orafix_up$BgRatio,"/"),"[[",2))
+
+orafix_up$es <- gr/br
+orafix_up <- orafix_up[order(-orafix_up$es),]
+orafix_up$Description=NULL
+
+head(orafix_up) %>%
+  kbl(row.names = FALSE, caption="Top upmethylated pathways in LPS treatment") %>%
+  kable_paper("hover", full_width = F)
+
+topup2 <- rev(head(orafix_up$es,10))
+names(topup2) <- rev(head(orafix_up$ID,10))
+
+```
+
+Now with the downmethylated genes
+
+```{r,oradnfix1}
+
+orafix_dn <- as.data.frame(enricher(gene = defdn ,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+orafix_dn$geneID <- NULL
+orafix_dn <- subset(orafix_dn,p.adjust<0.05 & Count >=5)
+orafix_dns <- rownames(orafix_dn)
+
+gr <- as.numeric(sapply(strsplit(orafix_dn$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(orafix_dn$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(orafix_dn$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(orafix_dn$BgRatio,"/"),"[[",2))
+
+orafix_dn$es <- gr/br
+orafix_dn <- orafix_dn[order(-orafix_dn$es),]
+orafix_dn$Description=NULL
+
+head(orafix_dn,n_pw) %>%
+  kbl(row.names = FALSE, caption="Top downmethylated pathways in LPS treatment") %>%
+  kable_paper("hover", full_width = F)
+
+topdn2 <- head(orafix_dn$es,n_pw)
+names(topdn2) <- head(orafix_dn$ID,n_pw)
+
+```
+
+Make a barplot
+
+```{r,topbarplot2fix1}
+
+par(mar=c(5,20,5,1))
+
+cols <- c(rep("blue",n_pw),rep("red",n_pw))
+
+top <- c(topdn2,topup2)
+
+if ( length(top) > 1 ) {
+  barplot(c(top),
+    horiz=TRUE,las=1,cex.names=0.65,col=cols,
+    main="top DE KEGGs",
+    xlab="ES",
+    cex.main=0.9)
+  mtext("ORA fix")
+}
+
+```
+
+
+## Compare pathway results
+
+```{r,venn1,fig.width=8,fig.height=5}
+
+v1 <- list("ORA up"=ora_ups, "ORA fix up"=orafix_ups)
+v2 <- list("ORA dn"=ora_dns, "ORA fix dn"=orafix_dns)
+v3 <- list("ORA"=union(ora_ups,ora_dns),
+  "ORA fix"=union(orafix_ups,orafix_dns))
+
+par(mar=c(10,10,10,10))
+par(mfrow=c(2,1))
+plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2),main="up-methylated KEGG pathways")
+plot(euler(v2),quantities = list(cex = 2), labels = list(cex = 2),main="down-methylated KEGG pathways")
+plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-methylated KEGG pathways")
+
+svg("meth_kegg_euler.svg")
+plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-methylated KEGG pathways")
+dev.off()
+
+```
+
+Jaccard index comparing ORA and ORA fix.
+
+```{r,jaccard1}
+
+jaccard <- function(a, b) {
+    intersection = length(intersect(a, b))
+    union = length(a) + length(b) - intersection
+    return (intersection/union)
+}
+
+ora <- c(ora_ups,ora_dns)
+orafix <- c(orafix_ups,orafix_dns)
+
+jaccard(ora,orafix)
+
+```
+
+List gene sets identified only in the "fixed" analysis.
+
+```{r,examine1}
+
+ora <- union(ora_ups,ora_dns)
+
+orafix <- union(orafix_ups,orafix_dns)
+
+setdiff(orafix,ora)
+
+```
+
+# Reactome Gene sets
+
+## ORA with Clusterprofiler custom background with otherwise default analysis
+
+I've compiled a reporting checklist:
+
+| Reporting criteria | Method/resource used |
+| --- | --- |
+| Origin of gene sets | Reactome (2023-03-06) |
+| Tool used | ClusterProfiler (check version at foot of report) |
+| Statistical test used | hypergeometric test |
+| P-value correction for multiple comparisons | FDR method |
+| Background list | Genes with one or more probes on the 450K array |
+| Gene Selection Criteria | Metaanalysis FDR<0.05 |
+| ORA directionality | Separate tests for up- and down-regulation |
+| Data availability | Data availability | PMID: 27651444 |
+| Other parameters | Min gene set size of 10 |
+
+Here I provide a custom background gene list.
+
+Get the gene sets loaded in R.
+These are Reactome gene sets
+
+
+```{r,gs2}
+
+genesets2 <- read.gmt("../ref/ReactomePathways_2023-03-06.gmt")
+gsets <- gmtPathways("../ref/ReactomePathways_2023-03-06.gmt")
+
+message(paste("number of genes described in the annotation set:",length(unique(genesets2$gene))))
+
+```
+
+Enrichment firstly with upmethylated genes
+
+```{r,oraup2}
+
+n_pw=10
+
+ora_up <- as.data.frame(enricher(gene = defup ,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora_up$geneID <- NULL
+ora_up <- subset(ora_up,p.adjust<0.05 & Count >=5)
+ora_ups <- rownames(ora_up)
+
+gr <- as.numeric(sapply(strsplit(ora_up$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_up$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(ora_up$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_up$BgRatio,"/"),"[[",2))
+
+ora_up$es <- gr/br
+ora_up <- ora_up[order(-ora_up$es),]
+ora_up$Description=NULL
+
+head(ora_up) %>%
+  kbl(row.names = FALSE, caption="Top upmethylated pathways in LPS treatment") %>%
+  kable_paper("hover", full_width = F)
+
+topup2 <- rev(head(ora_up$es,10))
+names(topup2) <- rev(head(ora_up$ID,10))
+
+```
+
+Now repeat with the downmethylated genes
+
+```{r,oradn2}
+
+ora_dn <- as.data.frame(enricher(gene = defdn ,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+ora_dn$geneID <- NULL
+ora_dn <- subset(ora_dn,p.adjust<0.05 & Count >=5)
+ora_dns <- rownames(ora_dn)
+
+gr <- as.numeric(sapply(strsplit(ora_dn$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_dn$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(ora_dn$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora_dn$BgRatio,"/"),"[[",2))
+
+ora_dn$es <- gr/br
+ora_dn <- ora_dn[order(-ora_dn$es),]
+ora_dn$Description=NULL
+
+head(ora_dn,n_pw) %>%
+  kbl(row.names = FALSE, caption="Top downmethylated pathways in LPS treatment") %>%
+  kable_paper("hover", full_width = F)
+
+topdn2 <- head(ora_dn$es,n_pw)
+names(topdn2) <- head(ora_dn$ID,n_pw)
+
+```
+
+Make a barplot
+
+```{r,topbarplot22}
+
+par(mar=c(5,20,5,1))
+
+cols <- c(rep("blue",n_pw),rep("red",n_pw))
+
+top <- c(topdn2,topup2)
+
+if ( length(top) > 1 ) {
+  barplot(c(top),
+    horiz=TRUE,las=1,cex.names=0.65,col=cols,
+    main="top DE Reactomes",
+    xlab="ES",
+    cex.main=0.9)
+  mtext("ORA test")
+}
+
+```
+
+## ORA with Clusterprofiler with custom background and special gene set list to fix the potential bug
+
+I've compiled a reporting checklist:
+
+| Reporting criteria | Method/resource used |
+| --- | --- |
+| Origin of gene sets | Reactome (2023-03-06) |
+| Tool used | ClusterProfiler (check version at foot of report) |
+| Statistical test used | hypergeometric test |
+| P-value correction for multiple comparisons | FDR method |
+| Background list | Genes with one or more probes on the 450K array |
+| Gene Selection Criteria | Metaanalysis FDR<0.05 |
+| ORA directionality | Separate tests for up- and down-regulation |
+| Data availability | Data availability | PMID: 27651444 |
+| Other parameters | Min gene set size of 10 + BUG FIX |
+
+Adding all detected genes to the background appears to improve results!
+
+```{r,gs2fix2}
+
+bgdf <- data.frame("background",bg)
+colnames(bgdf) <- c("term","gene")
+genesets2 <- rbind(genesets2,bgdf)
+
+```
+
+Enrichment firstly with upmethylated genes
+
+```{r,oraupfix2}
+
+orafix_up <- as.data.frame(enricher(gene = defup ,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+orafix_up$geneID <- NULL
+orafix_up <- subset(orafix_up,p.adjust<0.05 & Count >=5)
+orafix_ups <- rownames(orafix_up)
+
+gr <- as.numeric(sapply(strsplit(orafix_up$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(orafix_up$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(orafix_up$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(orafix_up$BgRatio,"/"),"[[",2))
+
+orafix_up$es <- gr/br
+orafix_up <- orafix_up[order(-orafix_up$es),]
+orafix_up$Description=NULL
+
+head(orafix_up) %>%
+  kbl(row.names = FALSE, caption="Top upmethylated pathways in LPS treatment") %>%
+  kable_paper("hover", full_width = F)
+
+topup2 <- rev(head(orafix_up$es,10))
+names(topup2) <- rev(head(orafix_up$ID,10))
+
+```
+
+Now with the downmethylated genes
+
+```{r,oradnfix2}
+
+n_pw=10
+
+orafix_dn <- as.data.frame(enricher(gene = defdn ,
+  universe = bg,  maxGSSize = 500000, TERM2GENE = genesets2,
+  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+orafix_dn$geneID <- NULL
+orafix_dn <- subset(orafix_dn,p.adjust<0.05 & Count >=5)
+orafix_dns <- rownames(orafix_dn)
+
+gr <- as.numeric(sapply(strsplit(orafix_dn$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(orafix_dn$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(orafix_dn$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(orafix_dn$BgRatio,"/"),"[[",2))
+
+orafix_dn$es <- gr/br
+orafix_dn <- orafix_dn[order(-orafix_dn$es),]
+orafix_dn$Description=NULL
+
+head(orafix_dn,n_pw) %>%
+  kbl(row.names = FALSE, caption="Top downmethylated pathways in LPS treatment") %>%
+  kable_paper("hover", full_width = F)
+
+topdn2 <- head(orafix_dn$es,n_pw)
+names(topdn2) <- head(orafix_dn$ID,n_pw)
+
+```
+
+Make a barplot
+
+```{r,topbarplot2fix2}
+
+par(mar=c(5,20,5,1))
+
+cols <- c(rep("blue",n_pw),rep("red",n_pw))
+
+top <- c(topdn2,topup2)
+
+if ( length(top) > 1 ) {
+  barplot(c(top),
+    horiz=TRUE,las=1,cex.names=0.65,col=cols,
+    main="top DE Reactomes",
+    xlab="ES",
+    cex.main=0.9)
+  mtext("ORA fix")
+}
+
+```
+
+## Compare pathway results
+
+```{r,venn2,fig.width=8,fig.height=5}
+
+v1 <- list("ORA up"=ora_ups, "ORA fix up"=orafix_ups)
+v2 <- list("ORA dn"=ora_dns, "ORA fix dn"=orafix_dns)
+v3 <- list("ORA"=union(ora_ups,ora_dns),
+  "ORA fix"=union(orafix_ups,orafix_dns))
+
+par(mar=c(10,10,10,10))
+par(mfrow=c(2,1))
+plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2),main="up-methylated Reactomes")
+plot(euler(v2),quantities = list(cex = 2), labels = list(cex = 2),main="down-methylated Reactomes")
+plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-methylated Reactomes")
+
+svg("meth_reactome_euler.svg")
+plot(euler(v3),quantities = list(cex = 2), labels = list(cex = 2),main="up- and down-methylated Reactomes")
+dev.off()
+
+```
+
+Jaccard index comparing ORA and ORA fix.
+
+```{r,jaccard2}
+
+jaccard <- function(a, b) {
+    intersection = length(intersect(a, b))
+    union = length(a) + length(b) - intersection
+    return (intersection/union)
+}
+
+ora <- c(ora_ups,ora_dns)
+orafix <- c(orafix_ups,orafix_dns)
+
+jaccard(ora,orafix)
+
+```
+
+List gene sets identified only in the "fixed" analysis.
+
+```{r,examine2}
+
+ora <- union(ora_ups,ora_dns)
+
+orafix <- union(orafix_ups,orafix_dns)
+
+setdiff(orafix,ora)
+
+```
+
+## Session information
+
+For reproducibility
+
+<br><details><summary><b>Click HERE to show session info</b></summary><br><p>
+
+```{r,session}
+
+sessionInfo()
+
+```
+
+</details>
