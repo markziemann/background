@@ -67,16 +67,24 @@ names(gs) <- gsub(".v2023.2.Hs.symbols.gmt","",names(gs))
 
 ```{r,gs1}
 
+# number of sets
 lapply(gs,length)
 
+# set size summary
 lapply(gs,function(x) {
   y <- unlist(lapply(x, length ))
   summary(y)
 } )
 
+# gene coverage
 lapply(gs,function(x) {
   y <- unique(unlist(x))
   length(y)
+} )
+
+# total number of annotations
+lapply(gs, function(x) {
+  sum(unlist(lapply(x,length)))
 } )
 
 ```
