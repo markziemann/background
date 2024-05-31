@@ -364,7 +364,7 @@ ns2
 df <- data.frame(ns1,ns2)
 df <- df[order(df$ns1),]
 
-par(mar=c(c(5.1, 10.1, 4.1, 2.1) ))
+par(mar=c(c(5.1, 7.1, 4.1, 2.1) ))
 barplot(t(df),beside=TRUE,horiz=TRUE,las=1,
   xlab="no. significant sets", main="Comparison of original and corrected data",
   col=c("gray30","gray80"))
@@ -392,7 +392,7 @@ rownames(jac) <- names(d)
 colnames(jac) <- names(gs)
 
 signif(jac,3) %>%
-  kbl(row.names = FALSE, caption="Jaccard similarity Corrected:Original") %>%
+  kbl(row.names = TRUE, caption="Jaccard similarity Corrected:Original") %>%
   kable_paper("hover", full_width = F)
 
 jac2 <- apply(jac,2,function(x) { x <- x[!is.na(x)] ; x <- x[is.finite(x)] ;  mean(x) } )
