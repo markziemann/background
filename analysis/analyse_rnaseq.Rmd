@@ -1,0 +1,415 @@
+---
+title: "Examining background gene lists in clusterProfiler - RNA-seq example"
+author: "Mark Ziemann & Anusuiya Bora"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    fig_width: 5
+    fig_height: 5
+theme: cosmo
+---
+
+Source: https://github.com/markziemann/background
+
+## Introduction
+
+This guide is a Rmarkdown script that conducts differential expression and enrichment analysis,
+which are very popular workflows for transcriptome data.
+
+The goal of this work is to understand how ClusterProfiler manages the background list,
+as we have observed some weird behaviour.
+In particular we see that when we provide a custom background, those genes do not appear in the
+final analysis unless they are also included in the gene list.
+
+In the code chunk below called `libs`, you can add and remove required R library dependancies.
+Check that the libraries listed here match the Dockerfile, otherwise you might get errors.
+
+```{r,libs}
+
+suppressPackageStartupMessages({
+  library("getDEE2")
+  library("DESeq2")
+  library("kableExtra")
+  library("clusterProfiler")
+  library("fgsea")
+  library("eulerr")
+  library("gplots")
+  library("parallel")
+})
+
+```
+
+For this guide I will be using bulk RNA-seq data from several previous studies.
+
+## Load data
+
+Gene sets were obtained from MSigDB.
+
+```{r,load_data}
+
+myfiles <- list.files("../dataprep",pattern="*Rds",full.names=TRUE)
+d <- lapply(myfiles,readRDS)
+names(d) <- basename(myfiles)
+
+mygmts <- list.files("../gmt",pattern="*gmt",full.names=TRUE)
+gs <- lapply(mygmts,gmtPathways)
+names(gs) <- basename(mygmts)
+
+names(gs) <- gsub(".v2023.2.Hs.symbols.gmt","",names(gs))
+
+
+```
+
+## Basic geneset analysis
+
+```{r,gs1}
+
+lapply(gs,length)
+
+lapply(gs,function(x) {
+  y <- unlist(lapply(x, length ))
+  summary(y)
+} )
+
+lapply(gs,function(x) {
+  y <- unique(unlist(x))
+  length(y)
+} )
+
+```
+
+## Enrichment with Clusterprofiler
+
+Here is a function that conducts over-representation analysis with ClusterProfiler.
+Genes that are not annotated as having any gene set category are discarded.
+
+```{r,orabad}
+
+# df = deseq output
+# df must have "ensID geneSymbol" as rownames
+
+# gs = gene sets
+# gs format is list of symbols
+orabad <- function( df, gs ) {
+
+  def <- df
+
+  gs1 <- stack(gs)
+  colnames(gs1) <- c("gene","term")
+  gs1 <- gs1[,c(2,1)]
+
+  defup <- rownames(subset(def,padj<=0.05 & log2FoldChange>0))
+  defup <- defup[lapply(strsplit(defup," "),length)==2]
+  defup <- unique(sapply(strsplit(defup," "),"[[",2))
+
+  if ( length(defup)<250 ) {
+    defup <- head(rownames(subset(def,log2FoldChange>0)),250)
+    defup <- defup[lapply(strsplit(defup," "),length)==2]
+    defup <- unique(sapply(strsplit(defup," "),"[[",2))
+  }
+
+  defdn <- rownames(subset(def,padj<=0.05 & log2FoldChange<0))
+  defdn <- defdn[lapply(strsplit(defdn," "),length)==2]
+  defdn <- unique(sapply(strsplit(defdn," "),"[[",2))
+
+  if ( length(defdn)<250 ) {
+    defdn <- head(rownames(subset(def,log2FoldChange<0)),250)
+    defdn <- defdn[lapply(strsplit(defdn," "),length)==2]
+    defdn <- unique(sapply(strsplit(defdn," "),"[[",2))
+  }
+
+  bg <- rownames(def)
+  bg <- bg[lapply(strsplit(bg," "),length)==2]
+  bg <- unique(sapply(strsplit(bg," "),"[[",2))
+
+  ora_up <- as.data.frame(enricher(gene = defup ,
+    universe = bg,  maxGSSize = 500000, TERM2GENE = gs1,
+    pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+  ora_up$geneID <- NULL
+  ora_ups <- rownames(ora_up)
+
+  gr <- as.numeric(sapply(strsplit(ora_up$GeneRatio,"/"),"[[",1)) /
+    as.numeric(sapply(strsplit(ora_up$GeneRatio,"/"),"[[",2))
+
+  br <- as.numeric(sapply(strsplit(ora_up$BgRatio,"/"),"[[",1)) /
+    as.numeric(sapply(strsplit(ora_up$BgRatio,"/"),"[[",2))
+
+  ora_up$es <- gr/br
+  ora_up <- ora_up[order(-ora_up$es),]
+  ora_up$Description=NULL
+
+  ora_dn <- as.data.frame(enricher(gene = defdn ,
+    universe = bg,  maxGSSize = 500000, TERM2GENE = gs1,
+    pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+  ora_dn$geneID <- NULL
+  ora_dns <- rownames(ora_dn)
+
+  gr <- as.numeric(sapply(strsplit(ora_dn$GeneRatio,"/"),"[[",1)) /
+    as.numeric(sapply(strsplit(ora_dn$GeneRatio,"/"),"[[",2))
+
+  br <- as.numeric(sapply(strsplit(ora_dn$BgRatio,"/"),"[[",1)) /
+    as.numeric(sapply(strsplit(ora_dn$BgRatio,"/"),"[[",2))
+
+  ora_dn$es <- gr/br
+  ora_dn <- ora_dn[order(-ora_dn$es),]
+  ora_dn$Description=NULL
+
+  result <- list("orabad_up"=ora_up,"orabad_dn"=ora_dn)
+  return(result)
+}
+
+```
+
+This function fixes the problem with excluding un-annotated genes.
+
+```{r,oragood}
+
+oragood <- function( df, gs ) {
+
+  def <- df
+
+  gs1 <- stack(gs)
+  colnames(gs1) <- c("gene","term")
+  gs1 <- gs1[,c(2,1)]
+
+  defup <- rownames(subset(def,padj<=0.05 & log2FoldChange>0))
+  defup <- defup[lapply(strsplit(defup," "),length)==2]
+  defup <- unique(sapply(strsplit(defup," "),"[[",2))
+
+  if ( length(defup)<250 ) {
+    defup <- head(rownames(subset(def,log2FoldChange>0)),250)
+    defup <- defup[lapply(strsplit(defup," "),length)==2]
+    defup <- unique(sapply(strsplit(defup," "),"[[",2))
+  }
+
+  defdn <- rownames(subset(def,padj<=0.05 & log2FoldChange<0))
+  defdn <- defdn[lapply(strsplit(defdn," "),length)==2]
+  defdn <- unique(sapply(strsplit(defdn," "),"[[",2))
+
+  if ( length(defdn)<250 ) {
+    defdn <- head(rownames(subset(def,log2FoldChange<0)),250)
+    defdn <- defdn[lapply(strsplit(defdn," "),length)==2]
+    defdn <- unique(sapply(strsplit(defdn," "),"[[",2))
+  }
+
+  bg <- rownames(def)
+  bg <- bg[lapply(strsplit(bg," "),length)==2]
+  bg <- unique(sapply(strsplit(bg," "),"[[",2))
+
+  bgdf <- data.frame("background",bg)
+  names(bgdf) <- c("term","gene")
+  gs1 <- rbind(gs1,bgdf)
+
+  ora_up <- as.data.frame(enricher(gene = defup ,
+    universe = bg,  maxGSSize = 500000, TERM2GENE = gs1,
+    pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+  ora_up$geneID <- NULL
+  ora_ups <- rownames(ora_up)
+
+  gr <- as.numeric(sapply(strsplit(ora_up$GeneRatio,"/"),"[[",1)) /
+    as.numeric(sapply(strsplit(ora_up$GeneRatio,"/"),"[[",2))
+
+  br <- as.numeric(sapply(strsplit(ora_up$BgRatio,"/"),"[[",1)) /
+    as.numeric(sapply(strsplit(ora_up$BgRatio,"/"),"[[",2))
+
+  ora_up$es <- gr/br
+  ora_up <- ora_up[order(-ora_up$es),]
+  ora_up$Description=NULL
+
+  ora_dn <- as.data.frame(enricher(gene = defdn ,
+    universe = bg,  maxGSSize = 500000, TERM2GENE = gs1,
+    pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+
+  ora_dn$geneID <- NULL
+  ora_dns <- rownames(ora_dn)
+
+  gr <- as.numeric(sapply(strsplit(ora_dn$GeneRatio,"/"),"[[",1)) /
+    as.numeric(sapply(strsplit(ora_dn$GeneRatio,"/"),"[[",2))
+
+  br <- as.numeric(sapply(strsplit(ora_dn$BgRatio,"/"),"[[",1)) /
+    as.numeric(sapply(strsplit(ora_dn$BgRatio,"/"),"[[",2))
+
+  ora_dn$es <- gr/br
+  ora_dn <- ora_dn[order(-ora_dn$es),]
+  ora_dn$Description=NULL
+
+  result <- list("oragood_up"=ora_up,"oragood_dn"=ora_dn)
+  return(result)
+}
+
+```
+
+## Compare the results of bad and good analysis
+
+```{r,compare}
+
+# bad=ORA analysis, a list with results of up and down regulated pathways
+# good=same as bad, except fixed the background problem
+compare_ora_plots <- function(bad,good){
+  badup <- bad$orabad_up
+  baddn <- bad$orabad_dn
+  goodup <- good$oragood_up
+  gooddn <- good$oragood_dn
+  mup <- merge(badup,goodup,by=0)
+  MAX=max(c(mup$es.x,mup$es.y))
+
+  plot(mup$es.x, mup$es.y,
+    xlim=c(0,MAX), ylim=c(0,MAX),
+    xlab="original", ylab="corrected", main="Enrichment score")
+  grid()
+  abline(a = 0, b = 1,lwd=2,lty=2)
+
+  MAX=max(-log10(c(mup$pvalue.x,mup$pvalue.y)))
+
+  plot(-log10(mup$pvalue.x), -log10(mup$pvalue.y),
+    xlim=c(0,MAX), ylim=c(0,MAX),
+    xlab="original", ylab="corrected", main="-log10 p-value")
+  grid()
+  abline(a = 0, b = 1,lwd=2,lty=2)
+
+  mdn <- merge(baddn,gooddn,by=0)
+  MAX=max(c(mdn$es.x,mdn$es.y))
+
+  plot(mdn$es.x, mdn$es.y,
+    xlim=c(0,MAX), ylim=c(0,MAX),
+    xlab="original", ylab="corrected", main="Enrichment score")
+  grid()
+  abline(a = 0, b = 1,lwd=2,lty=2)
+
+  MAX=max(-log10(c(mdn$pvalue.x,mdn$pvalue.y)))
+
+  plot(-log10(mdn$pvalue.x), -log10(mdn$pvalue.y),
+    xlim=c(0,MAX), ylim=c(0,MAX),
+    xlab="original", ylab="corrected", main="-log10 p-value")
+  grid()
+  abline(a = 0, b = 1,lwd=2,lty=2)
+}
+
+compare_ora <- function(bad,good){
+  badup <- bad$orabad_up
+  baddn <- bad$orabad_dn
+  goodup <- good$oragood_up
+  gooddn <- good$oragood_dn
+  mup <- merge(badup,goodup,by=0)
+  mdn <- merge(baddn,gooddn,by=0)
+  bup <- subset(mup,p.adjust.x<0.05)$Row.names
+  gup <- subset(mup,p.adjust.y<0.05)$Row.names
+  bdn <- subset(mdn,p.adjust.x<0.05)$Row.names
+  gdn <- subset(mdn,p.adjust.y<0.05)$Row.names
+  sig_bad <- unique(c(bup,bdn))
+  sig_good <- unique(c(gup,gdn))
+  nsig_bad <- length(sig_bad)
+  nsig_good <- length(sig_good)
+  jac <- length(intersect(sig_bad,sig_good)) / length(union(sig_bad,sig_good))
+  result=c("nsig_bad"=nsig_bad,"nsig_good"=nsig_good,"jaccard"=jac)
+  return(result)
+}
+
+```
+
+## Run some analyses
+
+```{r,run1}
+
+params <- expand.grid(1:length(d),1:length(gs))
+params2 <- expand.grid(names(d),names(gs))
+
+colnames(params) <- c("d","gs")
+
+ora_dat <- mclapply(1:nrow(params), function(i) {
+  j=params[i,1]
+  k=params[i,2]
+  bad <- orabad(d[[j]],gs[[k]])
+  good <- oragood(d[[j]],gs[[k]])
+  res <- compare_ora(bad,good)
+  return(res)
+} , mc.cores=8)
+
+ora_dat <- do.call(rbind,ora_dat)
+
+res1 <- cbind(params2,ora_dat)
+
+summary(res1$nsig_bad)
+summary(res1$nsig_good)
+summary(res1$jaccard)
+
+# NUMBER OF SIGNIFICANT SETS
+ns1 <- matrix( res1$nsig_bad , ncol=9 )
+rownames(ns1) <- names(d)
+colnames(ns1) <- names(gs)
+
+ns1 %>%
+  kbl(row.names = TRUE, caption="significant genesets in original analysis") %>%
+  kable_paper("hover", full_width = F)
+
+ns1 <- apply(ns1,2,function(x) { x <- x[!is.na(x)] ; x <- x[is.finite(x)] ;  mean(x) } )
+
+ns2 <- matrix( res1$nsig_good , ncol=9 )
+rownames(ns2) <- names(d)
+colnames(ns2) <- names(gs)
+
+ns2 %>%
+  kbl(row.names = TRUE, caption="significant genesets in corrected analysis") %>%
+  kable_paper("hover", full_width = F)
+
+ns2 <- apply(ns2,2,function(x) { x <- x[!is.na(x)] ; x <- x[is.finite(x)] ;  mean(x) } )
+ns2
+
+df <- data.frame(ns1,ns2)
+df <- df[order(df$ns1),]
+
+par(mar=c(c(5.1, 10.1, 4.1, 2.1) ))
+barplot(t(df),beside=TRUE,horiz=TRUE,las=1,
+  xlab="no. significant sets", main="Comparison of original and corrected data",
+  col=c("gray30","gray80"))
+
+legend("bottomright", inset=.02, legend=c("original","corrected"),
+  fill=c("gray30","gray80"), horiz=TRUE, cex=1)
+
+# RATIO
+rat <- matrix( (res1$nsig_good+0) / (res1$nsig_bad+0) , ncol=9 )
+rownames(rat) <- names(d)
+colnames(rat) <- names(gs)
+
+signif(rat,3) %>%
+  kbl(row.names = TRUE, caption="Ratio of significant genesets Corrected:Original") %>%
+  kable_paper("hover", full_width = F)
+
+rat2 <- apply(rat,2,function(x) { x <- x[!is.na(x)] ; x <- x[is.finite(x)] ;  mean(x) } )
+rat2
+
+barplot(sort(rat2),horiz=TRUE,las=1,main="increase in significant sets after correction",xlab="fold increase")
+
+# JACCARD
+jac <- matrix( res1$jaccard , ncol=9 )
+rownames(jac) <- names(d)
+colnames(jac) <- names(gs)
+
+signif(jac,3) %>%
+  kbl(row.names = FALSE, caption="Jaccard similarity Corrected:Original") %>%
+  kable_paper("hover", full_width = F)
+
+jac2 <- apply(jac,2,function(x) { x <- x[!is.na(x)] ; x <- x[is.finite(x)] ;  mean(x) } )
+jac2
+
+barplot(sort(jac2),horiz=TRUE,las=1,xlim=c(0,1),
+  main="Jaccard similarity Corrected:Original",xlab="fold increase")
+
+```
+
+## Session information
+
+For reproducibility
+
+```{r,session}
+
+sessionInfo()
+
+```
+
