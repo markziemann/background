@@ -126,7 +126,7 @@ orabad <- function( df, gs ) {
   bg <- unique(sapply(strsplit(bg," "),"[[",2))
 
   ora_up <- as.data.frame(enricher(gene = defup ,
-    universe = bg,  maxGSSize = 500000, TERM2GENE = gs1,
+    universe = bg, minGSSize = 5, maxGSSize = 500000, TERM2GENE = gs1,
     pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
   ora_up$geneID <- NULL
@@ -143,7 +143,7 @@ orabad <- function( df, gs ) {
   ora_up$Description=NULL
 
   ora_dn <- as.data.frame(enricher(gene = defdn ,
-    universe = bg,  maxGSSize = 500000, TERM2GENE = gs1,
+    universe = bg, minGSSize = 5, maxGSSize = 500000, TERM2GENE = gs1,
     pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
   ora_dn$geneID <- NULL
@@ -206,7 +206,7 @@ oragood <- function( df, gs ) {
   gs1 <- rbind(gs1,bgdf)
 
   ora_up <- as.data.frame(enricher(gene = defup ,
-    universe = bg,  maxGSSize = 500000, TERM2GENE = gs1,
+    universe = bg, minGSSize = 5, maxGSSize = 500000, TERM2GENE = gs1,
     pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
   ora_up$geneID <- NULL
@@ -223,7 +223,7 @@ oragood <- function( df, gs ) {
   ora_up$Description=NULL
 
   ora_dn <- as.data.frame(enricher(gene = defdn ,
-    universe = bg,  maxGSSize = 500000, TERM2GENE = gs1,
+    universe = bg, minGSSize = 5, maxGSSize = 500000, TERM2GENE = gs1,
     pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
   ora_dn$geneID <- NULL
