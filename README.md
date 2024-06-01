@@ -65,11 +65,31 @@ This results in adjusted p-values being slightly smaller than they should be.
 The overall aim of this work is to determine the impact of such problems on
 typical enrichment analyses.
 
+### Determining the impact of each bug
+
 The approach we will take is to collect several molecular profile datasets
 and several gene set databases, and systematically determine the effect of
-these two problems on all the combinations.
+these two problems on all the combinations. (DONE)
 
 This will be conducted for RNA-seq expression and then replicated for other
 omics such as DNA methylation, proteomics analysis and genomics (SNPs,GWAS).
+(TODO?)
+
+### Justification of best practice with simulations
+
+It may be argued that these concerns are minor for most researchers, so
+simulations can be used to show that it does impact results.
+
+Simulated gene expression profiles with selected changes will undergo
+analysis using a tool with the bugs (clusterProfiler::enricher) and one without the
+bugs (fgsea::fora).
+
+## Recommendations
 
 Finally, the article will give practical steps to mitigate this problem.
+Simply, GSEA algorithms don't suffer from this problem and avoids other problems
+too.
+If ORA must be used, fora() is recommended, but it lacks enrichment score output,
+which is important for prioritising results.
+Here, we can write a patch to output fora() fold enrichment score and contribute to
+fgsea package.
