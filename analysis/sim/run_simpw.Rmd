@@ -16,13 +16,15 @@ Source: https://github.com/markziemann/background
 
 ```{r,libs}
 
-library("tidyverse")
+#library("tidyverse")
 library("parallel")
 library("edgeR")
 library("DESeq2")
 library("limma")
 library("stringi")
 library("kableExtra")
+library("fgsea")
+library("clusterProfiler")
 source("simpw_func.R")
 
 ```
@@ -82,7 +84,7 @@ xxx object slots
 
 ```{r,getcounts,warning=FALSE}
 
-a<-countData()
+a <- countData()
 
 ```
 
@@ -90,7 +92,7 @@ a<-countData()
 
 ```{r,genesetgeneration}
 
-gsets<-randomGeneSets(a,setsize=50,nsets=500)
+gsets <- randomGeneSets(a,setsize=20,nsets=200)
 
 ```
 
@@ -101,10 +103,10 @@ gsets<-randomGeneSets(a,setsize=50,nsets=500)
 SIMS=8
 FRAC_DE=0.05
 FC=1
-N_REPS=4
+N_REPS=5
 DGE_FUNC="deseq2"
 SUM_COUNT=3e7
-VARIANCE=c(0.25,0.3,0.35,0.4,0.45)
+VARIANCE=c(0.3,0.35,0.4)
 
 mygrid <- expand.grid(FRAC_DE,FC,N_REPS,DGE_FUNC,SUM_COUNT,VARIANCE)
 colnames(mygrid) <- c("FRAC_DE","FC","N_REPS","DGE_FUNC","SUM_COUNT","VARIANCE")
