@@ -1,4 +1,4 @@
-652 4---
+---
 title: "Examining background gene lists using simulation - comparison of different enrichment techniques"
 author: "Mark Ziemann & Anusuiya Bora"
 date: "`r Sys.Date()`"
@@ -16,7 +16,6 @@ Source: https://github.com/markziemann/background
 
 ```{r,libs}
 
-#library("tidyverse")
 library("parallel")
 library("edgeR")
 library("DESeq2")
@@ -72,6 +71,10 @@ xxx object slots
 
 18. fgsea down gene sets
 
+19. mitch up
+
+20. mitch dn
+
 # Get count data
 
 ```{r,getcounts,warning=FALSE}
@@ -84,7 +87,7 @@ a <- countData()
 
 ```{r,genesetgeneration}
 
-gsets <- randomGeneSets(a,setsize=20,nsets=200)
+gsets <- randomGeneSets(a,setsize=30,nsets=200)
 
 ```
 
@@ -92,13 +95,13 @@ gsets <- randomGeneSets(a,setsize=20,nsets=200)
 
 ```{r,setparameters}
 
-SIMS=100
+SIMS=500
 FRAC_DE=0.05
 FC=1
-N_REPS=6
+N_REPS=5
 DGE_FUNC="deseq2"
-SUM_COUNT=3e7
-VARIANCE=c(0.3,0.35,0.4,0.45)
+SUM_COUNT=2e7
+VARIANCE=c(0.3,0.325,0.35,0.375,0.4,0.425,0.45)
 
 mygrid <- expand.grid(FRAC_DE,FC,N_REPS,DGE_FUNC,SUM_COUNT,VARIANCE)
 colnames(mygrid) <- c("FRAC_DE","FC","N_REPS","DGE_FUNC","SUM_COUNT","VARIANCE")
@@ -128,7 +131,7 @@ res <- do.call(rbind,res)
 
 Now show the results.
 
-```{r,results}
+```{r,rqesults}
 
 res %>% kbl(caption="simulation_results") %>% kable_paper("hover", full_width = F)
 
@@ -141,6 +144,7 @@ res %>% kbl(caption="simulation_results") %>% kable_paper("hover", full_width = 
 cp <- subset(res,PWAY_FUNC == "clusterprofiler")
 fo <- subset(res,PWAY_FUNC == "fora")
 fg <- subset(res,PWAY_FUNC == "fgsea")
+mi <- subset(res,PWAY_FUNC == "mitch")
 
 par(mfrow=c(1,3))
 
@@ -149,7 +153,8 @@ points(fo$VARIANCE,fo$p,type="b",pch=19,col="red")
 points(fg$VARIANCE,fg$p,type="b",pch=19,col="blue")
 
 legend("bottomleft", inset=.02, title="tool",
-   c("clusterprofiler","fora","fgsea"), col=c("black","red","blue"), horiz=FALSE, cex=1.2, pch=19,lwd=2)
+   c("clusterprofiler","fora","fgsea"), col=c("black","red","blue"),
+   horiz=FALSE, cex=1.2, pch=19,lwd=2)
 
 plot(cp$VARIANCE,cp$r,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="recall")
 points(fo$VARIANCE,fo$r,type="b",pch=19,col="red")
