@@ -1,4 +1,4 @@
----
+652 4---
 title: "Examining background gene lists using simulation - comparison of different enrichment techniques"
 author: "Mark Ziemann & Anusuiya Bora"
 date: "`r Sys.Date()`"
@@ -100,13 +100,13 @@ gsets <- randomGeneSets(a,setsize=20,nsets=200)
 
 ```{r,setparameters}
 
-SIMS=8
+SIMS=16
 FRAC_DE=0.05
 FC=1
 N_REPS=5
 DGE_FUNC="deseq2"
-SUM_COUNT=3e7
-VARIANCE=c(0.3,0.35,0.4)
+SUM_COUNT=2e7
+VARIANCE=c(0.3,0.35,0.4,0.45)
 
 mygrid <- expand.grid(FRAC_DE,FC,N_REPS,DGE_FUNC,SUM_COUNT,VARIANCE)
 colnames(mygrid) <- c("FRAC_DE","FC","N_REPS","DGE_FUNC","SUM_COUNT","VARIANCE")
