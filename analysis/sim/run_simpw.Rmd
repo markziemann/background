@@ -100,12 +100,12 @@ gsets <- randomGeneSets(a,setsize=20,nsets=200)
 
 ```{r,setparameters}
 
-SIMS=16
+SIMS=100
 FRAC_DE=0.05
 FC=1
-N_REPS=5
+N_REPS=6
 DGE_FUNC="deseq2"
-SUM_COUNT=2e7
+SUM_COUNT=3e7
 VARIANCE=c(0.3,0.35,0.4,0.45)
 
 mygrid <- expand.grid(FRAC_DE,FC,N_REPS,DGE_FUNC,SUM_COUNT,VARIANCE)
@@ -126,7 +126,7 @@ res <- lapply(1:nrow(mygrid), function(i) {
   DGE_FUNC=as.character(mygrid[i,"DGE_FUNC"])
   SUM_COUNT=mygrid[i,"SUM_COUNT"]
   VARIANCE=mygrid[i,"VARIANCE"]
-  x <- agg_dge(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,gsets)
+  x <- agg_dge(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,gsets,cores=32)
   as.data.frame(do.call(rbind, x))
 })
 

@@ -451,7 +451,7 @@ p<-true_pos/(true_pos+false_pos)
 r<-true_pos/(true_pos+false_neg)
 f<-2*p*r/(p+r)
 
-attr(x,'clusterprofiler_default') <-data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,true_pos,false_pos,true_neg,false_neg,p,r,f)
+attr(x,'clusterprofiler') <-data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,true_pos,false_pos,true_neg,false_neg,p,r,f)
 x
 
 }
@@ -808,10 +808,10 @@ xxx <- mclapply(xxx , DGE_FUNC , mc.cores = cores )
 xxx <- run_clusterprofiler_default(x=xxx,DGE_FUNC,gsets,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS)
 
 # run clusterprofiler default pos 11,12
-xxx <- run_clusterprofiler_fixed(x=xxx,DGE_FUNC,gsets,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS)
+#xxx <- run_clusterprofiler_fixed(x=xxx,DGE_FUNC,gsets,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS)
 
 # run clusterprofiler nobg pos 13,14
-xxx <- run_clusterprofiler_nobg(x=xxx,DGE_FUNC,gsets,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS)
+#xxx <- run_clusterprofiler_nobg(x=xxx,DGE_FUNC,gsets,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS)
 
 # run fora pos 15,16
 xxx <- run_fora(xxx,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS)
