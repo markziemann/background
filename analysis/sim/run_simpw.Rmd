@@ -29,7 +29,7 @@ source("simpw_func.R")
 
 ```
 
-# Intro
+## Intro
 
 TODO
 
@@ -52,33 +52,25 @@ xxx object slots
 
 8. DE genes down observed
 
-9. fgsea up gene sets
+9. clusterprofiler_default up gene sets
 
-10. fgsea down gene sets
+10. clusterprofiler_default down gene sets
 
-11. phyper up gene sets
+11. clusterprofiler_fixed up gene sets
 
-12. phyper down gene sets
+12. clusterprofiler_fixed down gene sets
 
-13. clusterprofiler_default up gene sets
+13. clusterprofiler_nobg up gene sets
 
-14. clusterprofiler_default down gene sets
+14. clusterprofiler_nobg down gene sets
 
-15. clusterprofiler_fixed up gene sets
+15. fora up gene sets
 
-16. clusterprofiler_fixed down gene sets
+16. fora down gene sets
 
-17. clusterprofiler_nobg up gene sets
+17. fgsea up gene sets
 
-18. clusterprofiler_nobg down gene sets
-
-19. fisher up gene sets
-
-20. fisher down gene sets
-
-21. DOSE up gene sets
-
-22. DOSE down gene sets
+18. fgsea down gene sets
 
 # Get count data
 
@@ -142,7 +134,36 @@ res %>% kbl(caption="simulation_results") %>% kable_paper("hover", full_width = 
 
 ```
 
-# Session information
+## Plot
+
+```{r,plot1}
+
+cp <- subset(res,PWAY_FUNC == "clusterprofiler")
+fo <- subset(res,PWAY_FUNC == "fora")
+fg <- subset(res,PWAY_FUNC == "fgsea")
+
+par(mfrow=c(1,3))
+
+plot(cp$VARIANCE,cp$p,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="precision")
+points(fo$VARIANCE,fo$p,type="b",pch=19,col="red")
+points(fg$VARIANCE,fg$p,type="b",pch=19,col="blue")
+
+legend("bottomleft", inset=.02, title="tool",
+   c("clusterprofiler","fora","fgsea"), col=c("black","red","blue"), horiz=FALSE, cex=1.2, pch=19,lwd=2)
+
+plot(cp$VARIANCE,cp$r,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="recall")
+points(fo$VARIANCE,fo$r,type="b",pch=19,col="red")
+points(fg$VARIANCE,fg$r,type="b",pch=19,col="blue")
+
+plot(cp$VARIANCE,cp$f,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="f1")
+points(fo$VARIANCE,fo$f,type="b",pch=19,col="red")
+points(fg$VARIANCE,fg$f,type="b",pch=19,col="blue")
+
+par(mfrow=c(1,1))
+
+```
+
+## Session information
 
 
 ```{r,session}
