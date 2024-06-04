@@ -7,7 +7,7 @@ output:
     toc: true
     toc_float: true
     code_folding: hide
-    fig_width: 5
+    fig_width: 7
     fig_height: 5
 theme: cosmo
 ---
@@ -16,18 +16,19 @@ Source: https://github.com/markziemann/background
 
 ```{r,libs}
 
-library("tidyverse")
 library("parallel")
 library("edgeR")
 library("DESeq2")
 library("limma")
 library("stringi")
 library("kableExtra")
+library("fgsea")
+library("clusterProfiler")
 source("simpw_func.R")
 
 ```
 
-# Intro
+## Intro
 
 TODO
 
@@ -50,39 +51,35 @@ xxx object slots
 
 8. DE genes down observed
 
-9. fgsea up gene sets
+9. clusterprofiler_default up gene sets
 
-10. fgsea down gene sets
+10. clusterprofiler_default down gene sets
 
-11. phyper up gene sets
+11. clusterprofiler_fixed up gene sets
 
-12. phyper down gene sets
+12. clusterprofiler_fixed down gene sets
 
-13. clusterprofiler_default up gene sets
+13. clusterprofiler_nobg up gene sets
 
-14. clusterprofiler_default down gene sets
+14. clusterprofiler_nobg down gene sets
 
-15. clusterprofiler_fixed up gene sets
+15. fora up gene sets
 
-16. clusterprofiler_fixed down gene sets
+16. fora down gene sets
 
-17. clusterprofiler_nobg up gene sets
+17. fgsea up gene sets
 
-18. clusterprofiler_nobg down gene sets
+18. fgsea down gene sets
 
-19. fisher up gene sets
+19. mitch up
 
-20. fisher down gene sets
-
-21. DOSE up gene sets
-
-22. DOSE down gene sets
+20. mitch dn
 
 # Get count data
 
 ```{r,getcounts,warning=FALSE}
 
-a<-countData()
+a <- countData()
 
 ```
 
@@ -90,7 +87,7 @@ a<-countData()
 
 ```{r,genesetgeneration}
 
-gsets<-randomGeneSets(a,setsize=50,nsets=500)
+gsets <- randomGeneSets(a,setsize=30,nsets=200)
 
 ```
 
@@ -98,13 +95,13 @@ gsets<-randomGeneSets(a,setsize=50,nsets=500)
 
 ```{r,setparameters}
 
-SIMS=8
+SIMS=500
 FRAC_DE=0.05
 FC=1
-N_REPS=4
+N_REPS=5
 DGE_FUNC="deseq2"
-SUM_COUNT=3e7
-VARIANCE=c(0.25,0.3,0.35,0.4,0.45)
+SUM_COUNT=2e7
+VARIANCE=c(0.3,0.325,0.35,0.375,0.4,0.425,0.45)
 
 mygrid <- expand.grid(FRAC_DE,FC,N_REPS,DGE_FUNC,SUM_COUNT,VARIANCE)
 colnames(mygrid) <- c("FRAC_DE","FC","N_REPS","DGE_FUNC","SUM_COUNT","VARIANCE")
@@ -124,11 +121,13 @@ res <- lapply(1:nrow(mygrid), function(i) {
   DGE_FUNC=as.character(mygrid[i,"DGE_FUNC"])
   SUM_COUNT=mygrid[i,"SUM_COUNT"]
   VARIANCE=mygrid[i,"VARIANCE"]
-  x <- agg_dge(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,gsets)
+  x <- agg_dge(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,gsets,cores=32)
   as.data.frame(do.call(rbind, x))
 })
 
 res <- do.call(rbind,res)
+
+saveRDS(res,file="res.Rds")
 
 ```
 
@@ -140,7 +139,41 @@ res %>% kbl(caption="simulation_results") %>% kable_paper("hover", full_width = 
 
 ```
 
-# Session information
+## Plot
+
+```{r,plot1}
+
+cp <- subset(res,PWAY_FUNC == "clusterprofiler")
+fo <- subset(res,PWAY_FUNC == "fora")
+fg <- subset(res,PWAY_FUNC == "fgsea")
+
+cp %>% kbl(caption="clusterprofiler") %>% kable_paper("hover", full_width = F)
+fo %>% kbl(caption="fora") %>% kable_paper("hover", full_width = F)
+fg %>% kbl(caption="fg") %>% kable_paper("hover", full_width = F)
+
+par(mfrow=c(1,3))
+
+plot(cp$VARIANCE,cp$p,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="precision")
+points(fo$VARIANCE,fo$p,type="b",pch=19,col="red")
+points(fg$VARIANCE,fg$p,type="b",pch=19,col="blue")
+
+legend("bottomleft", inset=.02, title="tool",
+   c("clusterprofiler","fora","fgsea"), col=c("black","red","blue"),
+   horiz=FALSE, cex=1.2, pch=19,lwd=2)
+
+plot(cp$VARIANCE,cp$r,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="recall")
+points(fo$VARIANCE,fo$r,type="b",pch=19,col="red")
+points(fg$VARIANCE,fg$r,type="b",pch=19,col="blue")
+
+plot(cp$VARIANCE,cp$f,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="f1")
+points(fo$VARIANCE,fo$f,type="b",pch=19,col="red")
+points(fg$VARIANCE,fg$f,type="b",pch=19,col="blue")
+
+par(mfrow=c(1,1))
+
+```
+
+## Session information
 
 
 ```{r,session}
