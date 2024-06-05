@@ -396,7 +396,7 @@ barplot(sort(jac2),horiz=TRUE,las=1,xlim=c(0,1),
   main="Jaccard similarity Corrected:Original",xlab="Jaccard index")
 
 # overall
-oa <- matrix(paste(res1$nsig_bad,res1$nsig_good,signif(res1$jaccard,2)),ncol=9)
+oa <- matrix(paste(res1$nsig_bad,res1$nsig_good,signif(res1$Jaccard,2)),ncol=9)
 rownames(oa) <- names(d)
 colnames(oa) <- names(gs)
 
