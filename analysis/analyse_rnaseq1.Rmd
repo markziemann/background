@@ -58,8 +58,9 @@ mygmts <- list.files("../gmt",pattern="*gmt",full.names=TRUE)
 gs <- lapply(mygmts,gmtPathways)
 names(gs) <- basename(mygmts)
 
-names(gs) <- gsub(".v2023.2.Hs.symbols.gmt","",names(gs))
-
+names(gs)
+names(gs) <- c("KEGG", "Reactome", "Wikipathways", "miR targets", "TFT GTRD",
+  "GO", "HPO", "Cellmarkers", "Hallmark" )
 
 ```
 
@@ -259,17 +260,21 @@ oragood <- function( df, gs ) {
 
 # bad=ORA analysis, a list with results of up and down regulated pathways
 # good=same as bad, except fixed the background problem
-compare_ora_plots <- function(bad,good){
+compare_ora_plots <- function(bad,good,libname=NULL){
   badup <- bad$orabad_up
   baddn <- bad$orabad_dn
   goodup <- good$oragood_up
   gooddn <- good$oragood_dn
   mup <- merge(badup,goodup,by=0)
   MAX=max(c(mup$es.x,mup$es.y))
+  UPHEADER=paste(libname,"up")
+  DNHEADER=paste(libname,"dn")
+
+  par(mfrow=c(2,2))
 
   plot(mup$es.x, mup$es.y,
     xlim=c(0,MAX), ylim=c(0,MAX),
-    xlab="original", ylab="corrected", main="Enrichment score")
+    xlab="original ES", ylab="corrected ES", main=UPHEADER)
   grid()
   abline(a = 0, b = 1,lwd=2,lty=2)
 
@@ -277,7 +282,7 @@ compare_ora_plots <- function(bad,good){
 
   plot(-log10(mup$pvalue.x), -log10(mup$pvalue.y),
     xlim=c(0,MAX), ylim=c(0,MAX),
-    xlab="original", ylab="corrected", main="-log10 p-value")
+    xlab="original -log10 p-value", ylab="corrected -log10 p-value", main=UPHEADER)
   grid()
   abline(a = 0, b = 1,lwd=2,lty=2)
 
@@ -286,7 +291,7 @@ compare_ora_plots <- function(bad,good){
 
   plot(mdn$es.x, mdn$es.y,
     xlim=c(0,MAX), ylim=c(0,MAX),
-    xlab="original", ylab="corrected", main="Enrichment score")
+    xlab="original ES", ylab="corrected ES", main=DNHEADER)
   grid()
   abline(a = 0, b = 1,lwd=2,lty=2)
 
@@ -294,7 +299,7 @@ compare_ora_plots <- function(bad,good){
 
   plot(-log10(mdn$pvalue.x), -log10(mdn$pvalue.y),
     xlim=c(0,MAX), ylim=c(0,MAX),
-    xlab="original", ylab="corrected", main="-log10 p-value")
+    xlab="original -log10 p-value", ylab="corrected -log10 p-value", main=DNHEADER)
   grid()
   abline(a = 0, b = 1,lwd=2,lty=2)
 }
@@ -377,26 +382,17 @@ df <- data.frame(ns1,ns2)
 df <- df[order(df$ns1),]
 
 par(mar=c(c(5.1, 7.1, 4.1, 2.1) ))
-barplot(t(df),beside=TRUE,horiz=TRUE,las=1,
-  xlab="no. significant sets", main="Comparison of original and corrected data",
+barplot(t(df),beside=TRUE,horiz=TRUE,las=1,xlim=c(0,1250),
+  xlab="no. significant sets", main="Effect of correcting the background bug",
   col=c("gray30","gray80"))
+text(df$ns1+50,((1:nrow(df))*3)-1.5,labels=signif(df[,1],3))
+text(df$ns2+50,((1:nrow(df))*3)-0.5,labels=signif(df[,2],3))
+#abline(v=seq(100,1000,100),lty=2,lwd=0.5,col="gray")
+legend("bottomright", inset=.02, legend=c("corrected","original"),
+  fill=c("gray80","gray30"), horiz=FALSE, cex=1.1)
 
-legend("bottomright", inset=.02, legend=c("original","corrected"),
-  fill=c("gray30","gray80"), horiz=TRUE, cex=1)
-
-# RATIO
-rat <- matrix( (res1$nsig_good+0) / (res1$nsig_bad+0) , ncol=9 )
-rownames(rat) <- names(d)
-colnames(rat) <- names(gs)
-
-signif(rat,3) %>%
-  kbl(row.names = TRUE, caption="Ratio of significant genesets Corrected:Original") %>%
-  kable_paper("hover", full_width = F)
-
-rat2 <- apply(rat,2,function(x) { x <- x[!is.na(x)] ; x <- x[is.finite(x)] ;  mean(x) } )
-rat2
-
-barplot(sort(rat2),horiz=TRUE,las=1,main="increase in significant sets after correction",xlab="fold increase")
+mylabels <- gsub("$","%",gsub("^","+",signif(((df$ns2/df$ns1)-1)*100,3)))
+text(df$ns2+160,((1:nrow(df))*3)-1,labels=mylabels,cex=1.1)
 
 # JACCARD
 jac <- matrix( res1$jaccard , ncol=9 )
@@ -426,7 +422,7 @@ names(gs)
 lapply(1:length(gs), function(i) {
   bad <- orabad(d[[1]],gs[[i]])
   good <- oragood(d[[1]],gs[[i]])
-  compare_ora_plots(bad,good)
+  compare_ora_plots(bad,good,libname=names(gs)[i])
 } )
 
 ```
