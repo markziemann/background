@@ -7,8 +7,8 @@ output:
     toc: true
     toc_float: true
     code_folding: hide
-    fig_width: 5
-    fig_height: 5
+    fig_width: 7
+    fig_height: 7
 theme: cosmo
 ---
 
