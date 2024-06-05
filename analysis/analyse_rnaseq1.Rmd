@@ -1,5 +1,5 @@
 ---
-title: "Examining background gene lists in clusterProfiler - RNA-seq example"
+title: "Examining background gene list issue in clusterProfiler - RNA-seq example"
 author: "Mark Ziemann & Anusuiya Bora"
 date: "`r Sys.Date()`"
 output:
