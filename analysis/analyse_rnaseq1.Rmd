@@ -320,7 +320,7 @@ compare_ora <- function(bad,good){
   nsig_bad <- length(sig_bad)
   nsig_good <- length(sig_good)
   jac <- length(intersect(sig_bad,sig_good)) / length(union(sig_bad,sig_good))
-  result=c("nsig_bad"=nsig_bad,"nsig_good"=nsig_good,"jaccard"=jac)
+  result=c("nsig_bad"=nsig_bad,"nsig_good"=nsig_good,"Jaccard"=jac)
   return(result)
 }
 

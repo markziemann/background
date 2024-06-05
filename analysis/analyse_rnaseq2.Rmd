@@ -7,8 +7,8 @@ output:
     toc: true
     toc_float: true
     code_folding: hide
-    fig_width: 5
-    fig_height: 5
+    fig_width: 7
+    fig_height: 7
 theme: cosmo
 ---
 
@@ -19,13 +19,17 @@ Source: https://github.com/markziemann/background
 This guide is a Rmarkdown script that conducts differential expression and enrichment analysis,
 which are very popular workflows for transcriptome data.
 
-The goal of this work is to understand how ClusterProfiler manages the background list,
+The goal of this work is to understand the behaviour of ClusterProfiler's p-value adjustment method
 as we have observed some weird behaviour.
-In particular we see that when we provide a custom background, those genes do not appear in the
-final analysis unless they are also included in the gene list.
+In particular we see that clusterprofiler's criteria for inclusion/exclusion of gene sets is irregular.
+For example clusterprofiler seems to include gene sets as detected if there is just 1 member detected
+in the foreground list.
+If a gene set has 10 in the background and  0 in the foreground it looks like it gets excluded.
+This is a bit strange and contrary to best practice, where the detection threshold should be set by
+the overlap size in the background list, rather than the foreground list.
 
-In the code chunk below called `libs`, you can add and remove required R library dependancies.
-Check that the libraries listed here match the Dockerfile, otherwise you might get errors.
+Theoretically, this behaviour could have a negative impact on performance, as FDR is applied to the
+wrong pathways.
 
 ```{r,libs}
 
@@ -58,7 +62,9 @@ mygmts <- list.files("../gmt",pattern="*gmt",full.names=TRUE)
 gs <- lapply(mygmts,gmtPathways)
 names(gs) <- basename(mygmts)
 
-names(gs) <- gsub(".v2023.2.Hs.symbols.gmt","",names(gs))
+names(gs)
+names(gs) <- c("KEGG", "Reactome", "Wikipathways", "miR targets", "TFT GTRD",
+  "GO", "HPO", "Cellmarkers", "Hallmark" )
 
 
 ```
@@ -248,7 +254,7 @@ oragood <- function( df, gs, ngenes=2000 ) {
 
 # bad=ORA analysis, a list with results of up and down regulated pathways
 # good=same as bad, except fixed the background problem
-compare_ora_plots <- function(bad,good){
+compare_ora_plots <- function(bad,good,libname=NULL,setsize=NULL){
   badup <- bad$orabad_up
   baddn <- bad$orabad_dn
   goodup <- good$oragood_up
@@ -256,10 +262,14 @@ compare_ora_plots <- function(bad,good){
   mup <- merge(badup,goodup,by=0)
 
   MAX=max(-log10(c(mup$p.adjust.x,mup$p.adjust.y)))
+  UPHEADER=paste(libname,"up",setsize,"genes")
+  DNHEADER=paste(libname,"dn",setsize,"genes")
+
+  par(mfrow=c(1,2))
 
   plot(-log10(mup$p.adjust.x), -log10(mup$p.adjust.y),
     xlim=c(0,MAX), ylim=c(0,MAX),
-    xlab="original", ylab="corrected", main="-log10 FDR")
+    xlab="original -log10 FDR", ylab="corrected -log10 FDR", main=UPHEADER)
   grid()
   abline(a = 0, b = 1,lwd=2,lty=2)
 
@@ -269,7 +279,7 @@ compare_ora_plots <- function(bad,good){
 
   plot(-log10(mdn$p.adjust.x), -log10(mdn$p.adjust.y),
     xlim=c(0,MAX), ylim=c(0,MAX),
-    xlab="original", ylab="corrected", main="-log10 FDR")
+    xlab="original -log10 FDR", ylab="corrected -log10 FDR", main=DNHEADER)
   grid()
   abline(a = 0, b = 1,lwd=2,lty=2)
 }
@@ -288,7 +298,7 @@ compare_ora <- function(bad,good){
   nsig_bad <- length(sig_bad)
   nsig_good <- length(sig_good)
   jac <- length(intersect(sig_bad,sig_good)) / length(union(sig_bad,sig_good))
-  result=c("nsig_bad"=nsig_bad,"nsig_good"=nsig_good,"jaccard"=jac)
+  result=c("nsig_bad"=nsig_bad,"nsig_good"=nsig_good,"Jaccard"=jac)
   return(result)
 }
 
@@ -322,7 +332,7 @@ res1 %>%
 
 summary(res1$nsig_bad)
 summary(res1$nsig_good)
-summary(res1$jaccard)
+summary(res1$Jaccard)
 
 # NUMBER OF SIGNIFICANT SETS
 ns1 <- matrix( res1$nsig_bad , ncol=9 )
@@ -350,12 +360,13 @@ df <- data.frame(ns1,ns2)
 df <- df[order(df$ns1),]
 
 par(mar=c(c(5.1, 7.1, 4.1, 2.1) ))
-barplot(t(df),beside=TRUE,horiz=TRUE,las=1,
-  xlab="no. significant sets", main="Comparison of original and corrected data",
+barplot(t(df),beside=TRUE,horiz=TRUE,las=1,xlim=c(0,330),
+  xlab="no. significant sets", main="Effect of correcting the FDR bug",
   col=c("gray30","gray80"))
-
-legend("bottomright", inset=.02, legend=c("original","corrected"),
-  fill=c("gray30","gray80"), horiz=TRUE, cex=1)
+text(df$ns1+20,((1:nrow(df))*3)-1.5,labels=signif(df[,1],3))
+text(df$ns2+20,((1:nrow(df))*3)-0.5,labels=signif(df[,2],3))
+legend("bottomright", inset=.02, legend=c("corrected","original"),
+  fill=c("gray80","gray30"), horiz=FALSE, cex=1)
 
 # RATIO
 rat <- matrix( (res1$nsig_good+0) / (res1$nsig_bad+0) , ncol=9 )
@@ -369,10 +380,8 @@ signif(rat,3) %>%
 rat2 <- apply(rat,2,function(x) { x <- x[!is.na(x)] ; x <- x[is.finite(x)] ;  mean(x) } )
 rat2
 
-barplot(sort(rat2),horiz=TRUE,las=1,main="increase in significant sets after correction",xlab="fold increase")
-
 # JACCARD
-jac <- matrix( res1$jaccard , ncol=9 )
+jac <- matrix( res1$Jaccard , ncol=9 )
 rownames(jac) <- names(d)
 colnames(jac) <- names(gs)
 
@@ -427,7 +436,7 @@ res1 %>%
 
 summary(res1$nsig_bad)
 summary(res1$nsig_good)
-summary(res1$jaccard)
+summary(res1$Jaccard)
 
 lapply(ngenes, function(n) {
   res2 <- subset(res1,Var3==n) ; summary(res2$nsig_bad)
@@ -438,7 +447,7 @@ lapply(ngenes, function(n) {
 } )
 
 lapply(ngenes, function(n) {
-  res2 <- subset(res1,Var3==n) ; summary(res2$jaccard)
+  res2 <- subset(res1,Var3==n) ; summary(res2$Jaccard)
 } )
 
 # NUMBER OF SIGNIFICANT SETS
@@ -492,7 +501,7 @@ ns2
 # JACCARD
 jac <- lapply(ngenes ,function(n) {
   res2 <- subset(res1,Var3==n)
-  ns <- matrix( res2$jaccard , ncol=9 )
+  ns <- matrix( res2$Jaccard , ncol=9 )
   rownames(ns) <- names(d)
   colnames(ns) <- names(gs)
   return(ns)
@@ -514,16 +523,16 @@ jac
 
 jac <- do.call(rbind,jac)
 
-plot(jac[,"c5.go"],type="b", pch=19,cex=1.5,lwd=2,
-  xaxt = "n",ylim=c(0,1),ylab="jaccard",xlab="no. genes selected")
+plot(jac[,"GO"],type="b", pch=19,cex=1.5,lwd=2,
+  xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected")
 axis(1, at = seq(1, 5, by = 1),
      labels = ngenes)
-points(jac[,"c2.cp.reactome"],type="b",col="red",pch=19,cex=1.5,lwd=2)
-points(jac[,"c8.all"],type="b",col="blue",pch=19,cex=1.5,lwd=2)
-points(jac[,"c3.tft.gtrd"],type="b",col="gray50",pch=19,cex=1.5,lwd=2)
-mtext("impact of gene list length on severity of FDR problem")
+points(jac[,"Reactome"],type="b",col="red",pch=19,cex=1.5,lwd=2)
+points(jac[,"Cellmarkers"],type="b",col="blue",pch=19,cex=1.5,lwd=2)
+points(jac[,"TFT GTRD"],type="b",col="gray50",pch=19,cex=1.5,lwd=2)
+mtext("impact of gene list length on FDR problem severity")
 
-legend("bottomright", legend=c("GO","Reactome", "Markers", "TFT"),
+legend("bottomright", legend=c("GO","Reactome", "Cellmarkers", "TFT"),
        col=c("black", "red", "blue", "gray50"), lty=1, cex=1.2,lwd=3,pch=19)
 
 ```
@@ -532,38 +541,38 @@ legend("bottomright", legend=c("GO","Reactome", "Markers", "TFT"),
 
 For bulk RNA-seq data set #1, run enrichment with all the gene set libraries.
 
-```{r,charts1}
+```{r,charts1,fig.height=4}
 
 names(gs)
 
 lapply(1:length(gs), function(i) {
   bad <- orabad(d[[1]],gs[[i]],ngenes=125)
   good <- oragood(d[[1]],gs[[i]],ngenes=125)
-  compare_ora_plots(bad,good)
+  compare_ora_plots(bad,good,libname=names(gs)[i],setsize=125)
 } )
 
 lapply(1:length(gs), function(i) {
   bad <- orabad(d[[1]],gs[[i]],ngenes=250)
   good <- oragood(d[[1]],gs[[i]],ngenes=250)
-  compare_ora_plots(bad,good)
+  compare_ora_plots(bad,good,libname=names(gs)[i],setsize=250)
 } )
 
 lapply(1:length(gs), function(i) {
   bad <- orabad(d[[1]],gs[[i]],ngenes=500)
   good <- oragood(d[[1]],gs[[i]],ngenes=500)
-  compare_ora_plots(bad,good)
+  compare_ora_plots(bad,good,libname=names(gs)[i],setsize=500)
 } )
 
 lapply(1:length(gs), function(i) {
   bad <- orabad(d[[1]],gs[[i]],ngenes=1000)
   good <- oragood(d[[1]],gs[[i]],ngenes=1000)
-  compare_ora_plots(bad,good)
+  compare_ora_plots(bad,good,libname=names(gs)[i],setsize=1000)
 } )
 
 lapply(1:length(gs), function(i) {
   bad <- orabad(d[[1]],gs[[i]],ngenes=2000)
   good <- oragood(d[[1]],gs[[i]],ngenes=2000)
-  compare_ora_plots(bad,good)
+  compare_ora_plots(bad,good,libname=names(gs)[i],setsize=2000)
 } )
 
 ```
