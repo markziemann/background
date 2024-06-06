@@ -32,15 +32,11 @@ TODO.
 
 * Bioinformatics
 
-* Reproducibility
-
-* Enrichment analysis
-
 * Pathway analysis
 
 * Gene set enrichment analysis
 
-* Docker
+* Research integrity
 
 # Main Body
 
@@ -56,25 +52,38 @@ library("kableExtra")
 ```
 
 Functional enrichment analysis involves the summarisation of omics data to reflect
-biological changes, and has become one of the most popular methods in bioinformatics.
+biological differences, and has become one of the most popular methods in bioinformatics.
 Enrichment analysis software packages have been collectively cited 131,332 times as of
 late 2019 [@Xie2021-ch].
 The algorithms used by these tools can largely be divided into two groups, functional
 class scoring (FCS) and over-representation analysis (ORA).
 In FCS, all detected genes are ranked by their degree of differential expression followed
-by some statistical test for enrichment of gene categories at either extreme of the
+by a statistical test for enrichment of gene categories at either extreme of the
 ranked list.
 ORA involdes the selection of genes of interest, followed by a test to ascertain whether
 certain functional categories are over-represented in the selected genes.
 
-Of these two methods, FCS is reported to be the most accurate, while ORA seems to be the
-most popular.
-
 According to a study that used simulated differential expression data, FCS accuracy was
 superior to ORA over a range of experimental designs [@Kaspi2020-rn].
+Despite this performance difference, a survey of articles published in 2019 showed that
+seven of the top eight most popular tools were based on ORA [@Wijesooriya2022-fw].
+The discrepancy between performance and popularity likely arose due to the relative ease of
+conducting ORA as compared to FCS.
+A minimalist ORA might involve pasting a single list of genes into a text box on a website,
+where the results appear nearly instantaneously.
+On the other hand, FCS typically involves downloading specific softwares and dealing with a
+dataset that represents every detected gene, typically ~20,000 rows and ensuring that the
+format from upstream tools can be shoehorned to meet the requirements of FCS packages.
 
-A survey of articles published in 2019 showed that seven of the top eight most popular
-methods were based on ORA.
+Since it's initial development in 1999 [@Tavazoie1999-bu], ORA has proliferated widely,
+becoming part of many websites and software packages.
+The most popular ORA website is DAVID [@Dennis2003-ar;@Huang2009-gi;@Sherman2022-jn],
+followed by Ingenuity Pathway Analysis, a commercial software package provided by QIAGEN Inc.
+ORA has been implemented into popular R/Bioconductor packages including `ClusterProfiler`
+[@Yu2012-jj],`limma`[@Ritchie2015-oz] and `GOseq`[@Young2010-iw].
+
+Despite the popularity of the technique, there are concerns that
+
 
 The general approach for over-representation analysis was developed in 1999 and
 
