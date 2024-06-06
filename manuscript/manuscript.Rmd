@@ -1,0 +1,751 @@
+---
+title: "Two subtle problems with over-representation analysis"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::robobook:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    fig_width: 5
+    fig_height: 5
+bibliography: references.bib
+csl: plos-computational-biology.csl
+---
+
+[Anusuiya Bora<sup>1,2</sup>](https://orcid.org/0009-0006-2908-1352),
+[Mark Ziemann<sup>1,2</sup>*](https://orcid.org/0000-0002-7688-6974)
+
+**Affiliations**
+
+1. Burnet Institute, Melbourne, Australia.
+
+2. Deakin University, School of Life and Environmental Sciences, Geelong, Australia.
+
+(*) Corresponding author: mark.ziemann@burnet.edu.au
+
+# Abstract
+
+TODO.
+
+# Keywords
+
+* Bioinformatics
+
+* Reproducibility
+
+* Enrichment analysis
+
+* Pathway analysis
+
+* Gene set enrichment analysis
+
+* Docker
+
+# Main Body
+
+## Introduction
+
+```{r,libs,echo=FALSE}
+
+library("DiagrammeR")
+library("RColorBrewer")
+library("kableExtra")
+#library("gt")
+
+```
+
+Functional enrichment analysis involves the summarisation of omics data to reflect
+biological changes, and has become one of the most popular methods in bioinformatics.
+Enrichment analysis software packages have been collectively cited 131,332 times as of
+late 2019 [@Xie2021-ch].
+The algorithms used by these tools can largely be divided into two groups, functional
+class scoring (FCS) and over-representation analysis (ORA).
+In FCS, all detected genes are ranked by their degree of differential expression followed
+by some statistical test for enrichment of gene categories at either extreme of the
+ranked list.
+ORA involdes the selection of genes of interest, followed by a test to ascertain whether
+certain functional categories are over-represented in the selected genes.
+
+Of these two methods, FCS is reported to be the most accurate, while ORA seems to be the
+most popular.
+
+According to a study that used simulated differential expression data, FCS accuracy was
+superior to ORA over a range of experimental designs [@Kaspi2020-rn].
+
+A survey of articles published in 2019 showed that seven of the top eight most popular
+methods were based on ORA.
+
+The general approach for over-representation analysis was developed in 1999 and
+
+According to a survey of related publications in 2022, 
+
+is one of the most frequently used methods in
+computational biology and involves the summarisation of omics data to reflect biological changes,
+such as the detection of pathway activation in development or disease
+[@Slonim2002-sf; @Khatri2012-do].
+As of August 2020, the various types of enrichment analysis were collectively cited 131,332 times [@Xie2021-ch].
+
+The most popular tool for enrichment analysis appears to be DAVID [@Sherman2022-hf].
+Its 11 related journal articles have received a total of 37,035 citations from 27,129
+separate PubMed articles (as of 29th June 2023).
+Examination of related keywords in PubMed suggests the number of articles describing
+"enrichment analysis" is doubling every two years, as omics analysis becomes accessible to
+more researchers around the world.
+
+These observations highlight that pathway enrichment tools are essential in the interpretation of omics data.
+However, there are concerns that inadvertent misuse of these methods leads to invalid results
+[@Timmons2015-ex; @Reimand2019-uw; @Wijesooriya2022-li; @Zhao2023-ok].
+According to a recent survey of 186 articles, incorrect methods are very common [@Wijesooriya2022-li].
+For example, a suitable background list for over-representation tests is reported in only 4.1% of studies.
+Correction of p-values to account for multiple testing was reported in only 54% of studies.
+This survey also revealed a general lack of reporting detail around other aspects of enrichment analysis,
+such as the tool version used.
+
+We hypothesise that the quality of enrichment analysis studies could be dramatically improved by adopting
+established simple rules for reproducible computing [@Sandve2013-lk], and specific guidelines for
+reporting enrichment analysis [@Zhao2023-ok].
+
+Our aim is to determine how reproducible published enrichment analyses are.
+To achieve this, we systematically examined the reproducibility of 20 published articles that used a web-based
+enrichment tool.
+We investigate root causes of reproduction failure and describe some potential solutions.
+
+## A systematic assessment of reproducibility in enrichment analysis
+
+### Methods
+
+From a list of 186 PubMed central articles using enrichment analysis that we examined previously
+@Wijesooriya2022-li, we selected 20 articles that fulfilled the following criteria; (1) the
+organism under study is human; (2) the tool used was DAVID (Database for Annotation,
+Visualization, and Integrated Discovery) @Huang2007-yw ; (3) the omics type was gene
+expression (array or RNA-seq); and (4) that the gene list was provided in the supplementary data.
+The basis for these selection criteria is that this combination represents the most common application
+of enrichment analysis according to our previous study, which could be reproduced without the need to
+reanalyse raw data. These articles are listed in the bibliography
+[@Liu2019-nm; @Zhang2019-bq; @Zhang2019-zs; @Wang2019-il; @Balusamy2019-ue; @Ahn2019-wl; @Chai2019-cn;
+@Guo2019-fx; @Alebrahim2019-zc; @Hong2019-ym; @Han2019-ix; @McSweeney2019-ij; @Wang2019-yw; @Pan2019-iv;
+@Wang2019-jy; @Weigt2019-mk; @Najafi2019-ce; @Feltrin2019-to; @Wang2019-xx; @Sun2019-xr].
+
+We screened reporting criteria of these articles, including whether the version of the application
+is given, whether p-values underwent correction for multiple testing, whether a background list was
+described and whether gene selection was described unambiguously.
+
+The lists of genes were collected from the supplementary files and stored in a spreadsheet, paying
+special attention to preventing gene name errors from occurring [@Zeeberg2004-na,Ziemann2016-pv, Abeysooriya2021-uz].
+The reproducibility analysis was performed using the respective methodologies stated in the methods
+sections of the 20 articles using DAVID v6.8, as at this time v6.7 was not available
+(conducted March-May 2022) [@Sherman2022-hf].
+
+Briefly, we used the DAVID v6.8 "Analysis Wizard" and pasted in the provided gene list into the text box,
+selecting this as "gene list", together with the appropriate gene identifier type.
+Typically, this was the official gene symbol.
+The species was specified as *Homo sapiens*.
+Next, we clicked on the "Functional Annotation Tool" link, bringing up the "Annotation Summary Results"
+page.
+We followed the steps indicated in the respective papers to select appropriate gene sets investigated
+in the articles such as Gene Ontology (GO; biological process, molecular function), Kyoto Encyclopedia
+of Genes and Genomes (KEGG) pathways, etc.
+Next, the "Functional Annotation Chart" was clicked on, opening a new window with a table of
+enrichment results, which were saved for future reference.
+
+The pathway enrichment results presented in the paper were compared to those we obtained.
+It would be ideal to compare standardised effect sizes (fold enrichment scores) between original and
+reproduction results, however these were reported in the main text of only 3/20 articles.
+Therefore we adopted a binary classification system, based on head-counting pathways that were presented as
+statistically significant in the original article.
+We defined a pathway as confirmed when it reached a similar level of statistical significance
+upon reproduction.
+We define "similar significance level" to be a value within 50% of the value presented in the original article.
+For example if an article shows a pathway with FDR=0.04, then an acceptable FDR in reproduction could be in
+the range of 0.02 to 0.06.
+Additionally, statements made in the abstract, results, and discussion sections based on specific pathway
+enrichment results were carefully examined and cross-checked with our results to understand whether those
+assertions survived reproduction or not.
+
+Each article was critically evaluated and given a score of one (1; low) to three (3; high).
+Articles were rated 1 when <50% of pathways shown in the results were confirmed
+upon reproduction, and most conclusions derived from enrichment analysis were not supported by reproduction.
+Articles were rated 2 when ≥50% of pathways shown in the results were confirmed
+upon reproduction, and most conclusions derived from the pathway enrichment analysis were supported.
+Articles were rated 3 when ≥80% of terms shown in the original article were observed again in
+reproduction with a similar significance value, and all conclusions derived from the pathway analysis were
+supported in reproduction.
+
+### Results
+
+As reproducibility is closely associated with the quality of documentation, we collected key methodological
+information about how the enrichment analysis was done and reported (Table 1).
+Only seven articles reported the version of DAVID that was used.
+Version 6.7 was reportedly used in two articles while version 6.8 was specified in five.
+Correction of p-values for multiple testing was specified or inferred in 11 articles, while the results of
+the remaining nine articles did not take into consideration the importance of p-value correction for
+minimising false positives.
+Of the 20 articles, none mentioned explicitly that a custom background list was used for enrichment analysis.
+We also examined whether the gene selection criteria were unambiguously clear, which was true in 16 articles.
+
+```{r,table1,echo=FALSE}
+
+x <- read.table("../data/checklist.tsv",header=TRUE,row.names=1)
+
+colnames(x) <- gsub("_"," ",colnames(x))
+x[,3]=NULL
+x |> gt(rownames_to_stub = TRUE) |> tab_header(title = "Table 1. Article reporting checklist results.")
+#x %>% kbl(caption = "Table 1. Article reporting checklist results.") %>% kable_paper("hover", full_width = F)
+
+```
+
+We attempted reproduction according to the methods described in the respective articles, with the limitation
+that we had to use DAVID v6.8 as v6.7 was no longer available.
+The 20 articles were classified based on the degree of reproducibility (**Figure 1**).
+Seven studies were classified as low reproducibility, while nine were classified as medium and just four
+were classified as high.
+Justifications for these classifications are provided in Table S1.
+
+```{r,barchart,fig.width=6,fig.height=5,echo=FALSE,fig.cap = "Figure 1. Examining reproducibility of enrichment analysis in a sample of 20 journal articles. Beside the PubMed Central identifier, the reported version of DAVID used in the original publication (blank if none given)."}
+
+score1 <- c("PMC6405693 (v6.7)","PMC6425008 (v6.8)","PMC6535219","PMC6539328 (v6.8)",
+  "PMC6542760","PMC6561911 (v6.8)","PMC6663624")
+score2 <- c("PMC6381667","PMC6463127","PMC6557785","PMC6580941","PMC6591946",
+  "PMC6582306","PMC6333352 (v6.8)","PMC6526186","PMC6607402 (v6.7)")
+score3 <- c("PMC6349697 (v6.8)","PMC6444048","PMC6587650", "PMC6368841")
+l <- list("1-low"=score1,"2-medium"=score2,"3-high"=score3)
+
+barplot(unlist(lapply(l,length)),col="lightgray",
+  xlab="Reproducibility score",ylab="no. articles",
+  ylim=c(0,11))
+
+#grid()
+text(0.7,1:7-0.5,labels=score1,cex=0.85)
+text(1.9,1:9-0.5,labels=score2,cex=0.85)
+text(3.1,1:4-0.5,labels=score3,cex=0.85)
+
+pc <- unlist(lapply(l,length)) / sum(unlist(lapply(l,length))) * 100
+pc2 <- paste(pc,"%",sep="")
+text(c(0.7,1.9,3.1),unlist(lapply(l,length))+0.4,labels=pc2)
+
+pdf("fig1.pdf",width=6,height=5)
+barplot(unlist(lapply(l,length)),col="lightgray",
+  xlab="reproducibility score",ylab="no. articles",
+  ylim=c(0,11))
+grid()
+text(0.7,1:7-0.5,labels=score1)
+text(1.9,1:9-0.5,labels=score2)
+text(3.1,1:4-0.5,labels=score3)
+pc <- unlist(lapply(l,length)) / sum(unlist(lapply(l,length))) * 100
+pc2 <- paste(pc,"%",sep="")
+text(c(0.7,1.9,3.1),unlist(lapply(l,length))+0.4,labels=pc2)
+dev.off()
+
+```
+
+| S.No. Pubmed ID: Replication of (Table/Figure) | A. Was Replication possible? B. Were there other significant terms found which were not mentioned in the article? | Replication score and justification |
+| --- | --- | --- |
+| 1.PMC6349697: Figure 2C and 2D | A. Yes, however, corrected p values are different after replication. B. Yes, only BP terms were taken into account so several CC and MF significant terms were not mentioned in the paper. |  **3 (high).** Considering top 6 BP Terms and KEGG pathways. The basis of the selection of just 6 gene ontologies and 4 KEGG pathways shown in the paper needs to be addressed, when there is a higher amount of significant GOs and pathways that are observed after replication. It was impossible to determine if the article utilised a background gene list or not. The steps to perform DAVID analysis could have been elaborated in the paper. The results shown in the paper are observed after replication but only 6 BP GO significant terms are shown in the paper. |
+| 2.PMC6368841: Figure 3 A - D | A. Only GO Terms were the similar as the paper. The FDR values are inconsistent. However, the paper should have clearly mentioned the different tools under figure captions to bring more clarity of the terms obtained by respective tools like DAVID and ClusterProfiler. The KEGG terms do not come up in DAVID at all. B. No | **3 (high).** The article receives a score of 3 solely based on GO results. GO results from the original manuscript are somewhat similar to reproduced analysis in DAVID. The FDR values however are inconsistent. The list of genes as input into DAVID analysis is unclear. The paper should have mentioned that both up and down-regulated proteins were considered for DAVID analysis. Another important question is why were two different tools used for GO and KEGG when both can be performed in DAVID or clusterprofiler? |
+| 3.PMC6381667: Figure 1 and Figure 2 | A. Results are not reproducible and are highly inconsistent B. N.A. | **2 (medium).** GO terms obtained after replication showed inconsistent results compared to the results in the original article. KEGG results were similar. Better naming convention for supplementary file for 117 genes for DAVID input is necessary. GO Results are not reproducible and are highly inconsistent. It was not made clear which results were obtained with DAVID or IPA. |
+| 4.PMC6405693: Table 1 and Table 2; Texts under “Protein-Protein Interaction Network Building and Interrelation Analysis Between Pathways” | A. Results do not match. B. N.A. | **1 (low).** GO analysis from up-regulated and down-regulated proteins are less similar to the results given in the paper. The FDR values for some pathways are highly inconsistent. KEGG Analysis of all DEGs do not match at all. |
+| 5.PMC6425008: Most of the tables and figures of the paper (Figure 5, 6, 7), Table 2 | A. No. B. N.A. | **1 (low).** This paper could have done proper labelling of supplementary files as it was difficult to find the gene list for DAVID analysis. Lacks information on when control genes are used and when citral-affected gene lists are used. Replication of GO and KEGG analysis is not consistent with results from the paper. How were Figures 5-7 derived? The overall protocol is not so coherent. |
+| 6.PMC6444048: The text under “Pathway analysis of SUVmax related genes” And Table 2 | A. Terms are the same but gene counts have been different. The DAVID results are somewhat reproducible. B. No | **3 (high).** Gene counts in the terms significantly enriched in the “process of cell division” and “nucleoplasm” have changed. Only cell cycle is highly enriched in the replicated results, the claims of metabolic pathways and hypoxia signalling (through GSEA analysis) to be enriched are not accurate. The results claimed are somewhat similar. All the processes have different FDR values. |
+| 7.PMC6463127: Table 4, Table 5, Table 6 | A. Yes but the significance differed. B. Yes, several terms from replication were not mentioned in the paper for GO Analysis. | **2 (medium).** Does not consider corrected p values. Overall, significant terms from GO analysis of up and down-regulated DEGs are missing upon replication. |
+| 8.PMC6535219: Figure 2 | A. Somewhat similar. B. There were many top significant terms that were not mentioned. | **1 (low).** Narrowing/Filtering the given gene list is a required step that could have been mentioned. Many terms were not so significant anymore. There were new terms that are of top positions after replication. |
+| 9.PMC6539328: Figure 1A | A. Mostly not. B. Yes, many | **1 (low).** The significant pathways stated in the paper are not showing up once replicated. There is no clarity of the up-regulated genes used for GO and KEGG analysis. Only 21 up-regulated genes are listed whereas the paper states 4831. Also, why are only up-regulated genes used? |
+| 10.PMC6542760: Figure 4 | A. No. B. Yes, many significant terms were observed. | **1 (low).** Replication results of GO terms are not at all similar with the results shown in the paper. |
+| 11.PMC6557785: Figure 5 A-B | A. Yes, but results in paper are not significant upon replication. B. Yes | **2 (medium).** For GO terms, there are other terms that have higher numbers of genes, making them more enriched than immune-related pathways as mentioned in the paper. For KEGG Pathways, there are other pathways that are more significant and contain a higher number of genes enriched for example “Salmonella infection” that has a higher count of genes but is not mentioned in the paper. |
+| 12.PMC6561911: Figure 5 a and b | A. No. B. N.A. | **1 (low).** The enrichment analysis results are inconsistent with the results displayed in the paper. There was no KEGG analysis done |
+| 13.PMC6580941: Table 1 and Table 2 | A. Yes. B. Yes! Significant terms like “nucleoplasm”, “RNA Binding”, “protein binding” are missing from the paper. | **2 (medium).** For GO analysis, the replicated results are not as significant as the GO terms shown in Tables 1 and 2 of the paper. The Gene list for input is not so clearly mentioned, it should have been labelled properly in the name of the supplemental file. P-values are completely different. |
+| 14.PMC6587650: Figure 2 | A. Yes. B. Yes, some. | **3 (high).** (Best) The GO terms results of BP, MF, CC and KEGG pathway results from the paper are compliant with replicated results. They could have mentioned why they chose the type of sorting shown in the paper to display their results. Overall, all results have been replicated. |
+| 15.PMC6591946: Figure 5 c and Figure 6 a | A. Yes for GO analysis only. B. Yes for KEGG analysis | **2 (medium).** The GO term results of replication are compliant with Figure 5 c of the paper. KEGG pathway results are semi-consistent. |
+| 16.PMC6663624: Table 3 and Table 4 | A. Yes. B. Yes | **1 (low).** The top 2 significant GO terms in the paper are not significant after replication analysis is done. Other GO terms are the same as replicated results. For KEGG Analysis, some terms are more significant after replication. Eg: PD-L1 expression and PD-1 checkpoint pathway in cancer, Th1 and Th2 cell differentiation, Th17 cell differentiation were more significant after “natural killer (NK) cell-mediated cytotoxicity” KEGG Pathway. The paper is somewhat replicable. |
+| 17.PMC6582306: Figure 5 | A. Partly. B. Yes, many. | **2 (medium).** The paper uses 44 sets of DEGs grouped in 4 major types. For replication, OFC Set 9 was used, DAVID GO analysis was done twice where a discrepancy of results was observed. Compared to the paper, the most significant term was missing after replication analysis was conducted. For OFC set 9, several pathways are seen after replication but only one pathway is shown in paper. This should be addressed. |
+| 18.PMC6333352: Figure 7 | A. Yes. B. Yes. There was a difference in gene counts as well. | **2 (medium).** DAVID was used for KEGG Analysis: From WGCNA - Bahn - KEGG Analysis: Epstein-Barr virus infection, the pathway with the highest gene count is missing in the results shown in the paper. From NERI - BAHN - KEGG Analysis: “Pathways of neurodegeneration - multiple diseases”, “Pathways in cancer” - pathways with the highest gene count (30 and 28 respectively) are not mentioned in the paper. Other pathways are present and the paper is somewhat reproducible. |
+| 19.PMC6526186: Table 1 | A. Yes. B. Yes. | **2 (medium).** The top BP GO terms from the paper are no longer significantly higher in the replicated GO results. The top 2 KEGG Pathways after replication are “Human cytomegalovirus infection” followed by “Pathways in cancer”. The p-values have changed after the results were replicated, compared to the values given in the paper. The rest of the pathways are similar to the results given in the paper. |
+| 20.PMC6607402: Figure 1 A-D | A. Yes. B. Yes, many! | **2 (medium).** For GO analysis and their replication, top enriched BP, CC and MF GO terms are not mentioned. Most of the terms are mentioned in the replicated results, but different levels of enrichment. |
+
+: Table S1. Classification and justification of reproducibility scores for each article.
+
+The ability to reproduce DAVID enrichment analysis using the supplementary gene
+lists was highly variable.
+The version of DAVID used is likely to be a big contributor to irreproducibility as we know that there are major
+differences in the underlying annotation set (knowledgebase) used by version 6.7 and 6.8.
+This is supported by the fact that none of the v6.7 studies received a high reproduicibility score.
+On the other hand these versions did not receive regular updates, so the knowledgebases were static for relatively
+long times; v6.7 (Jan. 2010 - Oct 2020) and v6.8 (Oct 2016 - Jun 2022).
+We can then deduce that knowledgebase version is likely not the cause of irreproducibility for PMC6561911,
+PMC6539328 and PMC6425008; studies that reportedly used v6.8 but received low reproducibility scores.
+
+We note that DAVID version 6.8 was retired in June 2022, so these 20 studies are currently no longer reproducible
+with the original tools.
+The implications of this are outlined in the Discussion section below.
+
+## A five-pillars approach to addressing reproducibility of enrichment analysis
+
+Our results emphasise the need for better methodological reporting to reduce ambiguity in methods sections
+and highlight that webtools can suddenly become unavailable.
+Although there are various solutions to these issues (refer to the Discussion section), here we will outline
+a potential solution whose design is guided by current best practices
+[@Tan2010-is; @Sandve2013-lk; @Piccolo2016-ji; @Gruning2018-sg; @Ziemann2023-dg].
+Our aim is to provide a beginner-friendly guide to enrichment analysis that will be
+reproducible for many years to come.
+
+### Method overview
+
+We have developed a step-by-step protocol for how to conduct a highly reproducible
+enrichment analysis, which is attached as a supplementary file (Suppl Info 1) and published to
+protocols.io with a permissive license [@Ziemann2023-kz].
+This protocol is prepared in accordance with the *five pillars* principles [@Ziemann2023-dg], and includes
+version control with git and GitHub, compute environment control using Docker, literate programming
+with R Markdown, persistent code and data sharing with Zenodo and documentation of all of these to
+empower others to reproduce the workflow.
+Central to this protocol is the provision of template Dockerfile and an R Markdown script, which
+are intended to be remixed and altered by end users to suit their project's needs.
+The general steps involved are shown in **Figure 2**.
+
+```{r,method_diagram,echo=FALSE,fig.height=6,fig.cap = "Figure 2. Flow chart of example workflow. An estimated amount of time to conduct each step is given."}
+
+library("RColorBrewer")
+library("shape")
+
+cols <- brewer.pal(5, "Set2")
+cols2 <- adjustcolor( cols, alpha.f = 0.7)
+plot(0,type='n',axes=FALSE,ann=FALSE, xaxs="i", yaxs="i", xlim=c(0, 11), ylim=c(-3, 8.5))
+
+polygon(c(0,6,6,0),c(8.5,8.5,7.5,7.5), col=cols2[1], border = NA)
+text( 3, 8.0, lab="1. Install Docker: 7 mins",cex=1.5)
+
+polygon(c(0.5,7.5,7.5,0.5),c(7.0,7.0,6.0,6.0), col=cols2[2], border = NA)
+text( 3.9, 6.5, lab="2. Validate example: 14 mins",cex=1.5)
+
+polygon(c(1,8.5,8.5,1),c(5.5,5.5,4.5,4.5), col=cols2[3], border = NA)
+text( 4.8, 5.0, lab="3. Create GitHub repo: 29 mins",cex=1.5)
+
+polygon(c(1.5,10.5,10.5,1.5),c(4,4,3,3), col=cols2[4], border = NA)
+text( 6.1, 3.5, lab="4. Build custom Docker image: 45 mins",cex=1.5)
+
+polygon(c(2,10.5,10.5,2),c(2.5,2.5,1.5,1.5), col=cols2[5], border = NA)
+text( 6.3, 2, lab="5. Customise R Markdown: 3-12 hrs",cex=1.5)
+
+polygon(c(2.5,9.5,9.5,2.5),c(1,1,0,0),col="lightgray", border = NA)
+text( 6.1, 0.5, lab="6. Update repository: 70 mins",cex=1.5)
+
+polygon(c(3,11,11,3),c(-0.5,-0.5,-1.5,-1.5), col=cols2[1], border = NA)
+text( 7.0, -1, lab="7. Update Docker image: 40 mins",cex=1.5)
+
+polygon(c(3.5,12,12,3.5),c(-2,-2,-3,-3), col=cols2[2], border = NA)
+text( 7.6, -2.5, lab="8. Long Term Archiving: 180 mins",cex=1.5)
+
+#Arrows(2, 7.5, 2.5, 7.0, lwd=2, arr.type="triangle")
+#Arrows(2.5, 6, 3, 5.5, lwd=2, arr.type="triangle")
+#Arrows(3, 4.5, 3.5, 4, lwd=2, arr.type="triangle")
+#Arrows(3.5, 3, 4, 2.5, lwd=2, arr.type="triangle")
+#Arrows(4, 1.5, 4.5, 1, lwd=2, arr.type="triangle")
+
+pdf("fig2.pdf",width=8,height=6)
+cols <- brewer.pal(5, "Set2")
+cols2 <- adjustcolor( cols, alpha.f = 0.7)
+plot(0,type='n',axes=FALSE,ann=FALSE, xaxs="i", yaxs="i", xlim=c(0, 11), ylim=c(-3, 8.5))
+
+polygon(c(0,6,6,0),c(8.5,8.5,7.5,7.5), col=cols2[1], border = NA)
+text( 3, 8.0, lab="1. Install Docker: 7 mins",cex=1.5)
+
+polygon(c(0.5,7.5,7.5,0.5),c(7.0,7.0,6.0,6.0), col=cols2[2], border = NA)
+text( 3.9, 6.5, lab="2. Validate example: 14 mins",cex=1.5)
+
+polygon(c(1,8.5,8.5,1),c(5.5,5.5,4.5,4.5), col=cols2[3], border = NA)
+text( 4.8, 5.0, lab="3. Create GitHub repo: 29 mins",cex=1.5)
+
+polygon(c(1.5,10.5,10.5,1.5),c(4,4,3,3), col=cols2[4], border = NA)
+text( 6.1, 3.5, lab="4. Build custom Docker image: 45 mins",cex=1.5)
+
+polygon(c(2,10.5,10.5,2),c(2.5,2.5,1.5,1.5), col=cols2[5], border = NA)
+text( 6.3, 2, lab="5. Customise R Markdown: 3-12 hrs",cex=1.5)
+
+polygon(c(2.5,9.5,9.5,2.5),c(1,1,0,0),col="lightgray", border = NA)
+text( 6.1, 0.5, lab="6. Update repository: 70 mins",cex=1.5)
+
+polygon(c(3,11,11,3),c(-0.5,-0.5,-1.5,-1.5), col=cols2[1], border = NA)
+text( 7.0, -1, lab="7. Update Docker image: 40 mins",cex=1.5)
+
+polygon(c(3.5,12,12,3.5),c(-2,-2,-3,-3), col=cols2[2], border = NA)
+text( 7.6, -2.5, lab="8. Long Term Archiving: 180 mins",cex=1.5)
+dev.off()
+
+```
+
+The Dockerfile uses a base image from Bioconductor that corresponds to the latest available
+stable release version, on the Ubuntu operating system.
+The image contains instructions for installing a few useful utilities including `nano` and `git` for
+modifying scripts, and `magic-wormhole` for transferring data between computers.
+It installs R packages from CRAN and Bioconductor repositories to fulfill common tasks in transcriptome
+analysis such as fetching RNA-seq counts from DEE2 with `getDEE2` @Ziemann2019-zo,
+differential expression with `DESeq2` @Love2014-hd,
+enrichment analysis with `clusterProfiler`, `fgsea` and `mitch`
+[@Yu2012-ts; @Korotkevich2016-ls; @Kaspi2020-dq].
+It also contains instructions to clone a GitHub repository, which contains the scripts that run the
+analytical workflow.
+Lastly, it copies a gene set library from Reactome @Gillespie2022-gz with a clear version
+history to guarantee provenance of the annotation data.
+
+The R Markdown script called `example.Rmd` undertakes the transcriptome and enrichment analyses.
+R Markdown allows the unification of extended descriptions, code and results into a single document,
+which is becoming ubiquitous in bioinformatics and data science more generally
+@Grolemund2017-zl.
+R Markdown supports languages other than R, including Python, Shell, Julia and others.
+The ability to provide extended descriptions is helpful for providing contextualising information about
+the purpose of the work, detailed methods and interpretations derived from the analysis.
+The R Markdown script contains code chunks that perform specific tasks including fetching an example
+data set from DEE2, inspecting data quality, differential expression and two types of enrichment
+analysis: over-representation analysis (ORA) and functional class scoring (FCS) (**Figure 3**).
+
+```{r,diagram2,echo=FALSE,fig.cap = "Figure 3. Flow chart of example workflow."}
+
+library("DiagrammeR")
+grViz("digraph flowchart {
+      node [fontname = Helvetica, shape = rectangle]
+      tab1 [label = '@@1']
+      tab2 [label = '@@2']
+      tab3 [label = '@@3']
+      tab4 [label = '@@4']
+      tab5 [label = '@@5']
+      tab6 [label = '@@6']
+      tab1 -> tab2 -> tab3 -> tab4 -> tab6;
+      tab3 -> tab5 -> tab6 }
+      [1]: 'Fetch RNA-seq from DEE2'
+      [2]: 'Quality control'
+      [3]: 'Differential expression'
+      [4]: 'Over-representation analysis'
+      [5]: 'Functional class scoring'
+      [6]: 'Euler diagram'
+")
+
+grViz("digraph flowchart {
+      node [fontname = Helvetica, shape = rectangle]
+      tab1 [label = '@@1']
+      tab2 [label = '@@2']
+      tab3 [label = '@@3']
+      tab4 [label = '@@4']
+      tab5 [label = '@@5']
+      tab6 [label = '@@6']
+      tab1 -> tab2 -> tab3 -> tab4 -> tab6;
+      tab3 -> tab5 -> tab6 }
+      [1]: 'Fetch RNA-seq from DEE2'
+      [2]: 'Quality control'
+      [3]: 'Differential expression'
+      [4]: 'Over-representation analysis'
+      [5]: 'Functional class scoring'
+      [6]: 'Euler diagram'
+") %>%
+  DiagrammeRsvg::export_svg() %>%
+  charToRaw() %>%
+  rsvg::rsvg_pdf("fig3.pdf")
+
+```
+
+For each enrichment analysis conducted, a checklist is provided to comply with reporting guidelines
+[@Wijesooriya2021-lb; @Zhao2023-ok].
+An example checklist is shown in **Table 2**.
+
+| Reporting criteria | Method or resource used |
+| -- | -- |
+| Origin of gene sets | Reactome (2023-03-06) |
+| Tool used | `clusterProfiler` |
+| Statistical test used | hypergeometric test |
+| P-value correction for multiple comparisons | FDR method |
+| Background list | Genes with >=10 reads per sample on average across all samples |
+| Gene Selection Criteria | DESeq2 FDR<0.05 |
+| ORA directionality | Separate tests for up- and down-regulation |
+| Data availability | via dee2.io at accession SRP038101 |
+| Other parameters | Minimum gene set size of 10 |
+
+: Table 2. An example reporting checklist for enrichment analysis.
+
+The software versions used in this example analysis are provided in Table 3.
+
+| Software | Version | Purpose |
+| --- | --- | --- |
+| Ubuntu | 22.04 | Operating System |
+| R | 4.3.0 | Statistical computing language |
+| nano | 6.2 | text editing |
+| git | 2.34.1 | source control |
+| R/kableExtra | 1.3.4 | render formatted tables |
+| R/vioplot | 0.4.0 | violin charts |
+| R/gplots | 3.1.3 | heatmaps |
+| R/eulerr | 7.0.0 | Venn diagrams |
+| BioC/getDEE2 | 1.6.0 | fetch example RNA-seq data |
+| BioC/DESeq2 | 1.36.0 | differential expression |
+| BioC/fgsea | 1.22.0 | functional class scoring |
+| BioC/clusterProfiler | 4.4.4 | over-representation analysis |
+| BioC/mitch | 1.10.0 | multi-contrast enrichment |
+
+: Table 3. The software bundled in the example Docker image.
+
+Reproducing the example workflow is relatively quick and simple, requiring six commands and approximately 4-7
+minutes starting from a base Linux install.
+The steps include installing Docker, pulling and running the container, running the R Markdown script,
+exiting the container and copy the newly created report from the container to the current working
+directory (Box 1).
+
+```bash
+sudo apt update && sudo apt install docker.io -y  # 30 sec
+sudo docker run --platform linux/amd64 mziemann/enrichment_recipe
+Rscript -e 'rmarkdown::render("example.Rmd")' # 150 sec
+docker cp $(docker ps -aql):/enrichment_recipe/example.html . # instant
+firefox example.html
+```
+<p style="text-align: center;">
+*Box 1. Linux shell commands to reproduce a transcriptome and enrichment analysis using a Docker image.
+Ubuntu 22.04 was used.*
+</p>
+
+### Demonstration
+
+To demonstrate the utility of this workflow, we present the results of this example data analysis;
+it is a comparison of control and 5-azacitidine-treated AML3 cell transcriptomes with RNA-seq
+in triplicate @Lund2014-et.
+We use this analysis to better understand the effect of DNA methyltransferase inhibitors on
+gene expression and elaborate upon previous findings [@Lund2014-et], which mainly focused on
+the relationship between RNA expression and DNA methylation but did not show results of a
+transcriptome-only enrichment analysis.
+Furthermore, we provide a comparison of the two most common approaches for enrichment analysis; ORA and
+FCS, and give guidance for interpreting results of such tests.
+
+For quality control the number of reads per sample was calculated and found to be in the range of
+11-16M.
+Genes with fewer than 10 reads per sample on average were removed from the analysis, leaving 13,168
+genes.
+A multi-dimensional scaling plot showed clustering of samples into their treatment
+groups, suggesting a robust effect of the chemical exposure (**Figure 4A**).
+Differential expression analysis revealed 3,598 differentially expressed genes with FDR<0.05, with
+1,672 exhibiting higher expression and 1,926 exhibiting lower expression in 5-azacytidine treated cells
+(**Figure 4B**).
+Up and down-regulated gene sets were subjected to ORA separately, using the list of
+13,168 genes as the background, and gene sets from REACTOME.
+
+![Figure 4. Differential expression and enrichment analysis with the example workflow.
+(A) An MDS plot of gene expression data for the largest two principal components.
+Blue and pink points represent control and azacitidine-treated
+samples respectively.
+(B) An MA plot.
+The x-axis represents the log<sub>10</sub> base mean expression, and the y-axis represents the
+log<sub>2</sub> fold change.
+Points in red indicate genes with statistically significant differential expression (FDR<0.05), while
+those in grey did not meet this threshold.
+(C) Bar plot of ORA-based enrichment test results.
+(D) Bar plot of FCS-based enrichment test results.
+(C,D) REACTOME gene sets with FDR>0.05 were discarded and the remaining gene sets were
+ranked by enrichment score (ES)
+The most extreme up- and down-regulated genes sets are shown (based on ES).
+Red bars indicate up-regulation and blue bars indicate down-regulation.
+(E) Euler diagrams of differentially regulated gene sets identified with ORA and FCS approaches.
+](../img/fig_example.png "Example enrichment analysis on")
+
+With ORA, we observed 201 up-regulated and 99 down-regulated gene sets (FDR<0.05).
+We prioritised enrichment results by enrichment score, a surrogate measure for effect size,
+which tends to highlight smaller and more specific gene sets undergoing more drastic differential
+expression, rather than large gene sets that undergo small expression changes.
+This led to the identification of up-regulated pathways related to nuclear RNA import and
+glucokinase regulation; while down-regulated pathways
+were associated with interferon signaling, interleukin signaling and NADPH oxidase
+(host defence) (**Figure 4C**).
+
+After FCS, we identified 239 up-regulated gene sets and 158 down-regulated gene sets (FDR<0.05).
+FCS up-regulated pathways were associated with prometaphase chromosome condensation, nuclear RNA
+transport and defective homologous recombination repair (**Figure 4D**).
+This finding is consistent with changes to the cell cycle observed in 5-azacytidine treated cells,
+where the proportion of cells in G2/M phase is reduced, and proxy measures of apoptosis appear
+slightly higher @Lund2014-et.
+
+Down-regulated pathways related to endosomal/vacuolar (antigen presentation) pathway, interferon
+signaling and TLR/TNF signaling, which was not described in the original publication @Lund2014-et.
+Interestingly, these pathways are reported to be *upregulated* in other cancer cell studies of DNA
+hypomethylating agents for similar durations [@Li2014-op; @Chiappinelli2015-tv; @Okoye-Okafor2019-iq].
+
+Regarding up-regulated pathways, the similarity between ORA and FCS was relatively high, exhibiting a
+Jaccard index of 0.58, while this agreement was lower for down-regulated pathways, with a Jaccard
+index of 0.46 (**Figure 4E**).
+
+## Discussion
+
+There are some notable limitations of this reproduction work.
+The sample size of 20 is relatively small.
+The articles were selected randomly from a list of articles that cited DAVID, and they are mostly from
+low and mid-tier journals (mean Scimago Journal Rank for 2022: 1.2, SD=0.68) and the results may not be representative of
+higher-tier journal articles.
+This is not a complete reproduction of all work in those papers; we only reproduced the DAVID functional enrichment analysis,
+which typically is just one component of an article that can have several other parts, including
+experimental validation of key findings.
+Therefore, if we identified that the enrichment analysis was not reproducible, it does not automatically mean that
+all results and conclusions are flawed.
+
+Furthermore, our reproducibility assessment is based on "head-counting" pathways that meet an arbitrary significance range.
+This binary classification of reproduction results is less powerful as opposed to comparison of standardised effect sizes [@Lakens2013-fx; @Goodman2016-ie].
+For DAVID analysis, the fold enrichment score could be reported as a type of effect size.
+Unfortunately, fold enrichment scores are infrequently reported, so it was not a feasible approach for a systematic and representative
+reproduction study like this.
+In future, we recommend researchers use both significance values and enrichment scores to prioritise and report
+enrichment results.
+
+Despite these limitations, there are a few key observations.
+We observe that only 4/20(20%) of studies achieved a high degree of reproducibility.
+In a way, this is unexpected, given the simplicity of using DAVID.
+Users provide a list of gene identifiers in a text box and select some options.
+There are several possible explanations for this inconsistency:
+
+* The methods stated in the respective articles are inconsistent with what was actually done.
+
+* The list of genes in the supplement is not the same as what was used for enrichment analysis.
+
+* Ambiguity around whether up- and down-regulated genes were considered
+separately or together.
+
+* Ambiguity around whether all GO classes were considered or just one, such as "biological process".
+
+* Ambiguity around whether a custom background gene set was used.
+
+* Differences between DAVID version 6.7 and 6.8.
+
+* Ambiguity around which tool was used, as some articles described using other tools in addition to DAVID
+but did not label figures and tables with the tool used.
+
+This irreproducibility might be expected given that substantial methodological flaws and reporting
+deficiencies were present in 85% of enrichment analyses from which this set of 20 studies were
+drawn @Wijesooriya2022-li.
+Authors can prevent these reporting deficiencies providing a checklist of methodological details similar
+to ours (**Table 2**).
+Checklists like these are a useful resource as they are simple for journals to enforce and reviewers to check.
+
+While researching the literature on computational reproducibility in bioinformatics, we identified
+many case studies, but only two systematic examinations of multiple journal articles.
+Ioannidis et al @Ioannidis2009-hv examined a set of 10 gene expression studies with available data
+published in 2005-2006, and found only two could be reproduced to a satisfactory level.
+A recent preprint reports that only 245 out of 9,625 Jupyter notebooks (2.5%) in biomedical journals
+successfully reproduced results identical to the respective journal article [@Samuel2022-dy].
+More work in this direction is urgently needed to understand the causes of irreproducible bioinformatics
+research so it can be remedied, as reproducibility is considered only the first step towards
+reliable research [@Nosek2022-hw].
+
+This article is an attempt to foster increased reproducibility in genomics by demonstrating the
+implementation of the five pillars principles into a commonly used routine, namely differential
+expression and pathway enrichment analysis.
+However, these concepts may be difficult for novice analysts, and so we provide a step-by-step
+protocol to guide them on how to customise template Dockerfile and R Markdown scripts to suit their
+project's needs [@Ziemann2023-kz].
+Although we aimed to make this process as easy as possible, it requires a substantial time outlay, which
+we estimate at 15-20 hours.
+This is significantly longer than using a web-based tool that provides results in just a few
+minutes, but we consider the time investment is well spent.
+It ensures analytical reproducibility, assists with auditing and makes the process of reproduction
+simple and fast (Box 1), which should aid the early identification of errors.
+Using a literate scripting approach such as R Markdown, Jupyter or Quarto notebook, enables very high
+levels of workflow transparency including inspection of intermediate data objects, and evidence that
+the published methods were followed.
+
+With the retirement of DAVID 6.8 and earlier versions, which occurred in June 2022, all DAVID analyses
+prior to 2021 have become irreproducible, including the sample of 20 studies featured here.
+This is concerning, as these studies were only three years old at the time of the tool's retirement.
+Moreover, according to PubMed citations, the DAVID project accrued 27,572 citations before 2021 from 20,878
+PubMed articles, suggesting that ~20,000 omics studies can no longer be reproducible with the original tools.
+
+The problem of bioinformatic resources including web services becoming unavailable is not a new one, being
+raised over a decade ago [@Hennessey2013-tj] and revisited in 2020 [@Kern2020-iz].
+We are worried that a reliance on web tools that lack open source code or containers can leave
+researchers in violation of their data management responsibilities, as preservation mandates
+include software as well as original research data
+[@NHMRC2019-wu ; @Harvard_2023-cl].
+
+With this, we must reconsider whether web-based tools are valid for scientific publications if they are at
+risk of becoming unavailable without notice due to link decay.
+Some progress is being made to make web-based point-and-click tools more reproducible.
+The Galaxy, GenePattern and RNAlysis projects offer graphical tools to create, edit and import
+workflows that enable reproducibility [@Kuehn2008-su; @Goecks2010-lq; @Teichman2023-fx].
+The Degust differential expression suite is a graphical interface to popular
+expression tools like edgeR and limma and allows users to download the computer script to facilitate
+future non-interactive reproducibility [@Powell2019-lv].
+The ShinyGO web-based enrichment tool is a satisfactory GUI-based alternative to DAVID as it provides Docker image
+downloads for all past versions [@Ge2020-qe], facilitating preservation and aiding future reproducibility.
+Still, such tools leave documentation and reproducibility gaps which are resolved with the highly reproducible
+approach detailed here.
+
+Although container-based workflows are frequently described as being a complete solution to computational
+reproducibility, they have some limitations.
+For example, building a Docker image relies on a network of servers providing software packages which may work now
+but not in a decade's time.
+Therefore building such images has a short reproducibility horizon.
+The Guix package and container manager, together with the Software Heritage code repository enables reproducible
+image builds, which enhances the transparency of compute environments, and lengthening the reproducibility horizon
+[@Vallet2022-gw].
+It is also not guaranteed that Docker images published now will be compatible with future Docker versions,
+whereas Guix can build an older version of itself.
+
+Although the recipe described here is designed for gene expression analysis, it is modifiable to accommodate
+other omics, for example genomic, epigenomic and proteomic data, given the names of analytes measured are
+consistent with the annotation databases.
+
+Although we hope that highly reproducible enrichment analysis will become more widespread, we do not
+anticipate any dramatic changes in researcher behaviour unless the motivating factors are addressed.
+Currently, reward structures in academia favour career progression for individuals who publish many
+articles as opposed to individuals who publish fewer but more rigorously conducted works.
+Solutions to this could include mandates by funding agencies, institutions or journals [@Garijo2013-zb],
+badging of articles that comply with best practices [@Kidwell2016-pm], and recognition of research rigour
+in track record evaluations.
+
+# Data and Software Availability
+
+## Underlying data
+
+Publicly available data were obtained from Digital Expression Explorer 2 (dee2.io).
+Expression data from untreated and Aza treated AML3 cells.
+NCBI Sequence Read Archive accession Number SRP038101.
+
+## Software and Code
+
+* The code repository including template Dockerfile and R Markdown script are available on GitHub
+(https://github.com/markziemann/enrichment_recipe).
+
+* The example Docker image is available on DockerHub (https://hub.docker.com/r/mziemann/enrichment_recipe).
+
+* The code repository and Docker image have been uploaded to Zenodo for long-term archiving
+(https://zenodo.org/record/8170984).
+
+## Availability of other materials
+
+* The full protocol can be found at protocols.io
+(https://www.protocols.io/view/a-recipe-for-extremely-reproducible-enrichment-ana-j8nlkwpdxl5r/v2) @Ziemann2023-kz.
+
+* Instructional video guides are available on YouTube
+(https://www.youtube.com/playlist?list=PLAAydBPtqFMXDpLa796q7f7W1HK4t_6Db).
+
+## Author Contributions
+
+Conceptualization: MZ, AB.
+Data Curation: MZ.
+Formal Analysis: MZ.
+Funding Acquisition: N/A.
+Investigation: MZ, AB.
+Methodology: MZ, AB.
+Project Administration: MZ.
+Resources: MZ.
+Software: MZ, AB.
+Supervision: MZ.
+Validation: AB.
+Visualization: MZ, AB.
+Writing – Original Draft Preparation: MZ, AB.
+Writing – Review & Editing: MZ, AB.
+
+## Competing Interests
+
+No competing interests were disclosed.
+
+## Grant Information
+
+The authors declared that no grants were involved in supporting this work.
+
+## Acknowledgements
+
+We thank Ms Megan Soria and Ms Kaumadi Wijesooriya (Deakin University) for discussions on the concept and manuscript.
+This research was supported by use of the Nectar Research Cloud, a collaborative Australian research
+platform supported by the NCRIS-funded Australian Research Data Commons (ARDC).
+The authors gratefully acknowledge the contribution to this work of the
+Victorian Operational Infrastructure Support Program received by the Burnet Institute.
+
+# Bibliography
