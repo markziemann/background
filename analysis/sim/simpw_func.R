@@ -170,12 +170,13 @@ deseq2<-function(x) {
   dds <- DESeqDataSetFromMatrix(countData = y, colData = samplesheet, design = ~ trt )
   res <- DESeq(dds)
   z <- DESeq2::results(res)
-  vsd <- vst(dds, blind=FALSE)
-  zz <- cbind(z,assay(vsd))
-  x[[6]] <- as.data.frame(zz[order(zz$padj),])
-  sig <- subset(zz,padj<0.05)
-  x[[7]] <- rownames(sig[which(sig$log2FoldChange>0),])
-  x[[8]] <- rownames(sig[which(sig$log2FoldChange<0),])
+  x[[6]] <- as.data.frame(z[order(z$pvalue),])
+  up <- rownames(subset(z,log2FoldChange>0 & padj<0.05))
+  if (length(up)<250) { up <- rownames(head(subset(z,log2FoldChange>0 ),250)) }
+  dn <- rownames(subset(z,log2FoldChange<0 & padj<0.05))
+  if (length(dn)<250) { dn <- rownames(head(subset(z,log2FoldChange<0 ),250)) }
+  x[[7]] <- up
+  x[[8]] <- dn
   x
 }
 
@@ -231,150 +232,6 @@ run_mitch <- function(y,DGE_FUNC,gsets, N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIM
   y
 }
 
-##################################
-# hypergeometric test function (limited to deseq2)
-##################################
-run_hypergeometric<-function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS){
-
-dge<-sapply(x,"[",6)
-
-ups<-lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange > 0)) } )
-dns<-lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange < 0)) } )
-
-l_ups<-sapply(ups,length)
-l_dns<-sapply(dns,length)
-geneset_sizes<-sapply( gsets , length )
-
-# calculate number of genes in sets that are up and downregulated
-n_dns=n_ups=p_ups=p_dns=obs_up=obs_dn=NULL
-n_dns=n_ups=p_ups=p_dns=obs_up=obs_dn=list()
-
-for (d in 1:length(dge)) {
-  universe=length(rownames(dge[[d]]))
-  n_ups[[d]]<-sapply( 1:length(gsets),function(x){length(which(gsets[[x]] %in% ups[[d]] ))} )
-  n_dns[[d]]<-sapply( 1:length(gsets),function(x){length(which(gsets[[x]] %in% dns[[d]] ))} )
-
-  p_ups[[d]]<-sapply( 1:length(gsets),function(x){phyper((n_ups[[d]][[x]]-1),l_ups[[d]],universe-geneset_sizes[[x]],geneset_sizes[[x]],lower.tail=FALSE,log.p=FALSE)})
-  p_dns[[d]]<-sapply( 1:length(gsets),function(x){phyper((n_dns[[d]][[x]]-1),l_dns[[d]],universe-geneset_sizes[[x]],geneset_sizes[[x]],lower.tail=FALSE,log.p=FALSE)})
-
-  x[[d]][[11]]<-names(gsets[which(p.adjust(p_ups[[d]],method="fdr")<0.05)])
-  x[[d]][[12]]<-names(gsets[which(p.adjust(p_dns[[d]],method="fdr")<0.05)])
-}
-
-obs_up<-sapply(x,"[",11)
-obs_dn<-sapply(x,"[",12)
-
-gt_up<-sapply(x,"[",4)
-gt_up<-lapply( gt_up , names)
-gt_dn<-sapply(x,"[",5)
-gt_dn<-lapply( gt_dn , names)
-
-true_pos_up<-as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_up ,  gt_up ))
-true_pos_dn<-as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_dn ,  gt_dn ))
-false_pos_up<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_up ,  gt_up ))
-false_pos_dn<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_dn , gt_dn ))
-false_neg_up<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_up ,  obs_up ))
-false_neg_dn<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_dn ,  obs_dn ))
-
-true_pos<-mean(true_pos_up+true_pos_dn)
-false_pos<-mean(false_pos_up+false_pos_dn)
-false_neg<-mean(false_neg_up+false_neg_dn)
-nrows<-as.numeric(lapply( sapply(x,"[",1 ), nrow))
-true_neg<-mean(nrows-(true_pos+false_pos+false_neg))
-
-p<-true_pos/(true_pos+false_pos)
-r<-true_pos/(true_pos+false_neg)
-f<-2*p*r/(p+r)
-
-attr(x,'phyper') <-data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,true_pos,false_pos,true_neg,false_neg,p,r,f)
-x
-
-}
-
-##################################
-# 1-sided fisher test function
-##################################
-run_fisher <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS){
-
-dge<-sapply(x,"[",6)
-
-ups<-lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange > 0)) } )
-dns<-lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange < 0)) } )
-bgs <- lapply(dge, function(x) { rownames(x) })
-
-l_ups<-sapply(ups,length)
-l_dns<-sapply(dns,length)
-geneset_sizes<-sapply( gsets , length )
-
-# calculate number of genes in sets that are up and downregulated
-upreg_incat=gsdet=unreg_incat=upreg_not_incat=unreg_not_incat=NULL
-upreg_incat=gsdet=unreg_incat=upreg_not_incat=unreg_not_incat=list()
-dnreg_incat=gsdet=unreg_incat=dnreg_not_incat=unreg_not_incat=NULL
-dnreg_incat=gsdet=unreg_incat=dnreg_not_incat=unreg_not_incat=list()
-p_ups=p_dns=NULL
-p_ups=p_dns=list()
-
-for (d in 1:length(dge)) {
-  universe =length(rownames(dge[[d]]))
-
-  upreg_incat[[d]]<-sapply( 1:length(gsets),function(y){length(which(gsets[[y]] %in% ups[[d]] ))} )
-  gsdet[[d]] <- sapply( 1:length(gsets),function(y){length(which(gsets[[y]] %in% bgs[[d]] ))} )
-  unreg_incat[[d]] <- gsdet[[d]] - upreg_incat[[d]]
-  upreg_not_incat[[d]]<-sapply( 1:length(gsets),function(y){length(which(!ups[[d]] %in% gsets[[y]] ))} )
-  unreg_not_incat[[d]] <- universe - upreg_incat[[d]] - unreg_incat[[d]] - upreg_not_incat[[d]]
-
-  p_ups[[d]] <- sapply( 1:length(gsets),function(y){
-    mx <- matrix(c( upreg_incat[[d]][[y]] , unreg_incat[[d]][[y]], upreg_not_incat[[d]][[y]], unreg_not_incat[[d]][[y]]),ncol=2)
-
-    fres <- fisher.test(mx,alternative = "greater")
-    fres$p
-  })
-
-  dnreg_incat[[d]]<-sapply( 1:length(gsets),function(y){length(which(gsets[[y]] %in% dns[[d]] ))} )
-  gsdet[[d]] <- sapply( 1:length(gsets),function(y){length(which(gsets[[y]] %in% bgs[[d]] ))} )
-  unreg_incat[[d]] <- gsdet[[d]] - dnreg_incat[[d]]
-  dnreg_not_incat[[d]]<-sapply( 1:length(gsets),function(y){length(which(!dns[[d]] %in% gsets[[y]] ))} )
-  unreg_not_incat[[d]] <- universe - dnreg_incat[[d]] - unreg_incat[[d]] - dnreg_not_incat[[d]]
-
-  p_dns[[d]] <- sapply( 1:length(gsets),function(y){
-    mx <- matrix(c( dnreg_incat[[d]][[y]] , unreg_incat[[d]][[y]], dnreg_not_incat[[d]][[y]], unreg_not_incat[[d]][[y]] ),ncol=2)
-    fres <- fisher.test(mx,alternative = "greater")
-    fres$p
-  })
-
-  x[[d]][[19]]<-names(gsets[which(p.adjust(p_ups[[d]],method="fdr")<0.05)])
-  x[[d]][[20]]<-names(gsets[which(p.adjust(p_dns[[d]],method="fdr")<0.05)])
-}
-
-obs_up<-sapply(x,"[",19)
-obs_dn<-sapply(x,"[",20)
-
-gt_up<-sapply(x,"[",4)
-gt_up<-lapply( gt_up , names)
-gt_dn<-sapply(x,"[",5)
-gt_dn<-lapply( gt_dn , names)
-
-true_pos_up<-as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_up ,  gt_up ))
-true_pos_dn<-as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_dn ,  gt_dn ))
-false_pos_up<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_up ,  gt_up ))
-false_pos_dn<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_dn , gt_dn ))
-false_neg_up<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_up ,  obs_up ))
-false_neg_dn<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_dn ,  obs_dn ))
-
-true_pos<-mean(true_pos_up+true_pos_dn)
-false_pos<-mean(false_pos_up+false_pos_dn)
-false_neg<-mean(false_neg_up+false_neg_dn)
-nrows<-as.numeric(lapply( sapply(x,"[",1 ), nrow))
-true_neg<-mean(nrows-(true_pos+false_pos+false_neg))
-
-p<-true_pos/(true_pos+false_pos)
-r<-true_pos/(true_pos+false_neg)
-f<-2*p*r/(p+r)
-
-attr(x,'fisher') <-data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,true_pos,false_pos,true_neg,false_neg,p,r,f)
-x
-
-}
 
 ##################################
 # clusterprofiler default function
@@ -386,9 +243,8 @@ gsets2 <- stack(gsets)[,c(2,1)]
 colnames(gsets2) <- c("term","gene")
 
 dge <- sapply(x,"[",6)
-
-ups <- lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange > 0)) } )
-dns <- lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange < 0)) } )
+up <- sapply(x,"[",7)
+dn <- sapply(x,"[",8)
 bgs <- lapply(dge, function(x) { rownames(x) } )
 
 l_ups <- sapply(ups,length)
@@ -458,182 +314,6 @@ r <- true_pos/(true_pos+false_neg)
 f <- 2*p*r/(p+r)
 
 attr(x,'clusterprofiler') <- data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,true_pos,false_pos,true_neg,false_neg,p,r,f)
-x
-
-}
-
-##################################
-# clusterprofiler fixed function
-##################################
-# Note that clusterprofiler requires different gene set format
-run_clusterprofiler_fixed <-function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS){
-
-gsets2 <- stack(gsets)[,c(2,1)]
-colnames(gsets2) <- c("term","gene")
-
-dge <- sapply(x,"[",6)
-
-ups <- lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange > 0)) } )
-dns <- lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange < 0)) } )
-bgs <- lapply(dge, function(x) { rownames(x) } )
-
-l_ups <- sapply(ups,length)
-l_dns <- sapply(dns,length)
-geneset_sizes <- sapply( gsets2 , length )
-
-# calculate number of genes in sets that are up and downregulated
-n_dns=n_ups=p_ups=p_dns=obs_up=obs_dn=NULL
-n_dns=n_ups=p_ups=p_dns=obs_up=obs_dn=list()
-
-for (d in 1:length(dge)) {
-
-bgset <- bgs[[d]]
-bgdf <- data.frame(term="bglist",gene=bgset)
-gsets3 <- rbind(gsets2,bgdf)
-
-# clusterprofiler UP
-if ( length(ups[[d]]) > 2 ) {
-  ora_up <- as.data.frame(enricher(gene = ups[[d]] ,
-    universe = bgs[[d]],  minGSSize=2, maxGSSize = 500000, TERM2GENE = gsets3,
-    pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1 ))
-
-  ora_up$geneID <- NULL
-  ora_up <- subset(ora_up,p.adjust<0.05 )
-  ora_ups <- rownames(ora_up)
-  obs_up[[d]] <- ora_ups
-} else {
-  ora_ups = NULL
-}
-
-# clusterprofiler DOWN
-if ( length(dns[[d]]) > 2 ) {
-  ora_dn <- as.data.frame(enricher(gene = dns[[d]] ,
-    universe = bgs[[d]],  minGSSize=2, maxGSSize = 500000, TERM2GENE = gsets3,
-    pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1 ))
-
-  ora_dn$geneID <- NULL
-  ora_dn <- subset(ora_dn,p.adjust<0.05 )
-  ora_dns <- rownames(ora_dn)
-  obs_dn[[d]] <- ora_dns
-} else {
-  ora_dns = NULL
-}
-
-x[[d]][[11]] <- ora_ups
-x[[d]][[12]] <- ora_dns
-
-}
-
-#ground truth comparison
-gt_up<-sapply(x,"[",4)
-gt_up<-lapply( gt_up , names)
-gt_dn<-sapply(x,"[",5)
-gt_dn<-lapply( gt_dn , names)
-
-true_pos_up<-as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_up ,  gt_up ))
-true_pos_dn<-as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_dn ,  gt_dn ))
-false_pos_up<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_up ,  gt_up ))
-false_pos_dn<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_dn , gt_dn ))
-false_neg_up<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_up ,  obs_up ))
-false_neg_dn<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_dn ,  obs_dn ))
-
-true_pos<-mean(true_pos_up+true_pos_dn)
-false_pos<-mean(false_pos_up+false_pos_dn)
-false_neg<-mean(false_neg_up+false_neg_dn)
-nrows<-as.numeric(lapply( sapply(x,"[",1 ), nrow))
-true_neg<-mean(nrows-(true_pos+false_pos+false_neg))
-
-p<-true_pos/(true_pos+false_pos)
-r<-true_pos/(true_pos+false_neg)
-f<-2*p*r/(p+r)
-
-attr(x,'clusterprofiler_fixed') <-data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,true_pos,false_pos,true_neg,false_neg,p,r,f)
-x
-
-}
-
-
-##################################
-# clusterprofiler nobg
-##################################
-run_clusterprofiler_nobg <-function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS){
-
-gsets2 <- stack(gsets)[,c(2,1)]
-colnames(gsets2) <- c("term","gene")
-
-dge <- sapply(x,"[",6)
-
-ups <- lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange > 0)) } )
-dns <- lapply(dge, function(x) { rownames(subset(x, padj<0.05 & log2FoldChange < 0)) } )
-bgs <- lapply(dge, function(x) { rownames(x) } )
-
-l_ups <- sapply(ups,length)
-l_dns <- sapply(dns,length)
-geneset_sizes <- sapply( gsets2 , length )
-
-# calculate number of genes in sets that are up and downregulated
-n_dns=n_ups=p_ups=p_dns=obs_up=obs_dn=NULL
-n_dns=n_ups=p_ups=p_dns=obs_up=obs_dn=list()
-
-for (d in 1:length(dge)) {
-
-# clusterprofiler UP
-if ( length(ups[[d]]) > 2 ) {
-  ora_up <- as.data.frame(enricher(gene = ups[[d]] ,
-    universe = NULL,  minGSSize=2, maxGSSize = 500000, TERM2GENE = gsets2,
-    pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
-
-  ora_up$geneID <- NULL
-  ora_up <- subset(ora_up,p.adjust<0.05 )
-  ora_ups <- rownames(ora_up)
-  obs_up[[d]] <- ora_ups
-} else {
-  ora_ups = NULL
-}
-
-# clusterprofiler DOWN
-if ( length(dns[[d]]) > 2 ) {
-  ora_dn <- as.data.frame(enricher(gene = dns[[d]] ,
-    universe = NULL,  minGSSize=2, maxGSSize = 500000, TERM2GENE = gsets2,
-    pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
-
-  ora_dn$geneID <- NULL
-  ora_dn <- subset(ora_dn,p.adjust<0.05 )
-  ora_dns <- rownames(ora_dn)
-  obs_dn[[d]] <- ora_dns
-} else {
-  ora_dns = NULL
-}
-
-x[[d]][[13]] <- ora_ups
-x[[d]][[14]] <- ora_dns
-
-}
-
-#ground truth comparison
-gt_up<-sapply(x,"[",4)
-gt_up<-lapply( gt_up , names)
-gt_dn<-sapply(x,"[",5)
-gt_dn<-lapply( gt_dn , names)
-
-true_pos_up<-as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_up ,  gt_up ))
-true_pos_dn<-as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_dn ,  gt_dn ))
-false_pos_up<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_up ,  gt_up ))
-false_pos_dn<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_dn , gt_dn ))
-false_neg_up<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_up ,  obs_up ))
-false_neg_dn<-as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_dn ,  obs_dn ))
-
-true_pos<-mean(true_pos_up+true_pos_dn)
-false_pos<-mean(false_pos_up+false_pos_dn)
-false_neg<-mean(false_neg_up+false_neg_dn)
-nrows<-as.numeric(lapply( sapply(x,"[",1 ), nrow))
-true_neg<-mean(nrows-(true_pos+false_pos+false_neg))
-
-p<-true_pos/(true_pos+false_pos)
-r<-true_pos/(true_pos+false_neg)
-f<-2*p*r/(p+r)
-
-attr(x,'clusterprofiler_nobg') <-data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,true_pos,false_pos,true_neg,false_neg,p,r,f)
 x
 
 }
