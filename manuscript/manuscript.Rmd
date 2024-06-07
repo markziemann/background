@@ -13,8 +13,8 @@ bibliography: references.bib
 csl: plos-computational-biology.csl
 ---
 
-[Anusuiya Bora<sup>1,2</sup>](https://orcid.org/0009-0006-2908-1352),
-[Mark Ziemann<sup>1,2</sup>*](https://orcid.org/0000-0002-7688-6974)
+[Mark Ziemann<sup>1,2</sup>*](https://orcid.org/0000-0002-7688-6974),
+[Anusuiya Bora<sup>1,2</sup>](https://orcid.org/0009-0006-2908-1352)
 
 **Affiliations**
 
@@ -51,36 +51,36 @@ library("kableExtra")
 
 ```
 
-Functional enrichment analysis involves the summarisation of omics data to reflect
-biological differences, and has become one of the most popular methods in bioinformatics.
-Enrichment analysis software packages have been collectively cited 131,332 times as of
-late 2019 [@Xie2021-ch].
-The algorithms used by these tools can largely be divided into two groups, functional
-class scoring (FCS) and over-representation analysis (ORA).
-In FCS, all detected genes are ranked by their degree of differential expression followed
-by a statistical test for enrichment of gene categories at either extreme of the
-ranked list.
+Over-representation analysis (ORA) is a type of functional enrichment analysis (FEA) that
+involves the summarisation of omics data to reflect biological differences.
+Generally speaking, FEA has become one of the most popular methods in bioinformatics,
+collectively accumulating 131,332 citations as of late 2019 [@Xie2021-nv].
+
 ORA involdes the selection of genes of interest, followed by a test to ascertain whether
 certain functional categories are over-represented in the selected genes.
-
-According to a study that used simulated differential expression data, FCS accuracy was
-superior to ORA over a range of experimental designs [@Kaspi2020-rn].
-Despite this performance difference, a survey of articles published in 2019 showed that
-seven of the top eight most popular tools were based on ORA [@Wijesooriya2022-fw].
-The discrepancy between performance and popularity likely arose due to the relative ease of
-conducting ORA as compared to FCS.
-A minimalist ORA might involve pasting a single list of genes into a text box on a website,
-where the results appear nearly instantaneously.
-On the other hand, FCS typically involves downloading specific softwares and dealing with a
-dataset that represents every detected gene, typically ~20,000 rows and ensuring that the
-format from upstream tools can be shoehorned to meet the requirements of FCS packages.
-
 Since it's initial development in 1999 [@Tavazoie1999-bu], ORA has proliferated widely,
 becoming part of many websites and software packages.
 The most popular ORA website is DAVID [@Dennis2003-ar;@Huang2009-gi;@Sherman2022-jn],
 followed by Ingenuity Pathway Analysis, a commercial software package provided by QIAGEN Inc.
 ORA has been implemented into popular R/Bioconductor packages including `ClusterProfiler`
-[@Yu2012-jj],`limma` [@Ritchie2015-oz] and `GOseq` [@Young2010-iw].
+[@Yu2012-jj;@Wu2021-wy], `limma` [@Ritchie2015-oz] and `GOseq` [@Young2010-iw].
+
+Another popular approach to FEA is functional class scoring (FCS).
+In FCS, all detected genes are ranked by their degree of differential expression followed
+by a statistical test for enrichment of gene categories at either extreme of the
+ranked list [@Subramanian2005-no].
+
+According to a study that used simulated differential expression data, FCS accuracy was
+superior to ORA over a range of experimental designs [@Kaspi2020-rn].
+Despite this performance difference, a survey of articles published in 2019 showed that
+seven of the top eight most popular tools were based on ORA [@Wijesooriya2022-fw].
+The discrepancy between performance and popularity is likely due to the relative ease of
+conducting ORA as compared to FCS.
+A minimal ORA might involve pasting a single list of genes into a text box on a website,
+where the results appear nearly instantaneously.
+On the other hand, FCS typically involves installing specific softwares and dealing with a
+dataset representing every detected gene (~20,000 rows) and ensuring that the file
+format from upstream tools can be compatible with FCS packages.
 
 Despite the popularity of ORA, there are concerns that this technique is being misused.
 Due to technological and biological reasons, not all genes are detected in transcriptomic
@@ -96,8 +96,8 @@ false positive rate, but this is reported in only ~54% of studies [@Wijesooriya2
 These discoveries have resulted in the development of best practices for end users
 to improve awareness of the issues and help enforce reporting standards [@Zhao2023-mx].
 
-The focus of this work is to raise awareness to two existing problems in ORA as implemented
-by some popular enrichment tools.
+The focus of this work is to raise awareness to two existing problems in some implementations
+of ORA used by popular enrichment tools.
 The first problem is that genes belonging to the background list are removed from the analysis
 entirely if they are not annotated as belonging to any functional categories.
 This results in the background list appearing smaller than it should, leading to an
@@ -118,21 +118,104 @@ This is problematic, as the act of trying to find an intersect between a foregro
 and a pathway is in itself a test, even if there are no common genes.
 This results in pathways being discarded from the analysis if no common genes are found in
 the foreground, despite a large number of those genes being present in the background list.
-This leads to FDR values appearing lower than they should.
+This artificially reduces the number of tests conducted and makes FDR values appear lower
+than they should, potentially raising the rate of false positives.
 We expect this problem to have a more severe effect when the foreground list is fairly small.
 
-Here, we show the effect of these two problems on real RNA-seq based enrichment analysis
-results and demonstrate these two issues lead to poor performance using simulated expression
+Here, we define the effect of these two problems on real RNA-seq based enrichment analysis
+results and demonstrate how these two issues impact performance using simulated expression
 data.
 Finally we classify popular tools regarding these two problems and provide general
 recommendations for end users.
 
-## A systematic assessment of reproducibility in enrichment analysis
-
 ### Methods
+
+### Expression data preparation
+
+To test the effect of these two problems on RNA-seq based enrichment analysis, data from seven
+transcriptomic studies were downloaded from DEE2 using the getDEE2 R/Bioconductor package
+[@Ziemann2019-ux].
+Raw data for these seven studies are available from NCBI Sequence Read Archive under the
+accession numbers SRP128998, SRP038101, SRP037718, SRP096177, SRP097759, SRP253951 and
+SRP068733 [@Felisbino2021-hc; @Lund2014-ds; @Rafehi2014-rv; @Keating2014-ab;
+@Blanco-Melo2020-hh; @Rafehi2017-qn].
+For each dataset, kallisto counts were aggregated to the gene level.
+Genes with fewer than 10 reads per sample on average were removed from downstream analysis.
+Remaining genes passing this selection were included in the background gene set.
+Differential expression analysis was conducted with DESeq2 v1.42.0 [@Love2014-wg], with
+genes identified by their Ensembl identifiers.
+Gene symbols were then fetched using biomaRt v2.58.0, based on Ensembl version 112 [@Durinck2009-dr].
+
+### Examining the background problem using real transcriptome data
+
+Human gene sets were obtained from MSigDB v2023.2 [@Liberzon2015-cs], and included
+KEGG Medicus, Reactome, Wikipathways, MicroRNA targets from miRdb, transcription factor
+targets from GTRD, Gene Ontology (GO), Human Phenotype Ontology (HPO), Cell markers and
+Hallmark pathways [REFS].
+For an initial demonstration of the background problem, differentially expressed genes with
+FDR<0.05 were subset, with separate lists for up and downregulated genes.
+These gene lists were subjected to ORA using the `enricher` function of clusterProfiler
+v4.10.0, using a minimum set size of 5 and a maximum set size of 500,000.
+
+For one test, a GO gene set called "Complement activation classical pathway" was added
+to the KEGG database to test whether fold enrichment and p-values were affected.
+
+To systematically assess the impact of the background problem, we conducted ORA with
+`enricher` using the different gene set libraries described above for the seven RNA-seq
+datasets and nine gene set libraries.
+`enricher` was used with the same parameters as above, and we devised a simple workaround
+to the background problem, which is to append the entire background list as a gene set to the
+library.
+This forces `enricher` to retain all background genes.
+The ORA analyses were then filtered for significant sets using a FDR threshold of 0.05.
+Jaccard index was used to compare original and corrected analyses.
+
+### Examining the FDR problem
+
 
 
 ### Results
+
+### Understanding the background problem
+
+In the analysis of dataset 1, the background list contained 14,144 genes and the foreground
+list consisted of 1,469 genes.
+After ORA with KEGG sets, the background size reported by clusterProfiler was only 2,120.
+With GO sets, the background was reported to be 12,365.
+These numbers correspond to the number of genes in the background list that are annotated with
+one or more functions in the respective gene set libraries.
+
+We used a workaround to eliminate the background problem and compared the results to standard
+analysis.
+This was repeated for seven datasets and the nine gene set libraries.
+The mean number of significant results was calculated for each of the gene set libraries
+before and after correcting the problem (**Figure 1A**).
+Each of the gene set libraries showed an uplift when correcting the background problem.
+The smallest increase was observed in Cellmarkers gene library (11.7%), while the largest
+increase was observed for HPO (229%).
+The similarity between results, as quantified with the Jaccard similarity was highest for
+Cellmarkers and GTRD at 0.88 and 0.76 respectively, and the lowest similarity was recorded for
+HPO and KEGG with 0.20 and 0.48 respectively.
+Observed Jaccard scores correlated with the number of genes annotated to one or more functional
+categories in the gene set library (**Figure 1B**).
+
+![**Figure 1A. Effect of correcting the background problem.** Figures represent the mean number
+of statistically significant sets over seven independent datasets detected with clusterProfiler
+with and without correcting the background problem.
+The percent increase in significant sets are shown.](../analysis/fig1_ORAsig.png "Figure 1A
+shows that correcting the background bug improves the number of significant sets between 12 and
+229%.")
+
+![**Figure 1B. Impact of background problem is worse for smaller gene set libraries.** Mean
+Jaccard similarity index was calculated for original and corrected ORA for seven independent
+datasets. The number of genes represented in one or more functional sets is shown on the x-axis,
+and the mean Jaccard index is shown on the y-axis.](../analysis/fig1_ORAjac.png "Figure 1B
+shows that the background bug impacts smaller gene sets libraries like KEGG and HPO more
+severely.")
+
+### Understanding the FDR problem
+
+
 
 ## Discussion
 
@@ -153,12 +236,6 @@ Publicly available data were obtained from Digital Expression Explorer 2 (dee2.i
 (https://zenodo.org/record/8170984).
 
 ## Availability of other materials
-
-* The full protocol can be found at protocols.io
-(https://www.protocols.io/view/a-recipe-for-extremely-reproducible-enrichment-ana-j8nlkwpdxl5r/v2) @Ziemann2023-kz.
-
-* Instructional video guides are available on YouTube
-(https://www.youtube.com/playlist?list=PLAAydBPtqFMXDpLa796q7f7W1HK4t_6Db).
 
 ## Author Contributions
 
