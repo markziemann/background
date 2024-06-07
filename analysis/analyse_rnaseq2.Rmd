@@ -359,14 +359,25 @@ ns2
 df <- data.frame(ns1,ns2)
 df <- df[order(df$ns1),]
 
-par(mar=c(c(5.1, 7.1, 4.1, 2.1) ))
+par(mar=c(c(5.1, 7.1, 2.1, 2.1) ))
 barplot(t(df),beside=TRUE,horiz=TRUE,las=1,xlim=c(0,330),
-  xlab="no. significant sets", main="Effect of correcting the FDR bug",
+  xlab="no. significant sets",
   col=c("gray30","gray80"))
 text(df$ns1+20,((1:nrow(df))*3)-1.5,labels=signif(df[,1],3))
 text(df$ns2+20,((1:nrow(df))*3)-0.5,labels=signif(df[,2],3))
 legend("bottomright", inset=.02, legend=c("corrected","original"),
   fill=c("gray80","gray30"), horiz=FALSE, cex=1)
+
+png("fig2_ORAfdr.png")
+par(mar=c(c(5.1, 7.1, 2.1, 2.1) ))
+barplot(t(df),beside=TRUE,horiz=TRUE,las=1,xlim=c(0,330),
+  xlab="no. significant sets",
+  col=c("gray30","gray80"))
+text(df$ns1+20,((1:nrow(df))*3)-1.5,labels=signif(df[,1],3))
+text(df$ns2+20,((1:nrow(df))*3)-0.5,labels=signif(df[,2],3))
+legend("bottomright", inset=.02, legend=c("corrected","original"),
+  fill=c("gray80","gray30"), horiz=FALSE, cex=1)
+dev.off()
 
 # RATIO
 rat <- matrix( (res1$nsig_good+0) / (res1$nsig_bad+0) , ncol=9 )
@@ -530,10 +541,24 @@ axis(1, at = seq(1, 5, by = 1),
 points(jac[,"Reactome"],type="b",col="red",pch=19,cex=1.5,lwd=2)
 points(jac[,"Cellmarkers"],type="b",col="blue",pch=19,cex=1.5,lwd=2)
 points(jac[,"TFT GTRD"],type="b",col="gray50",pch=19,cex=1.5,lwd=2)
-mtext("impact of gene list length on FDR problem severity")
 
 legend("bottomright", legend=c("GO","Reactome", "Cellmarkers", "TFT"),
        col=c("black", "red", "blue", "gray50"), lty=1, cex=1.2,lwd=3,pch=19)
+
+png("fig2_ORAsz.png")
+
+plot(jac[,"GO"],type="b", pch=19,cex=1.5,lwd=2,
+  xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected")
+axis(1, at = seq(1, 5, by = 1),
+     labels = ngenes)
+points(jac[,"Reactome"],type="b",col="red",pch=19,cex=1.5,lwd=2)
+points(jac[,"Cellmarkers"],type="b",col="blue",pch=19,cex=1.5,lwd=2)
+points(jac[,"TFT GTRD"],type="b",col="gray50",pch=19,cex=1.5,lwd=2)
+
+legend("bottomright", legend=c("GO","Reactome", "Cellmarkers", "TFT"),
+       col=c("black", "red", "blue", "gray50"), lty=1, cex=1.2,lwd=3,pch=19)
+
+dev.off()
 
 ```
 

@@ -172,7 +172,20 @@ Jaccard index was used to compare original and corrected analyses.
 
 ### Examining the FDR problem
 
+A workaround for the FDR problem was devised by filtering the gene sets by the presence of
+at least two genes in the background list prior to running `enricher`.
+After `enricher` using the parameters above, the number of gene sets in the results was
+quantified, and compared to the number that should have been reported using the two gene limit.
+The difference between these numbers (*n*) represents the number of missing gene sets.
+To account for these tests, *n* 1 values were appended to the p-values obtained by enricher,
+followed by FDR correction in R, to obtain the corrected FDR values.
+As above, analysis of seven datasets was done with nine gene set libraries, the significant
+sets were selected and the Jaccard statistics were collected for each run to compare original
+and corrected analysis.
 
+As we predicted that this effect could be more severe for smaller foreground lists, we performed
+parallel analysis with foreground gene lists with sizes varying between 125 and 2,000 genes,
+as ranked by FDR value.
 
 ### Results
 
@@ -200,8 +213,8 @@ Observed Jaccard scores correlated with the number of genes annotated to one or 
 categories in the gene set library (**Figure 1B**).
 
 ![**Figure 1A. Effect of correcting the background problem.** Figures represent the mean number
-of statistically significant sets over seven independent datasets detected with clusterProfiler
-with and without correcting the background problem.
+of statistically significant sets over seven independent datasets detected with clusterProfiler's
+`enricher` function with and without correcting the background problem.
 The percent increase in significant sets are shown.](../analysis/fig1_ORAsig.png "Figure 1A
 shows that correcting the background bug improves the number of significant sets between 12 and
 229%.")
@@ -215,9 +228,40 @@ severely.")
 
 ### Understanding the FDR problem
 
+A workaround for the FDR problem was developed and as above, and original and corrected
+analyses were conducted for the seven datasets and nine gene set libraries.
+The results obtained showed no major differences in the number of significant sets between
+original and corrected analyses (**Figure 2A**).
 
+We posited that the foreground gene list length may have exacerbate the problem, so we performed
+parallel analysis with foreground lists of length between 125 and 2,000 genes (**Figure 2B**).
+A clear trend was observed for GO, Reactome, Cellmarkers and TFT GTRD, with Jaccard similarity
+being significantly reduced when foreground gene lists were shorter than 500 genes.
+Interestingly, the drop in Jaccard similarity was more severe for GO and Reactome sets as
+compared to Cellmarkers and TFT GTRD sets, and may be associated with the size of the gene
+sets in the library.
+Median gene set size for these are GO:18, Reactome:11, TFT GTRD:287 and Cellmarkers:115.
+
+![**Figure 2A. Effect of correcting the FDR problem.** Figures represent the mean number of
+significant sets with and without correction of the FDR problem over seven independent RNA-seq
+datasets.](../analysis/fig2_ORAfdr.png "Figure 2A shows that correcting the FDR bug slightly
+reduces the number of significant sets.")
+
+![**Figure 2B. Impact of FDR problem is worse for shorter foreground gene lists.** Mean Jaccard
+index between original and corrected analysis were calculated for seven RNA-seq datasets and nine
+gene set libraries. Only GO, Reactome, Cellmarkers and TFT GTRD are shown.](
+../analysis/fig2_ORAsz.png "Figure 2B shows that the impact of the FDR bug is worse when
+foreground gene lists are shorter than 500.")
 
 ## Discussion
+
+In addition to the subtle problems with ORA, there are some major ones too:
+
+* Rarely used or reported properly (BG,FDR)
+
+* Results vary dramatically depending on the number of genes selected in the foreground
+
+* Less accurate as compared to FCS
 
 # Data and Software Availability
 
