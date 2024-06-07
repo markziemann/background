@@ -170,11 +170,12 @@ deseq2<-function(x) {
   dds <- DESeqDataSetFromMatrix(countData = y, colData = samplesheet, design = ~ trt )
   res <- DESeq(dds)
   z <- DESeq2::results(res)
-  x[[6]] <- as.data.frame(z[order(z$pvalue),])
+  z <- as.data.frame(z[order(z$pvalue),])
   up <- rownames(subset(z,log2FoldChange>0 & padj<0.05))
   if (length(up)<250) { up <- rownames(head(subset(z,log2FoldChange>0 ),250)) }
   dn <- rownames(subset(z,log2FoldChange<0 & padj<0.05))
   if (length(dn)<250) { dn <- rownames(head(subset(z,log2FoldChange<0 ),250)) }
+  x[[6]] <- z
   x[[7]] <- up
   x[[8]] <- dn
   x
@@ -243,8 +244,8 @@ gsets2 <- stack(gsets)[,c(2,1)]
 colnames(gsets2) <- c("term","gene")
 
 dge <- sapply(x,"[",6)
-up <- sapply(x,"[",7)
-dn <- sapply(x,"[",8)
+ups <- sapply(x,"[",7)
+dns <- sapply(x,"[",8)
 bgs <- lapply(dge, function(x) { rownames(x) } )
 
 l_ups <- sapply(ups,length)

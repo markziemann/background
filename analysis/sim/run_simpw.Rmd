@@ -96,12 +96,13 @@ gsets <- randomGeneSets(a,setsize=30,nsets=200)
 ```{r,setparameters}
 
 SIMS=500
+#run 500 sims
 FRAC_DE=0.05
 FC=1
 N_REPS=5
 DGE_FUNC="deseq2"
 SUM_COUNT=2e7
-VARIANCE=c(0.3,0.325,0.35,0.375,0.4,0.425,0.45)
+VARIANCE=c(0.3,0.4,0.5,0.6,0.7,0.8,0.9,1,1.2,1.3,1.4)
 
 mygrid <- expand.grid(FRAC_DE,FC,N_REPS,DGE_FUNC,SUM_COUNT,VARIANCE)
 colnames(mygrid) <- c("FRAC_DE","FC","N_REPS","DGE_FUNC","SUM_COUNT","VARIANCE")
