@@ -282,8 +282,8 @@ orabad <- function( df, gs ) {
   defup <- defup[lapply(strsplit(defup," "),length)==2]
   defup <- unique(sapply(strsplit(defup," "),"[[",2))
 
-  if ( length(defup)<250 ) {
-    defup <- head(rownames(subset(def,log2FoldChange>0)),250)
+  if ( length(defup)<200 ) {
+    defup <- head(rownames(subset(def,log2FoldChange>0)),200)
     defup <- defup[lapply(strsplit(defup," "),length)==2]
     defup <- unique(sapply(strsplit(defup," "),"[[",2))
   }
@@ -292,8 +292,8 @@ orabad <- function( df, gs ) {
   defdn <- defdn[lapply(strsplit(defdn," "),length)==2]
   defdn <- unique(sapply(strsplit(defdn," "),"[[",2))
 
-  if ( length(defdn)<250 ) {
-    defdn <- head(rownames(subset(def,log2FoldChange<0)),250)
+  if ( length(defdn)<200 ) {
+    defdn <- head(rownames(subset(def,log2FoldChange<0)),200)
     defdn <- defdn[lapply(strsplit(defdn," "),length)==2]
     defdn <- unique(sapply(strsplit(defdn," "),"[[",2))
   }
@@ -358,8 +358,8 @@ oragood <- function( df, gs ) {
   defup <- defup[lapply(strsplit(defup," "),length)==2]
   defup <- unique(sapply(strsplit(defup," "),"[[",2))
 
-  if ( length(defup)<250 ) {
-    defup <- head(rownames(subset(def,log2FoldChange>0)),250)
+  if ( length(defup)<200 ) {
+    defup <- head(rownames(subset(def,log2FoldChange>0)),200)
     defup <- defup[lapply(strsplit(defup," "),length)==2]
     defup <- unique(sapply(strsplit(defup," "),"[[",2))
   }
@@ -368,8 +368,8 @@ oragood <- function( df, gs ) {
   defdn <- defdn[lapply(strsplit(defdn," "),length)==2]
   defdn <- unique(sapply(strsplit(defdn," "),"[[",2))
 
-  if ( length(defdn)<250 ) {
-    defdn <- head(rownames(subset(def,log2FoldChange<0)),250)
+  if ( length(defdn)<200 ) {
+    defdn <- head(rownames(subset(def,log2FoldChange<0)),200)
     defdn <- defdn[lapply(strsplit(defdn," "),length)==2]
     defdn <- unique(sapply(strsplit(defdn," "),"[[",2))
   }

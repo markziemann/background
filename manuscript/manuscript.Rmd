@@ -56,13 +56,13 @@ involves the summarisation of omics data to reflect biological differences.
 Generally speaking, FEA has become one of the most popular methods in bioinformatics,
 collectively accumulating 131,332 citations as of late 2019 [@Xie2021-nv].
 
-ORA involdes the selection of genes of interest, followed by a test to ascertain whether
+ORA involves the selection of genes of interest, followed by a test to ascertain whether
 certain functional categories are over-represented in the selected genes.
 Since it's initial development in 1999 [@Tavazoie1999-bu], ORA has proliferated widely,
-becoming part of many websites and software packages.
+becoming part of many bioinformatics websites and software packages.
 The most popular ORA website is DAVID [@Dennis2003-ar;@Huang2009-gi;@Sherman2022-jn],
 followed by Ingenuity Pathway Analysis, a commercial software package provided by QIAGEN Inc.
-ORA has been implemented into popular R/Bioconductor packages including `ClusterProfiler`
+ORA has been implemented into R/Bioconductor packages including `clusterProfiler`
 [@Yu2012-jj;@Wu2021-wy], `limma` [@Ritchie2015-oz] and `GOseq` [@Young2010-iw].
 
 Another popular approach to FEA is functional class scoring (FCS).
@@ -80,24 +80,25 @@ A minimal ORA might involve pasting a single list of genes into a text box on a 
 where the results appear nearly instantaneously.
 On the other hand, FCS typically involves installing specific softwares and dealing with a
 dataset representing every detected gene (~20,000 rows) and ensuring that the file
-format from upstream tools can be compatible with FCS packages.
+format from upstream tools is compatible with FCS packages.
 
 Despite the popularity of ORA, there are concerns that this technique is being misused.
 Due to technological and biological reasons, not all genes are detected in transcriptomic
 studies, meaning that some genes will more readily appear as differentially expressed.
 To address this bias, a background list of detected genes is required for comparison to the
 list of selected genes (foreground list) [@Tilford2009-vx].
-Failure to use a background gene list can lead to dramatic changes in enrichment results,
+Failure to use a background gene list leads to dramatic changes in enrichment results,
 rendering them unreliable [@Timmons2015-ki].
 Unfortunately, use of an appropriate background list is reported in only a small fraction
 (~4%) of peer-reviewed articles describing enrichment analysis [@Wijesooriya2022-fw].
-In addition, correction of p-values for multiple testing is crucial in controlling the
-false positive rate, but this is reported in only ~54% of studies [@Wijesooriya2022-fw].
-These discoveries have resulted in the development of best practices for end users
-to improve awareness of the issues and help enforce reporting standards [@Zhao2023-mx].
+Correction of p-values for multiple testing is crucial in controlling the false positive rate
+as enrichment analysis typically involves throusands of parallel tests.
+But appropriate p-value correction is reported in only ~54% of studies [@Wijesooriya2022-fw].
+These issues have resulted in the development of best practices for end users and
+stronger reporting standards [@Zhao2023-mx].
 
-The focus of this work is to raise awareness to two existing problems in some implementations
-of ORA used by popular enrichment tools.
+The focus of this work is to raise awareness to two existing problems in ORA implementations
+of some popular enrichment tools.
 The first problem is that genes belonging to the background list are removed from the analysis
 entirely if they are not annotated as belonging to any functional categories.
 This results in the background list appearing smaller than it should, leading to an
@@ -106,11 +107,12 @@ In principle, this problem would differentially affect analyses involving differ
 libraries, with smaller libraries such as Kyoto Encyclopedia of Genes and Genomes (KEGG)
 [@Kanehisa2023-ni], which describes 2,727 genes affected more severely as compared to larger
 libraries like Gene Ontology [@The_Gene_Ontology_Consortium2023-xp] which describes 19,428
-genes (figures obtained from MSigDB [@Liberzon2015-cs]).
+genes (figures obtained from MSigDB June 2024 [@Liberzon2015-cs]).
 
 The second problem is that adjusting p-values for multiple testing, also known as
-false-discovery correction is implemented improperly.
-ORA tools should implement a threshold by which a pathway could be considered as detected.
+false-discovery rate correction is implemented improperly.
+Determining which pathways should be subject to false discovery rate correction depends on
+how a detection threshold is set.
 Ideally, a pathway should be considered detected based on the presence of a predetermined
 number of member genes in the background set.
 However some tools use the foreground set to define a pathway as detected.
@@ -139,7 +141,8 @@ Raw data for these seven studies are available from NCBI Sequence Read Archive u
 accession numbers SRP128998, SRP038101, SRP037718, SRP096177, SRP097759, SRP253951 and
 SRP068733 [@Felisbino2021-hc; @Lund2014-ds; @Rafehi2014-rv; @Keating2014-ab;
 @Blanco-Melo2020-hh; @Rafehi2017-qn].
-For each dataset, kallisto counts were aggregated to the gene level.
+For each dataset, kallisto (v0.43.1) [@Bray2016-lu] transcript counts were aggregated to the
+gene level.
 Genes with fewer than 10 reads per sample on average were removed from downstream analysis.
 Remaining genes passing this selection were included in the background gene set.
 Differential expression analysis was conducted with DESeq2 v1.42.0 [@Love2014-wg], with
@@ -149,20 +152,28 @@ Gene symbols were then fetched using biomaRt v2.58.0, based on Ensembl version 1
 ### Examining the background problem using real transcriptome data
 
 Human gene sets were obtained from MSigDB v2023.2 [@Liberzon2015-cs], and included
-KEGG Medicus, Reactome, Wikipathways, MicroRNA targets from miRdb, transcription factor
-targets from GTRD, Gene Ontology (GO), Human Phenotype Ontology (HPO), Cell markers and
-Hallmark pathways [REFS].
+KEGG Medicus [@Kanehisa2023-ni],
+Reactome [@Milacic2024-iv],
+Wikipathways [@Agrawal2024-lr],
+MicroRNA targets from miRdb [@Chen2020-wo],
+transcription factor targets from GTRD [@Kolmykov2021-mn],
+Gene Ontology (GO) [@The_Gene_Ontology_Consortium2023-xp],
+Human Phenotype Ontology (HPO) [@Kohler2021-ha],
+Cell markers and
+Hallmark pathways [@Liberzon2015-cs].
 For an initial demonstration of the background problem, differentially expressed genes with
 FDR<0.05 were subset, with separate lists for up and downregulated genes.
+If fewer than 200 genes met this criteria, then the 200 genes with the smallest p-values
+were selected.
 These gene lists were subjected to ORA using the `enricher` function of clusterProfiler
-v4.10.0, using a minimum set size of 5 and a maximum set size of 500,000.
+v4.10.0, using a minimum set size of 5 and a no maximum set size.
 
 For one test, a GO gene set called "Complement activation classical pathway" was added
 to the KEGG database to test whether fold enrichment and p-values were affected.
 
 To systematically assess the impact of the background problem, we conducted ORA with
 `enricher` using the different gene set libraries described above for the seven RNA-seq
-datasets and nine gene set libraries.
+datasets.
 `enricher` was used with the same parameters as above, and we devised a simple workaround
 to the background problem, which is to append the entire background list as a gene set to the
 library.
@@ -172,10 +183,13 @@ Jaccard index was used to compare original and corrected analyses.
 
 ### Examining the FDR problem
 
+For this test, 2000 of the top up and down regulated genes were selected from each
+differential expression dataset.
 A workaround for the FDR problem was devised by filtering the gene sets by the presence of
 at least two genes in the background list prior to running `enricher`.
 After `enricher` using the parameters above, the number of gene sets in the results was
-quantified, and compared to the number that should have been reported using the two gene limit.
+quantified, and compared to the number that should have been reported using the two gene
+limit.
 The difference between these numbers (*n*) represents the number of missing gene sets.
 To account for these tests, *n* 1 values were appended to the p-values obtained by enricher,
 followed by FDR correction in R, to obtain the corrected FDR values.
@@ -209,7 +223,7 @@ bioconductor package v1.30.0 which does not suffer these problems, and `fgsea` a
 implementation of the preranked GSEA algorithm [@Korotkevich2016-gd].
 For the ORA functions above, significantly differentially expressed genes with FDR 0.05 were
 selected for the foreground gene set.
-If fewer than 250 genes are detected as significant, then 250 genes with the smallest p-values
+If fewer than 200 genes are detected as significant, then 200 genes with the smallest p-values
 were used for ORA, similar to a previous report [@Tarca2013-xh].
 For `fgsea`, the DESeq2 test statistic was used for scoring differential expression.
 
@@ -285,6 +299,13 @@ index between original and corrected analysis were calculated for seven RNA-seq 
 gene set libraries. Only GO, Reactome, Cellmarkers and TFT GTRD are shown.](
 ../analysis/fig2_ORAsz.png "Figure 2B shows that the impact of the FDR bug is worse when
 foreground gene lists are shorter than 500.")
+
+### Impact of these two problems on accuracy determined with simulated data
+
+![**Figure 3. Comparison of clusterProfiler, fora and fgsea accuracy with simulated data.**
+Precision, recall and F1 score are shown with the addition of different amounts of random
+noise to expression levels.](../analysis/sim/fig3_sim.png "Figure 3 shows that fora is more
+precise than clusterProfiler, and fgsea has higher recall than either ORA methods.")
 
 ## Discussion
 
