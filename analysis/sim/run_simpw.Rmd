@@ -95,7 +95,7 @@ gsets <- randomGeneSets(a,setsize=30,nsets=200)
 
 ```{r,setparameters}
 
-SIMS=500
+SIMS=1000
 #run 500 sims
 FRAC_DE=0.05
 FC=1
@@ -179,7 +179,7 @@ par(mfrow=c(1,3))
 plot(cp$VARIANCE,cp$p,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="precision")
 points(fo$VARIANCE,fo$p,type="b",pch=19,col="red")
 points(fg$VARIANCE,fg$p,type="b",pch=19,col="blue")
-
+grid()
 legend("bottomleft", inset=.02, title="tool",
    c("clusterprofiler","fora","fgsea"), col=c("black","red","blue"),
    horiz=FALSE, cex=1.2, pch=19,lwd=2)
@@ -187,11 +187,11 @@ legend("bottomleft", inset=.02, title="tool",
 plot(cp$VARIANCE,cp$r,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="recall")
 points(fo$VARIANCE,fo$r,type="b",pch=19,col="red")
 points(fg$VARIANCE,fg$r,type="b",pch=19,col="blue")
-
+grid()
 plot(cp$VARIANCE,cp$f,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="f1")
 points(fo$VARIANCE,fo$f,type="b",pch=19,col="red")
 points(fg$VARIANCE,fg$f,type="b",pch=19,col="blue")
-
+grid()
 dev.off()
 
 ```
