@@ -172,9 +172,9 @@ deseq2<-function(x) {
   z <- DESeq2::results(res)
   z <- as.data.frame(z[order(z$pvalue),])
   up <- rownames(subset(z,log2FoldChange>0 & padj<0.05))
-  if (length(up)<250) { up <- rownames(head(subset(z,log2FoldChange>0 ),250)) }
+  if (length(up)<200) { up <- rownames(head(subset(z,log2FoldChange>0 ),200)) }
   dn <- rownames(subset(z,log2FoldChange<0 & padj<0.05))
-  if (length(dn)<250) { dn <- rownames(head(subset(z,log2FoldChange<0 ),250)) }
+  if (length(dn)<200) { dn <- rownames(head(subset(z,log2FoldChange<0 ),200)) }
   x[[6]] <- z
   x[[7]] <- up
   x[[8]] <- dn
