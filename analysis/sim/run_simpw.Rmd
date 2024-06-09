@@ -95,11 +95,11 @@ gsets <- randomGeneSets(a,setsize=30,nsets=200)
 
 ```{r,setparameters}
 
-SIMS=32
+SIMS=1000
 #run 500 sims
 FRAC_DE=0.05
 FC=1
-N_REPS=5
+N_REPS=3
 DGE_FUNC="deseq2"
 SUM_COUNT=2e7
 VARIANCE=c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)

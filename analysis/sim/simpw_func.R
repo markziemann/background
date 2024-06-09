@@ -87,10 +87,12 @@ if (NDIF>0) {
 
   # select the ones that are also in the profile
   UP_DE<-UP_DE[which(UP_DE %in% row.names(df))]
+  #UP_DE<-sample(UP_DE,length(UP_DE)/2)
 
   # same for down genes
   DN_DE<-unique(unlist(unname(DN_LIST)))
   DN_DE<-DN_DE[which(DN_DE %in% row.names(df))]
+  #DN_DE<-sample(DN_DE,length(DN_DE)/2)
 
   ITX<-intersect(UP_DE,DN_DE)
   # need to eliminate the overlapping ones for simplicity
