@@ -222,16 +222,16 @@ the `fgsea` bioconductor package v1.30.0 which does not suffer these problems, a
 fast implementation of the preranked GSEA algorithm [@Korotkevich2016-gd].
 For the ORA functions above, significantly differentially expressed genes with FDR 0.05 were
 selected for the foreground gene set.
-If fewer than 200 genes are detected as significant, then 200 genes with the smallest p-values
+If fewer than 200 genes were detected as significant, then 200 genes with the smallest p-values
 were used for ORA, similar to a previous report [@Tarca2013-xh].
 For `fgsea`, the DESeq2 test statistic was used for scoring differential expression.
-After enrichment analysis with these approaches, the significant sets up and down regulated
+After enrichment analysis with these approaches, the significant up and down regulated
 sets were selected and compared to the ground truth in order to calculate precision, recall
 and F1 score.
-At each value of added variance, 1000 replications were conducted.
+At each value of added variance, 500 replications were conducted.
 No set seed was used, but results were similar when run on different computer systems.
 
-### Results
+## Results
 
 ### Understanding the background problem
 
@@ -292,12 +292,49 @@ foreground gene lists are shorter than 500.")
 
 ### Impact of these two problems on accuracy determined with simulated data
 
+Simulated differential expression profiles with apriori changes to predetermined pathway genes were
+analysed in parallel by clusterProfilers enricher function, which suffers from the two aforementioned
+problems and fora which does not.
+In parallel, fgsea was used to compare the performance of these two ORA methods against a prototypical
+FCS method.
+ClusterProfiler scored very high precision when added variance was less than 0.4, but showed a
+progressive worsening in precision as more noise was added to the dataset, dropping to 0.68 with added
+variance of 1.0.
+In comparison, the precision of fora was relatively stable around 0.97 until added variance reached 0.9.
+The recall of ORA methods dropped suddenly when added variance was 0.5 or larger.
+fgsea showed stable precision of 0.94 across all levels of added variance, and superior recall overall.
+
 ![**Figure 3. Comparison of clusterProfiler, fora and fgsea accuracy with simulated data.**
 Precision, recall and F1 score are shown with the addition of different amounts of random
 noise to expression levels.](../analysis/sim/fig3_sim.png "Figure 3 shows that fora is more
 precise than clusterProfiler, and fgsea has higher recall than either ORA methods.")
 
 ## Discussion
+
+Here we have described the effect of two subtle problems with common implementations of ORA.
+This work was inspired by a doctoral student new to bioinformatics who was puzzled by confusing results
+obtained from clusterProfiler when using a custom set of pathways.
+Our hunch that clusterProfiler was behaving in an undesired way was confirmed by several posts to
+online bioinformatics forums dating to 2020 where confused users were wondering why the number of
+background genes changed so much.
+ClusterProfiler maintainers recently provided an option to prevent the loss of unannotated genes from the
+background `options(enrichment_force_universe = TRUE)`, however this feature isn't yet described in the
+official documentation.
+
+The second problem is potentially more serious in that it could lead to lots of false positives,
+as clusterProfiler underestimates the actual number of tests that were conducted.
+As shown in Figure 2B, this affects results differently depending on the gene set library used and also
+the number of genes selected in the foreground list.
+
+ClusterProfiler is not the only tool to suffer from these problems, they are widespread (**Table 1**).
+
+| Tool | Has problems | Citation |
+| --- | --- | --- |
+| ClusterProfiler | Background and FDR | [@Yu2012-jj;@Wu2021-wy] |
+| DAVID | Background and FDR | [@Dennis2003-ar;@Huang2009-gi;@Sherman2022-jn] |
+| fora (fgsea) | Neither | [@Korotkevich2016-gd] |
+
+: Table 1. Classification of several popular ORA tools for Background and FDR problems.
 
 In addition to the subtle problems with ORA, there are some major ones too:
 
@@ -306,6 +343,13 @@ In addition to the subtle problems with ORA, there are some major ones too:
 * Results vary dramatically depending on the number of genes selected in the foreground
 
 * Less accurate as compared to FCS
+
+The reason why such problems proliferated for so long is that using a custom background for ORA seems
+to be the exception, rather than the rule.
+Several tools do not even allow for the use of a custom background, suggesting that some tool developers
+were unaware of the seriousness of this error.
+This is one reason why ORA tool documentation also seems to lack any explanation of the importance of
+using a custom background set.
 
 # Data and Software Availability
 
