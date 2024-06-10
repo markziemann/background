@@ -172,7 +172,7 @@ points(fo$VARIANCE,fo$f,type="b",pch=19,col="red")
 points(fg$VARIANCE,fg$f,type="b",pch=19,col="blue")
 
 
-png("fig3_sim.png",width=720, height=480)
+png("fig3_sim.png", width=7,height=5,units="in",res=150,pointsize=12)
 par(mar=c(c(5.1, 5.1, 2.1, 2.1) ))
 par(mfrow=c(1,3))
 
