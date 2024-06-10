@@ -95,7 +95,7 @@ gsets <- randomGeneSets(a,setsize=30,nsets=200)
 
 ```{r,setparameters}
 
-SIMS=1000
+SIMS=500
 #run 500 sims
 FRAC_DE=0.05
 FC=1
@@ -140,7 +140,9 @@ res %>% kbl(caption="simulation_results") %>% kable_paper("hover", full_width = 
 
 ```
 
-## Plotfig1_ORAjac.png
+## Plot
+
+fig1_ORAjac.png
 
 ```{r,plot1}
 
