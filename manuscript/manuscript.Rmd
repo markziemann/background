@@ -76,7 +76,7 @@ Despite this performance difference, a survey of articles published in 2019 show
 seven of the top eight most popular tools were based on ORA [@Wijesooriya2022-fw].
 The discrepancy between performance and popularity is likely due to the relative ease of
 conducting ORA as compared to FCS.
-A minimal ORA might involve pasting a single list of genes into a text box on a website,
+A minimal ORA might involve pasting a list of gene symbols into a text box on a website,
 where the results appear nearly instantaneously.
 On the other hand, FCS typically involves installing specific softwares and dealing with a
 dataset representing every detected gene (~20,000 rows) and ensuring that the file
@@ -91,7 +91,7 @@ Failure to use a background gene list leads to dramatic changes in enrichment re
 rendering them unreliable [@Timmons2015-ki].
 Unfortunately, use of an appropriate background list is reported in only a small fraction
 (~4%) of peer-reviewed articles describing enrichment analysis [@Wijesooriya2022-fw].
-Correction of p-values for multiple testing is crucial in controlling the false positive rate
+Correction of p-values for multiple testing is also crucial in controlling the false positive rate
 as enrichment analysis typically involves throusands of parallel tests.
 But appropriate p-value correction is reported in only ~54% of studies [@Wijesooriya2022-fw].
 These issues have resulted in the development of best practices for end users and
@@ -122,7 +122,7 @@ This results in pathways being discarded from the analysis if no common genes ar
 the foreground, despite a large number of those genes being present in the background list.
 This artificially reduces the number of tests conducted and makes FDR values appear lower
 than they should, potentially raising the rate of false positives.
-We expect this problem to have a more severe effect when the foreground list is fairly small.
+We expect this problem to have a more severe effect when the foreground list is small.
 
 Here, we define the effect of these two problems on real RNA-seq based enrichment analysis
 results and demonstrate how these two issues impact performance using simulated expression
@@ -161,15 +161,12 @@ Gene Ontology (GO) [@The_Gene_Ontology_Consortium2023-xp],
 Human Phenotype Ontology (HPO) [@Kohler2021-ha],
 Cell markers and
 Hallmark pathways [@Liberzon2015-cs].
-For an initial demonstration of the background problem, differentially expressed genes with
+To demonstrate the background problem, differentially expressed genes with
 FDR<0.05 were subset, with separate lists for up and downregulated genes.
 If fewer than 200 genes met this criteria, then the 200 genes with the smallest p-values
-were selected.
+were selected, as suggested by a previous report [@Tarca2013-xh].
 These gene lists were subjected to ORA using the `enricher` function of clusterProfiler
 v4.10.0, using a minimum set size of 5 and a no maximum set size.
-
-For one test, a GO gene set called "Complement activation classical pathway" was added
-to the KEGG database to test whether fold enrichment and p-values were affected.
 
 To systematically assess the impact of the background problem, we conducted ORA with
 `enricher` using the different gene set libraries described above for the seven RNA-seq
@@ -184,7 +181,7 @@ Jaccard index was used to compare original and corrected analyses.
 ### Examining the FDR problem
 
 For this test, 2000 of the top up and down regulated genes were selected from each
-differential expression dataset.
+differential expression dataset based on p-value.
 A workaround for the FDR problem was devised by filtering the gene sets by the presence of
 at least two genes in the background list prior to running `enricher`.
 After `enricher` using the parameters above, the number of gene sets in the results was
