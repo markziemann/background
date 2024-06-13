@@ -26,7 +26,23 @@ csl: plos-computational-biology.csl
 
 # Abstract
 
-TODO.
+Over-representation analysis (ORA) is used widely to asses for the enrichment of functional
+categories in a gene list compared to a background list.
+ORA is therefore a critical method in the interpretation of 'omics data, relating gene lists
+to biological functions and themes.
+Although ORA is hugely popular, we and others have noticed two potentially undesired
+behaviours of some ORA tools.
+The first one we call the "background problem", because it involves the software eliminating
+large numbers of genes from the background list if they are not annotated as belonging to any
+category.
+The second one we call the "false discovery rate problem", because some tools underestimate
+the true number of parallel tests conducted.
+Here we demonstrate the impact of these issues on several real RNA-seq datasets and use
+simulated RNA-seq data to quantify the impact of these problems.
+We show that the severity of these problems depends on the gene set library, the number of
+genes in the list, and the degree of noise in the dataset.
+These problem can be mitigated by changing packages/websites for ORA or by changing to another
+approach such as functional class scoring.
 
 # Keywords
 
@@ -130,7 +146,7 @@ data.
 Finally we classify popular tools regarding these two problems and provide general
 recommendations for end users.
 
-### Methods
+## Methods
 
 ### Expression data preparation
 
@@ -211,7 +227,8 @@ addition of some extra variation drawn from a normal distribution with mean of 1
 standard deviation varying between 0.1 and 0.6, this value selected randomly for each gene.
 Three "control" and five "case" pseudosamples were generated.
 For the genes selected to be differentially expressed, expression values were multiplied by a
-log fold change in the case samples of 0.5 for upregulated genes and -0.5 for downregulated genes.
+log fold change in the case samples of 0.5 for upregulated genes and -0.5 for downregulated
+genes.
 Genes that were selected to be both up and downregulated were left unchanged.
 With these expression profiles, DESeq2 was used for differential analysis, and the results
 were subjected to `enricher` which suffers from both problems, `fora`, an ORA function of
@@ -219,8 +236,8 @@ the `fgsea` bioconductor package v1.30.0 which does not suffer these problems, a
 fast implementation of the preranked GSEA algorithm [@Korotkevich2016-gd].
 For the ORA functions above, significantly differentially expressed genes with FDR 0.05 were
 selected for the foreground gene set.
-If fewer than 200 genes were detected as significant, then 200 genes with the smallest p-values
-were used for ORA, similar to a previous report [@Tarca2013-xh].
+If fewer than 200 genes were detected as significant, then 200 genes with the smallest
+p-values were used for ORA, similar to a previous report [@Tarca2013-xh].
 For `fgsea`, the DESeq2 test statistic was used for scoring differential expression.
 After enrichment analysis with these approaches, the significant up and down regulated
 sets were selected and compared to the ground truth in order to calculate precision, recall
@@ -245,6 +262,8 @@ Cellmarkers and GTRD at 0.88 and 0.76 respectively, and the lowest similarity wa
 HPO and KEGG with 0.20 and 0.48 respectively.
 Observed Jaccard scores correlated with the number of genes annotated to one or more functional
 categories in the gene set library (**Figure 1B**).
+This result suggests that ORA with smaller gene set libraries like HPO and KEGG are impacted
+more severely.
 
 ![**Figure 1A. Effect of correcting the background problem.** Figures represent the mean number
 of statistically significant sets (FDR<0.05) over seven independent datasets detected with
@@ -276,11 +295,13 @@ Interestingly, the drop in Jaccard similarity was more severe for GO and Reactom
 compared to Cellmarkers and TFT GTRD sets, and may be associated with the size of the gene
 sets in the library.
 Median gene set size for these are GO:18, Reactome:11, TFT GTRD:287 and Cellmarkers:115.
+These results demonstrate that the FDR problem is more severe when dealing with shorter
+foreground lists, and this is exacerbated when functional categories in the gene set library
+are also small.
 
 ![**Figure 2A. Effect of correcting the FDR problem.** Figures represent the mean number of
 significant sets with and without correction of the FDR problem over seven independent RNA-seq
-datasets. Foreground list consisted of 2000 genes with the smallest p-values](../analysis/fig2_ORAfdr.png
-"Figure 2A shows that correcting the FDR bug slightly reduces the number of significant sets.")
+datasets. Foreground list consisted of 2000 genes with the smallest p-values](../analysis/fig2_ORAfdr.png "Figure 2A shows that correcting the FDR bug slightly reduces the number of significant sets.")
 
 ![**Figure 2B. Impact of FDR problem is worse for shorter foreground gene lists.** Mean Jaccard
 index between original and corrected analysis were calculated for seven RNA-seq datasets and nine
@@ -290,24 +311,25 @@ foreground gene lists are shorter than 500.")
 
 ### Impact of these two problems on accuracy determined with simulated data
 
-Simulated differential expression profiles with apriori changes to predetermined pathway genes were
-analysed in parallel by clusterProfiler's `enricher` function, which suffers from the two
-aforementioned problems and `fora` which does not.
+Simulated differential expression profiles with *a priori* changes to predetermined pathway
+genes were analysed in parallel by clusterProfiler's `enricher` function, which suffers from
+the two aforementioned problems and `fora` which does not.
 In parallel, `fgsea` was used to compare the performance of these two ORA methods against a
 prototypical FCS method.
-ClusterProfiler scored very high precision when added variance was less than 0.4, but showed a
-progressive worsening in precision as more noise was added to the dataset, dropping to 0.61 with added
-variance of 0.6.
-In comparison, the precision of fora was relatively stable around 0.97 until added variance reached 0.5.
-The recall of ORA methods dropped suddenly when added variance was 0.2 or larger.
-fgsea showed stable precision of 0.94 when added variance was 0.4 or lower, and dropped slightly to
-0.91 with added variance of 0.6.
+ClusterProfiler scored very high precision when added variance was less than 0.2, but showed a
+progressive worsening in precision as more noise was added to the dataset, dropping to 0.69
+with added variance of 0.5.
+In comparison, the precision of fora was relatively stable around 0.97 until added variance
+reached 0.5, where it dropped to 0.88.
+The recall of ORA methods dropped suddenly when added variance was 0.2 or greater.
+fgsea showed stable precision of 0.93 or greater when added variance was 0.5 or lower, which
+dropped slightly to 0.91 with added variance of 0.6.
 fgsea recall was better than either ORA tool across all levels of added variance.
-This result shows that these two subtle problems result in poorer precision for clusterProfiler,
-which becomes more severe with higher levels of noise.
-Overall, fgsea had similar precision to fora (mean=0.94), but the higher recall of fgsea meant it had
-a higher overall accuracy measured by F1 score (0.83) as compared to fora and clusterProfiler
-(0.61 and 0.64 respectively).
+This result shows that these two subtle problems result in poorer precision for
+clusterProfiler, which becomes more severe with higher levels of noise.
+Overall, fgsea had similar mean precision to fora (0.94), but the higher recall of fgsea
+meant it had a higher overall accuracy measured by F1 score (0.83) as compared to fora and
+clusterProfiler (0.61 and 0.64 respectively).
 
 ![**Figure 3. Comparison of clusterProfiler, fora and fgsea accuracy with simulated data.**
 Precision, recall and F1 score are shown with the addition of different amounts of random
@@ -316,21 +338,26 @@ precise than clusterProfiler, and fgsea has higher recall than either ORA method
 
 ## Discussion
 
-Here we have described the effect of two subtle problems with common implementations of ORA.
-This work was inspired by a doctoral student new to bioinformatics who was puzzled by confusing results
-obtained from clusterProfiler when using a custom set of pathways.
-Our hunch that clusterProfiler was behaving in an undesired way was confirmed by the discovery of
-several posts to online bioinformatics forums dating to ~2020 where confused users were wondering why
-the number of background genes changed so much.
-ClusterProfiler maintainers recently provided an option to prevent the loss of unannotated genes from
-the background `options(enrichment_force_universe = TRUE)`, however this feature isn't yet described
-in the official documentation.
+The background problem came to our attention when a doctoral student in our department
+was puzzled by results obtained from clusterProfiler when using a custom set of pathways.
+This exact issue was the subject of several posts to online bioinformatics forums dating to
+~2020 where confused users were wondering why the number of background genes changed so much.
+The results shown here show that the background problem effects smaller gene set libraries
+like KEGG and HPC more severely as compared to Cellmarkers and GO libraries which describe
+a larger proportion of all genes.
+ClusterProfiler maintainers recently provided an option to prevent the loss of unannotated
+genes from the background `options(enrichment_force_universe = TRUE)`, however this feature
+isn't yet described in the official documentation.
 
-The second problem is potentially more serious in that it could lead large numbers false positives
-under specific conditions; when the foreground list is short and the median pathway size is relatively
-small.
+The second problem is potentially more serious in that it could lead to increasing false
+positives under specific conditions; when the foreground list is short and the median pathway
+size is relatively small.
 These false positives arise due to an underestimate of the actual number of tests conducted.
-ClusterProfiler is not the only tool to suffer from these problems, they are widespread (**Table 1**).
+In extreme cases, correction of this problem can lead to around half of the significant
+results changing.
+
+ClusterProfiler is not the only tool to suffer from these problems, they are widespread
+(**Table 1**), but there are also several tools free of these problems.
 
 | Tool | Has problems | Citation |
 | --- | --- | --- |
@@ -340,20 +367,20 @@ ClusterProfiler is not the only tool to suffer from these problems, they are wid
 
 : Table 1. Classification of several popular ORA tools for Background and FDR problems.
 
-Although the purpose of this work was to describe two subtle problems with ORA, it has some major
-drawbacks which limit its utility.
-
-* The method is rarely reported comprehensively, especially crucial details about background gene list
-and FDR correction.
-
-* Results vary dramatically depending on the number of genes selected in the foreground.
-
-* Overall ORA is less accurate as compared to FCS
-
-These bigger problems suggest FCS should replace ORA in most cases.
-Where it makes sense to use ORA would be when FCS is not applicable, for example when investigating
-the over-represented categories in gene expression modules defined by packages like WGCNA (Weighted
-Gene Correlation Network Analysis)[@Langfelder2008-hu].
+Although the purpose of this work was to describe two subtle problems with ORA, this work
+highlights some major drawbacks.
+Firstly, ORA was less accurate as compared to FCS in this simulation work, confirming a
+previous report [@Kaspi2020-rn].
+Secondly ORA results can vary dramatically depending on the number of genes selected in the
+foreground, a mostly arbitrary choice.
+These issues together with previously mentioned pitfalls such as lack of background
+correction and methodological misreporting [@Timmons2015-ki;@Wijesooriya2022-fw], suggest
+that ORA should be discouraged in most situations, and replaced by other methods such as FCS.
+Where it makes sense to use ORA would be when FCS is not applicable, for example when
+investigating the over-represented categories in gene expression modules defined by packages
+like WGCNA (Weighted Gene Correlation Network Analysis)[@Langfelder2008-hu], or when
+investigating over-represented functional categories among genes with variants associated
+with a disease.
 
 # Data and Software Availability
 
