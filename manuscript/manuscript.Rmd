@@ -93,7 +93,7 @@ seven of the top eight most popular tools were based on ORA [@Wijesooriya2022-fw
 The discrepancy between performance and popularity is likely due to the relative ease of
 conducting ORA as compared to FCS.
 A minimal ORA might involve pasting a list of gene symbols into a text box on a website,
-where the results appear nearly instantaneously.
+with results appearing nearly instantly.
 On the other hand, FCS typically involves installing specific softwares and dealing with a
 dataset representing every detected gene (~20,000 rows) and ensuring that the file
 format from upstream tools is compatible with FCS packages.
@@ -104,11 +104,11 @@ studies, meaning that some genes will more readily appear as differentially expr
 To address this bias, a background list of detected genes is required for comparison to the
 list of selected genes (foreground list) [@Tilford2009-vx].
 Failure to use a background gene list leads to dramatic changes in enrichment results,
-rendering them unreliable [@Timmons2015-ki].
+rendering them unreliable [@Timmons2015-ki;@Wijesooriya2022-fw].
 Unfortunately, use of an appropriate background list is reported in only a small fraction
 (~4%) of peer-reviewed articles describing enrichment analysis [@Wijesooriya2022-fw].
-Correction of p-values for multiple testing is also crucial in controlling the false positive rate
-as enrichment analysis typically involves throusands of parallel tests.
+Correction of p-values for multiple testing is also crucial in controlling the false positive
+rate as enrichment analysis typically involves throusands of parallel tests [@Tilford2009-vx].
 But appropriate p-value correction is reported in only ~54% of studies [@Wijesooriya2022-fw].
 These issues have resulted in the development of best practices for end users and
 stronger reporting standards [@Zhao2023-mx].
