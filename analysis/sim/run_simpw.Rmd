@@ -55,25 +55,25 @@ xxx object slots
 
 10. clusterprofiler_default down gene sets
 
-11. clusterprofiler_fixed up gene sets
+11. clusterprofiler bg fix up gene sets
 
-12. clusterprofiler_fixed down gene sets
+12. clusterprofiler bg fix down gene sets
 
-13. clusterprofiler_nobg up gene sets
+13. clusterprofiler FDR fix up gene sets
 
-14. clusterprofiler_nobg down gene sets
+14. clusterprofiler FDR fix down gene sets
 
-15. fora up gene sets
+15. clusterprofiler BG and FDR fix up gene sets
 
-16. fora down gene sets
+16. clusterprofiler BG and FDR fix down gene sets
 
-17. fgsea up gene sets
+17. fora up gene sets
 
-18. fgsea down gene sets
+18. fora down gene sets
 
-19. mitch up
+19. fgsea up gene sets
 
-20. mitch dn
+20. fgsea down gene sets
 
 # Get count data
 
@@ -146,11 +146,17 @@ fig1_ORAjac.png
 
 ```{r,plot1}
 
-cp <- subset(res,PWAY_FUNC == "clusterprofiler")
+cp <- subset(res,PWAY_FUNC == "clusterProfiler default")
+cpbg <- subset(res,PWAY_FUNC == "clusterProfiler BG fix")
+cpfdr <- subset(res,PWAY_FUNC == "clusterProfiler FDR fix")
+cpbgfdr <- subset(res,PWAY_FUNC == "clusterProfiler BG and FDR fix")
 fo <- subset(res,PWAY_FUNC == "fora")
 fg <- subset(res,PWAY_FUNC == "fgsea")
 
-cp %>% kbl(caption="clusterprofiler") %>% kable_paper("hover", full_width = F)
+cp %>% kbl(caption="clusterProfiler") %>% kable_paper("hover", full_width = F)
+cpbg %>% kbl(caption="clusterProfiler with background bug fix") %>% kable_paper("hover", full_width = F)
+cpfdr %>% kbl(caption="clusterProfiler with FDR bug fix") %>% kable_paper("hover", full_width = F)
+cpbgfdr %>% kbl(caption="clusterProfiler with background and FDR fixes") %>% kable_paper("hover", full_width = F)
 fo %>% kbl(caption="fora") %>% kable_paper("hover", full_width = F)
 fg %>% kbl(caption="fg") %>% kable_paper("hover", full_width = F)
 
@@ -158,18 +164,27 @@ par(mfrow=c(1,3))
 par(mar=c(c(5.1, 5.1, 2.1, 2.1) ))
 
 plot(cp$VARIANCE,cp$p,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="precision")
+points(cpbg$VARIANCE,cpbg$p,type="b",pch=19,col="orange")
+points(cpfdr$VARIANCE,cpfdr$p,type="b",pch=19,col="darkgreen")
+points(cpbgfdr$VARIANCE,cpbgfdr$p,type="b",pch=19,col="purple")
 points(fo$VARIANCE,fo$p,type="b",pch=19,col="red")
 points(fg$VARIANCE,fg$p,type="b",pch=19,col="blue")
 
 legend("bottomleft", inset=.02, title="tool",
-   c("clusterprofiler","fora","fgsea"), col=c("black","red","blue"),
-   horiz=FALSE, cex=1.2, pch=19,lwd=2)
+   c("CP default","CP BG fix","CP FDR fix","CP BG and FDR fix","fora","fgsea"),
+   col=c("black","orange","darkgreen","purple","red","blue"),horiz=FALSE, cex=1.2, pch=19,lwd=2)
 
 plot(cp$VARIANCE,cp$r,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="recall")
+points(cpbg$VARIANCE,cpbg$r,type="b",pch=19,col="orange")
+points(cpfdr$VARIANCE,cpfdr$r,type="b",pch=19,col="darkgreen")
+points(cpbgfdr$VARIANCE,cpbgfdr$r,type="b",pch=19,col="purple")
 points(fo$VARIANCE,fo$r,type="b",pch=19,col="red")
 points(fg$VARIANCE,fg$r,type="b",pch=19,col="blue")
 
 plot(cp$VARIANCE,cp$f,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="f1")
+points(cpbg$VARIANCE,cpbg$f,type="b",pch=19,col="orange")
+points(cpfdr$VARIANCE,cpfdr$f,type="b",pch=19,col="darkgreen")
+points(cpbgfdr$VARIANCE,cpbgfdr$f,type="b",pch=19,col="purple")
 points(fo$VARIANCE,fo$f,type="b",pch=19,col="red")
 points(fg$VARIANCE,fg$f,type="b",pch=19,col="blue")
 
@@ -179,22 +194,54 @@ par(mar=c(c(5.1, 5.1, 2.1, 2.1) ))
 par(mfrow=c(1,3))
 
 plot(cp$VARIANCE,cp$p,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="precision")
+points(cpbg$VARIANCE,cpbg$p,type="b",pch=19,col="orange")
+points(cpfdr$VARIANCE,cpfdr$p,type="b",pch=19,col="darkgreen")
+points(cpbgfdr$VARIANCE,cpbgfdr$p,type="b",pch=19,col="purple")
 points(fo$VARIANCE,fo$p,type="b",pch=19,col="red")
 points(fg$VARIANCE,fg$p,type="b",pch=19,col="blue")
 grid()
 legend("bottomleft", inset=.02, title="tool",
-   c("clusterprofiler","fora","fgsea"), col=c("black","red","blue"),
+   c("CP default","CP BG fix","CP FDR fix","CP BG and FDR fix","fora","fgsea"),
+   col=c("black","orange","darkgreen","purple","red","blue"),
    horiz=FALSE, cex=1.2, pch=19,lwd=2)
 
 plot(cp$VARIANCE,cp$r,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="recall")
+points(cpbg$VARIANCE,cpbg$r,type="b",pch=19,col="orange")
+points(cpfdr$VARIANCE,cpfdr$r,type="b",pch=19,col="darkgreen")
+points(cpbgfdr$VARIANCE,cpbgfdr$r,type="b",pch=19,col="purple")
 points(fo$VARIANCE,fo$r,type="b",pch=19,col="red")
 points(fg$VARIANCE,fg$r,type="b",pch=19,col="blue")
 grid()
+
 plot(cp$VARIANCE,cp$f,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="f1")
+points(cpbg$VARIANCE,cpbg$f,type="b",pch=19,col="orange")
+points(cpfdr$VARIANCE,cpfdr$f,type="b",pch=19,col="darkgreen")
+points(cpbgfdr$VARIANCE,cpbgfdr$f,type="b",pch=19,col="purple")
 points(fo$VARIANCE,fo$f,type="b",pch=19,col="red")
 points(fg$VARIANCE,fg$f,type="b",pch=19,col="blue")
 grid()
 dev.off()
+
+```
+
+Barplot is simpler.
+
+```{r,bars}
+
+prec <- c("CP default"=mean(cp$p),"CP BG fix"=mean(cpbg$p),"CP FDR fix"=mean(cpfdr$p),"CP BG and FDR fix"=mean(cpbgfdr$p),"fora"=mean(fo$p),"fgsea"=mean(fg$p))
+rec <- c("CP default"=mean(cp$r),"CP BG fix"=mean(cpbg$r),"CP FDR fix"=mean(cpfdr$r),"CP BG and FDR fix"=mean(cpbgfdr$r),"fora"=mean(fo$r),"fgsea"=mean(fg$r))
+f1 <- sapply(1:length(prec), function(i) { 2/(1/rec[i]+1/prec[i]) })
+
+par(mfrow=c(1,3))
+par(mar=c(c(9.1, 3.5, 2.1, 1.1) ))
+barplot(prec,ylim=c(0,1.1),las=2,main="precision",ylab="index")
+text((1:6*1.18)-0.38,prec+0.02,labels=signif(prec,3))
+barplot(rec,ylim=c(0,1.1),las=2,main="recall",ylab="index")
+text((1:6*1.18)-0.38,rec+0.02,labels=signif(rec,3))
+
+barplot(f1,ylim=c(0,1.1),las=2,main="F1",ylab="index")
+text((1:6*1.18)-0.38,f1+0.02,labels=signif(f1,3))
+
 
 ```
 
