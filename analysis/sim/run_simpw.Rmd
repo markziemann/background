@@ -172,7 +172,7 @@ points(fg$VARIANCE,fg$p,type="b",pch=19,col="blue")
 
 legend("bottomleft", inset=.02, title="tool",
    c("CP default","CP BG fix","CP FDR fix","CP BG and FDR fix","fora","fgsea"),
-   col=c("black","orange","darkgreen","purple","red","blue"),horiz=FALSE, cex=1.2, pch=19,lwd=2)
+   col=c("black","orange","darkgreen","purple","red","blue"),horiz=FALSE, cex=1.0, pch=19,lwd=2)
 
 plot(cp$VARIANCE,cp$r,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="recall")
 points(cpbg$VARIANCE,cpbg$r,type="b",pch=19,col="orange")
@@ -203,7 +203,7 @@ grid()
 legend("bottomleft", inset=.02, title="tool",
    c("CP default","CP BG fix","CP FDR fix","CP BG and FDR fix","fora","fgsea"),
    col=c("black","orange","darkgreen","purple","red","blue"),
-   horiz=FALSE, cex=1.2, pch=19,lwd=2)
+   horiz=FALSE, cex=1.0, pch=19,lwd=2)
 
 plot(cp$VARIANCE,cp$r,ylim=c(0,1),type="b",pch=19,xlab="variance added",ylab="index",main="recall")
 points(cpbg$VARIANCE,cpbg$r,type="b",pch=19,col="orange")
