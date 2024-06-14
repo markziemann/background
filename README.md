@@ -94,6 +94,8 @@ fgsea package.
 
 The enviornment and all R packages for reproducing this work are available at [DockerHub](https://hub.docker.com/repository/docker/mziemann/background/general).
 
+Reproduction requires a system with 32 threads and 64 GB RAM.
+
 ```
 # fetch image
 docker pull mziemann/background
@@ -108,6 +110,6 @@ q()
 exit
 # copy results to new folder
 mkdir docker_results
-docker cp -r 2ef8f2cfe56a:/background/analysis docker_results
+docker cp  `docker ps -alq`:/background/analysis docker_results
 ```
 
