@@ -26,7 +26,7 @@ git pull
 
 Need to fetch some data.
 
-```{r,dataprep}
+```{r,maindataprep}
 
 setwd("../dataprep")
 rmarkdown::render("bulkrna1.Rmd")
@@ -42,7 +42,7 @@ setwd("../analysis")
 
 ## Figure 1 - the background problem
 
-```{r,fig1}
+```{r,mainfig1}
 
 rmarkdown::render("analyse_rnaseq1.Rmd")
 
@@ -50,7 +50,7 @@ rmarkdown::render("analyse_rnaseq1.Rmd")
 
 ## Figure 2 - the FDR problem
 
-```{r,fig2}
+```{r,mainfig2}
 
 rmarkdown::render("analyse_rnaseq2.Rmd")
 
@@ -58,7 +58,7 @@ rmarkdown::render("analyse_rnaseq2.Rmd")
 
 ## Figure 3 - Examining accuracy with simulated expression data
 
-```{r,fig3}
+```{r,mainfig3}
 
 setwd("sim")
 rmarkdown::render("run_simpw.Rmd")
@@ -67,7 +67,7 @@ rmarkdown::render("run_simpw.Rmd")
 
 # Session information
 
-```{r,session}
+```{r,mainsession}
 
 sessionInfo()
 
