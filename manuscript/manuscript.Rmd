@@ -60,10 +60,7 @@ approach such as functional class scoring.
 
 ```{r,libs,echo=FALSE}
 
-library("DiagrammeR")
-library("RColorBrewer")
 library("kableExtra")
-#library("gt")
 
 ```
 
@@ -181,16 +178,16 @@ To demonstrate the background problem, differentially expressed genes with
 FDR<0.05 were subset, with separate lists for up and downregulated genes.
 If fewer than 200 genes met this criteria, then the 200 genes with the smallest p-values
 were selected, as suggested by a previous report [@Tarca2013-xh].
-These gene lists were subjected to ORA using the `enricher` function of clusterProfiler
+These gene lists were subjected to ORA using clusterProfiler's `enricher` function
 v4.10.0, using a minimum set size of 5 and a no maximum set size.
 
 To systematically assess the impact of the background problem, we conducted ORA with
-`enricher` using the different gene set libraries described above for the seven RNA-seq
+clusterProfiler using the different gene set libraries described above for the seven RNA-seq
 datasets.
-`enricher` was used with the same parameters as above, and we devised a simple workaround
+ClusterProfiler was used with the same parameters as above, and we devised a simple workaround
 to the background problem, which is to append the entire background list as a gene set to the
 library.
-This forces `enricher` to retain all background genes.
+This forces clusterProfiler to retain all background genes.
 The ORA analyses were then filtered for significant sets using a FDR threshold of 0.05.
 Jaccard index was used to compare original and corrected analyses.
 
@@ -199,13 +196,13 @@ Jaccard index was used to compare original and corrected analyses.
 For this test, 2000 of the top up and down regulated genes were selected from each
 differential expression dataset based on p-value.
 A workaround for the FDR problem was devised by filtering the gene sets by the presence of
-at least two genes in the background list prior to running `enricher`.
-After `enricher` using the parameters above, the number of gene sets in the results was
+at least two genes in the background list prior to running clusterProfiler.
+After clusterProfiler using the parameters above, the number of gene sets in the results was
 quantified, and compared to the number that should have been reported using the two gene
 limit.
 The difference between these numbers (*n*) represents the number of missing gene sets.
 To account for these tests, *n* values of 1 were appended to the p-values obtained by
-enricher, followed by FDR correction in R, to obtain the properly corrected FDR values.
+clusterProfiler, followed by FDR correction in R, to obtain the properly corrected FDR values.
 As above, analysis of seven datasets was done with nine gene set libraries, the significant
 sets were selected and the Jaccard statistics were collected for each run to compare original
 and corrected analysis.
@@ -231,9 +228,12 @@ log fold change in the case samples of 0.5 for upregulated genes and -0.5 for do
 genes.
 Genes that were selected to be both up and downregulated were left unchanged.
 With these expression profiles, DESeq2 was used for differential analysis, and the results
-were subjected to `enricher` which suffers from both problems, `fora`, an ORA function of
-the `fgsea` bioconductor package v1.30.0 which does not suffer these problems, and `fgsea` a
-fast implementation of the preranked GSEA algorithm [@Korotkevich2016-gd].
+were subjected to clusterProfiler which suffers from both problems,
+clusterProfiler with the background problem fix, clusterProfiler with the FDR problem fix,
+clusterProfiler with the fixes to background and FDR problems, an ORA function called `fora`
+from `fgsea` bioconductor package v1.30.0 that does not suffer these problems, and `fgsea` a
+fast implementation of the preranked gene set enrichment analysis (GSEA) algorithm
+[@Korotkevich2016-gd].
 For the ORA functions above, significantly differentially expressed genes with FDR 0.05 were
 selected for the foreground gene set.
 If fewer than 200 genes were detected as significant, then 200 genes with the smallest
@@ -244,6 +244,7 @@ sets were selected and compared to the ground truth in order to calculate precis
 and F1 score.
 At each value of added variance, 1000 replications were conducted.
 No set seed was used, but results were similar when run on different computer systems.
+All analyses were undertaken with R v4.4.0.
 
 ## Results
 
@@ -267,7 +268,7 @@ more severely.
 
 ![**Figure 1A. Effect of correcting the background problem.** Figures represent the mean number
 of statistically significant sets (FDR<0.05) over seven independent datasets detected with
-clusterProfiler's `enricher` function with and without correcting the background problem.
+clusterProfiler with and without correcting the background problem.
 Separate tests for up- and down-regulated gene lists were conducted.
 The percent increase in significant sets are shown.](../analysis/fig1_ORAsig.png "Figure 1A
 shows that correcting the background bug improves the number of significant sets between 12 and
@@ -312,29 +313,54 @@ foreground gene lists are shorter than 500.")
 ### Impact of these two problems on accuracy determined with simulated data
 
 Simulated differential expression profiles with *a priori* changes to predetermined pathway
-genes were analysed in parallel by clusterProfiler's `enricher` function, which suffers from
-the two aforementioned problems and `fora` which does not.
-In parallel, `fgsea` was used to compare the performance of these two ORA methods against a
+genes were analysed in parallel by clusterProfiler default and with mitigations for
+problems described above.
+In addition, these data underwent ORA with fora which does not suffer from these two
+problems.
+For comparison fgsea was used to compare the performance of these two ORA methods against a
 prototypical FCS method.
-ClusterProfiler scored very high precision when added variance was less than 0.2, but showed a
-progressive worsening in precision as more noise was added to the dataset, dropping to 0.69
-with added variance of 0.5.
-In comparison, the precision of fora was relatively stable around 0.97 until added variance
-reached 0.5, where it dropped to 0.88.
-The recall of ORA methods dropped suddenly when added variance was 0.2 or greater.
-fgsea showed stable precision of 0.93 or greater when added variance was 0.5 or lower, which
-dropped slightly to 0.91 with added variance of 0.6.
-fgsea recall was better than either ORA tool across all levels of added variance.
-This result shows that these two subtle problems result in poorer precision for
-clusterProfiler, which becomes more severe with higher levels of noise.
-Overall, fgsea had similar mean precision to fora (0.94), but the higher recall of fgsea
-meant it had a higher overall accuracy measured by F1 score (0.83) as compared to fora and
-clusterProfiler (0.61 and 0.64 respectively).
+These methods were tested with different levels of introduced variation and the mean
+precision, recall and F1 scores were recorded (**Figure 3A**).
+As anticipated, mitigating the background problem improved recall (by 1.6%), however it caused
+a similar-sized decrease in precision.
+Addressing the FDR problem improved precison by 9.6%, but the recall dropped by 8.5%.
+Addressing both problems improved precision by 8.2% but decreased recall by 5.6%.
+Under these conditions, the FDR problem affected results more severely than the background
+problem.
+Results obtained for clusterProfiler after implementing the two mitigations were identical to
+fora to three significant figures.
+fgsea recorded precision of 0.937, similar to the ORA methods, but recall was far superior,
+with fgsea scoring 22.4% higher than default clusterProfiler and 28% higher than fora.
+As a result, fgsea's overall accuracy as defined by F1 index was 21.2% higher than fora and
+18.4% higher than default clusterProfiler.
 
-![**Figure 3. Comparison of clusterProfiler, fora and fgsea accuracy with simulated data.**
+When looking at the accuracy profile at different levels of added noise (**Figure 3B**), we
+see that ORA techniques have superior precision when the added noise is low (<0.2), but the
+precision of ORA techniques drops at higher levels of added noise.
+The rate of drop in precision was more severe for approaches that suffer from the FDR problem.
+The precision of fgsea was relatively stable despite high levels of added noise, ranging from
+0.95 to 0.91.
+The recall of fgsea was superior to all ORA approaches across all levels of added noise.
+
+![**Figure 3A. Impact of correcting these two problems on accuracy of simulated expression
+data.**
+Precision, recall and F1 scores are the mean of trials at a range of added noise.
+CP; clusterProfiler, CP BG fix; clusterProfiler with a workaround to the background problem,
+CP FDR fix; clusterProfiler with a workaround to the FDR problem,
+CD BG and FDR fix; clusterProfiler with mitigations for both background and FDR problems,
+fora; ORA function of the fgsea package,
+fgsea; an FCS method similar to GSEA.
+](../analysis/sim/fig3_bars.png "Figure 3A shows that fora is more
+precise than clusterProfiler, and fgsea has higher recall than ORA methods.")
+
+![**Figure 3B. Accuracy of clusterProfiler, fora and fgsea with simulated data with various
+levels of added noise.**
 Precision, recall and F1 score are shown with the addition of different amounts of random
-noise to expression levels.](../analysis/sim/fig3_sim.png "Figure 3 shows that fora is more
-precise than clusterProfiler, and fgsea has higher recall than either ORA methods.")
+noise to expression levels.
+The purple line for clusterProfiler with mitigations for both problems is not visible as the
+performance was identical to fora.
+](../analysis/sim/fig3_sim.png "Figure 3B shows that ORA methods have deteriorating accuracy
+with noisy data as compared to fgsea, a FCS method.")
 
 ## Discussion
 
@@ -367,10 +393,17 @@ ClusterProfiler is not the only tool to suffer from these problems, they are wid
 
 : Table 1. Classification of several popular ORA tools for Background and FDR problems.
 
-Although the purpose of this work was to describe two subtle problems with ORA, this work
-highlights some major drawbacks.
+The purpose of this work was to describe two subtle problems with ORA, but there are some
+bigger problems noted.
 Firstly, ORA was less accurate as compared to FCS in this simulation work, confirming a
 previous report [@Kaspi2020-rn].
+Specifically, precision of ORA deteriorated with greater levels of added noise, while FCS
+was relatively stable.
+This means researchers can be more confident with FCS results, even if the data are
+noisy.
+Higher recall of FCS also means that researchers will have more power to identify pathways
+relevant to the biological processes being studied.
+
 Secondly ORA results can vary dramatically depending on the number of genes selected in the
 foreground, a mostly arbitrary choice.
 These issues together with previously mentioned pitfalls such as lack of background

@@ -1,0 +1,74 @@
+---
+title: "Regenerate figures for the ORA paper"
+author: "Ziemann lab"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+  toc: true
+theme: cosmo
+---
+
+Source: https://github.com/markziemann/background/
+
+## Introduction
+
+Here we investigate two subtle problems with ORA.
+
+```{bash,pull}
+
+git pull
+
+```
+
+# Workflow
+
+## Data preparation
+
+Need to fetch some data.
+
+```{r,dataprep}
+
+setwd("../dataprep")
+rmarkdown::render("bulkrna1.Rmd")
+rmarkdown::render("bulkrna2.Rmd")
+rmarkdown::render("bulkrna3.Rmd")
+rmarkdown::render("bulkrna4.Rmd")
+rmarkdown::render("bulkrna5.Rmd")
+rmarkdown::render("bulkrna6.Rmd")
+rmarkdown::render("bulkrna7.Rmd")
+setwd("../analysis")
+
+```
+
+## Figure 1 - the background problem
+
+```{r,fig1}
+
+rmarkdown::render("analyse_rnaseq1.Rmd")
+
+```
+
+## Figure 2 - the FDR problem
+
+```{r,fig2}
+
+rmarkdown::render("analyse_rnaseq2.Rmd")
+
+```
+
+## Figure 3 - Examining accuracy with simulated expression data
+
+```{r,fig3}
+
+setwd("sim")
+rmarkdown::render("run_simpw.Rmd")
+
+```
+
+# Session information
+
+```{r,session}
+
+sessionInfo()
+
+```
