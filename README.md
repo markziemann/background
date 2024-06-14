@@ -69,11 +69,7 @@ typical enrichment analyses.
 
 The approach we will take is to collect several molecular profile datasets
 and several gene set databases, and systematically determine the effect of
-these two problems on all the combinations. (DONE)
-
-This will be conducted for RNA-seq expression and then replicated for other
-omics such as DNA methylation, proteomics analysis and genomics (SNPs,GWAS).
-(TODO?)
+these two problems on all the combinations.
 
 ### Justification of best practice with simulations
 
@@ -93,3 +89,25 @@ If ORA must be used, fora() is recommended, but it lacks enrichment score output
 which is important for prioritising results.
 Here, we can write a patch to output fora() fold enrichment score and contribute to
 fgsea package.
+
+## Reproducibility
+
+The enviornment and all R packages for reproducing this work are available at [DockerHub](https://hub.docker.com/repository/docker/mziemann/background/general).
+
+```
+# fetch image
+docker pull mziemann/background
+# run bash in container
+docker run -it mziemann/background bash
+# get updated codes
+git pull
+# go to the analysis folder and execute main script
+cd analysis && Rscript -e 'rmarkdown::render("main.Rmd")'
+# once complete, exit
+q()
+exit
+# copy results to new folder
+mkdir docker_results
+docker cp -r 2ef8f2cfe56a:/background/analysis docker_results
+```
+
