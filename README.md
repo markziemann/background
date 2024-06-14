@@ -110,6 +110,8 @@ q()
 exit
 # copy results to new folder
 mkdir docker_results
-docker cp  `docker ps -alq`:/background/analysis docker_results
+docker cp  `docker ps -alq`:/background docker_results
 ```
 
+The `docker_results` should contain the completed R markdown reports
+and a compiled manuscript too.
