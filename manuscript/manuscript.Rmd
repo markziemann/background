@@ -158,9 +158,9 @@ For each dataset, kallisto (v0.43.1) [@Bray2016-lu] transcript counts were aggre
 gene level.
 Genes with fewer than 10 reads per sample on average were removed from downstream analysis.
 Remaining genes passing this selection were included in the background gene set.
-Differential expression analysis was conducted with DESeq2 v1.42.0 [@Love2014-wg], with
+Differential expression analysis was conducted with DESeq2 v1.44.0 [@Love2014-wg], with
 genes identified by their Ensembl identifiers.
-Gene symbols were then fetched using biomaRt v2.58.0, based on Ensembl version 112 [@Durinck2009-dr].
+Gene symbols were then fetched using biomaRt v2.60.0, based on Ensembl version 112 [@Durinck2009-dr].
 
 ### Examining the background problem using real transcriptome data
 
@@ -179,7 +179,7 @@ FDR<0.05 were subset, with separate lists for up and downregulated genes.
 If fewer than 200 genes met this criteria, then the 200 genes with the smallest p-values
 were selected, as suggested by a previous report [@Tarca2013-xh].
 These gene lists were subjected to ORA using clusterProfiler's `enricher` function
-v4.10.0, using a minimum set size of 5 and a no maximum set size.
+v4.12.0, using a minimum set size of 5 and a no maximum set size.
 
 To systematically assess the impact of the background problem, we conducted ORA with
 clusterProfiler using the different gene set libraries described above for the seven RNA-seq
@@ -244,7 +244,7 @@ sets were selected and compared to the ground truth in order to calculate precis
 and F1 score.
 At each value of added variance, 1000 replications were conducted.
 No set seed was used, but results were similar when run on different computer systems.
-All analyses were undertaken with R v4.4.0.
+All analyses were undertaken with R v4.4.0 in a Docker container.
 
 ## Results
 
@@ -256,10 +256,10 @@ gene set libraries.
 The mean number of significant results was calculated for each of the gene set libraries
 before and after correcting the problem (**Figure 1A**).
 Each of the gene set libraries showed an uplift when correcting the background problem.
-The smallest increase was observed in Cellmarkers gene library (11.7%), while the largest
-increase was observed for HPO (229%).
+The smallest increase was observed in Cellmarkers gene library (11.8%), while the largest
+increase was observed for HPO (224%).
 The similarity between results, as quantified with the Jaccard similarity was highest for
-Cellmarkers and GTRD at 0.88 and 0.76 respectively, and the lowest similarity was recorded for
+Cellmarkers and GTRD at 0.76 and 0.77 respectively, and the lowest similarity was recorded for
 HPO and KEGG with 0.20 and 0.48 respectively.
 Observed Jaccard scores correlated with the number of genes annotated to one or more functional
 categories in the gene set library (**Figure 1B**).
@@ -321,25 +321,25 @@ For comparison fgsea was used to compare the performance of these two ORA method
 prototypical FCS method.
 These methods were tested with different levels of introduced variation and the mean
 precision, recall and F1 scores were recorded (**Figure 3A**).
-As anticipated, mitigating the background problem improved recall (by 1.6%), however it caused
-a similar-sized decrease in precision.
-Addressing the FDR problem improved precison by 9.6%, but the recall dropped by 8.5%.
-Addressing both problems improved precision by 8.2% but decreased recall by 5.6%.
+Mitigating the background problem improved recall (by 1.8%), however it caused
+a similar-sized decrease in precision (1.6% lower).
+Addressing the FDR problem improved precison by 9.9%, but the recall dropped by 7.7%.
+Addressing both problems improved precision by 8.2% but decreased recall by 5.4%.
 Under these conditions, the FDR problem affected results more severely than the background
 problem.
 Results obtained for clusterProfiler after implementing the two mitigations were identical to
 fora to three significant figures.
-fgsea recorded precision of 0.937, similar to the ORA methods, but recall was far superior,
-with fgsea scoring 22.4% higher than default clusterProfiler and 28% higher than fora.
-As a result, fgsea's overall accuracy as defined by F1 index was 21.2% higher than fora and
-18.4% higher than default clusterProfiler.
+fgsea recorded precision of 0.940, similar to the ORA methods, but recall was far superior,
+with fgsea scoring 22.9% higher than default clusterProfiler and 28.3% higher than fora.
+As a result, fgsea's overall accuracy as defined by F1 index was 21.0% higher than fora and
+18.6% higher than default clusterProfiler.
 
-When looking at the accuracy profile at different levels of added noise (**Figure 3B**), we
-see that ORA techniques have superior precision when the added noise is low (<0.2), but the
-precision of ORA techniques drops at higher levels of added noise.
+When looking at the accuracy profile at different levels of added noise (**Figure 3B**),
+ORA techniques show high precision when the added noise is low (<0.2), but
+precision drops at higher levels of added noise.
 The rate of drop in precision was more severe for approaches that suffer from the FDR problem.
 The precision of fgsea was relatively stable despite high levels of added noise, ranging from
-0.95 to 0.91.
+0.95 to 0.92.
 The recall of fgsea was superior to all ORA approaches across all levels of added noise.
 
 ![**Figure 3A. Impact of correcting these two problems on accuracy of simulated expression
@@ -369,7 +369,7 @@ was puzzled by results obtained from clusterProfiler when using a custom set of 
 This exact issue was the subject of several posts to online bioinformatics forums dating to
 ~2020 where confused users were wondering why the number of background genes changed so much.
 The results shown here show that the background problem effects smaller gene set libraries
-like KEGG and HPC more severely as compared to Cellmarkers and GO libraries which describe
+like KEGG and HPO more severely as compared to Cellmarkers and GO libraries which describe
 a larger proportion of all genes.
 ClusterProfiler maintainers recently provided an option to prevent the loss of unannotated
 genes from the background `options(enrichment_force_universe = TRUE)`, however this feature
@@ -416,7 +416,6 @@ investigating the over-represented categories in gene expression modules defined
 like WGCNA (Weighted Gene Correlation Network Analysis)[@Langfelder2008-hu], or when
 investigating over-represented functional categories among genes with variants associated
 with a disease.
-
 
 # Data and Software Availability
 
