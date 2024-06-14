@@ -404,7 +404,9 @@ noisy.
 Higher recall of FCS also means that researchers will have more power to identify pathways
 relevant to the biological processes being studied.
 
-Secondly ORA results can vary dramatically depending on the number of genes selected in the
+The lack of enrichment scores hampers interpretation.
+
+Lastly, ORA results can vary dramatically depending on the number of genes selected in the
 foreground, a mostly arbitrary choice.
 These issues together with previously mentioned pitfalls such as lack of background
 correction and methodological misreporting [@Timmons2015-ki;@Wijesooriya2022-fw], suggest
@@ -415,6 +417,7 @@ like WGCNA (Weighted Gene Correlation Network Analysis)[@Langfelder2008-hu], or 
 investigating over-represented functional categories among genes with variants associated
 with a disease.
 
+
 # Data and Software Availability
 
 ## Underlying data
@@ -423,10 +426,11 @@ Publicly available data were obtained from Digital Expression Explorer 2 (dee2.i
 
 ## Software and Code
 
-* The code repository including template Dockerfile and R Markdown script are available on GitHub
-(https://github.com/markziemann/enrichment_recipe).
+* The code repository including template Dockerfile and R Markdown script are available on
+GitHub (https://github.com/markziemann/background).
 
-* The example Docker image is available on DockerHub (https://hub.docker.com/r/mziemann/enrichment_recipe).
+* The example Docker image is available on DockerHub
+(https://hub.docker.com/r/mziemann/background).
 
 * The code repository and Docker image have been uploaded to Zenodo for long-term archiving
 (https://zenodo.org/record/8170984).
