@@ -62,6 +62,16 @@ rmarkdown::render("analyse_rnaseq2.Rmd")
 
 setwd("sim")
 rmarkdown::render("run_simpw.Rmd")
+setwd("..")
+
+```
+
+## Manuscript
+
+```{r,main_manuscript}
+
+setwd("../manuscript")
+rmarkdown::render("manuscript.Rmd")
 
 ```
 
