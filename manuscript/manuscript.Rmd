@@ -26,7 +26,7 @@ csl: plos-computational-biology.csl
 
 # Abstract
 
-Over-representation analysis (ORA) is used widely to asses for the enrichment of functional
+Over-representation analysis (ORA) is used widely to assess the enrichment of functional
 categories in a gene list compared to a background list.
 ORA is therefore a critical method in the interpretation of 'omics data, relating gene lists
 to biological functions and themes.
@@ -41,7 +41,7 @@ Here we demonstrate the impact of these issues on several real RNA-seq datasets 
 simulated RNA-seq data to quantify the impact of these problems.
 We show that the severity of these problems depends on the gene set library, the number of
 genes in the list, and the degree of noise in the dataset.
-These problem can be mitigated by changing packages/websites for ORA or by changing to another
+These problems can be mitigated by changing packages/websites for ORA or by changing to another
 approach such as functional class scoring.
 
 # Keywords
@@ -66,12 +66,12 @@ library("kableExtra")
 
 Over-representation analysis (ORA) is a type of functional enrichment analysis (FEA) that
 involves the summarisation of omics data to reflect biological differences.
-Generally speaking, FEA has become one of the most popular methods in bioinformatics,
+FEA has become one of the most popular methods in bioinformatics,
 collectively accumulating 131,332 citations as of late 2019 [@Xie2021-nv].
 
 ORA involves the selection of genes of interest, followed by a test to ascertain whether
 certain functional categories are over-represented in the selected genes.
-Since it's initial development in 1999 [@Tavazoie1999-bu], ORA has proliferated widely,
+Since its initial development in 1999 [@Tavazoie1999-bu], ORA has proliferated widely,
 becoming part of many bioinformatics websites and software packages.
 The most popular ORA website is DAVID [@Dennis2003-ar;@Huang2009-gi;@Sherman2022-jn],
 followed by Ingenuity Pathway Analysis, a commercial software package provided by QIAGEN Inc.
@@ -91,7 +91,7 @@ The discrepancy between performance and popularity is likely due to the relative
 conducting ORA as compared to FCS.
 A minimal ORA might involve pasting a list of gene symbols into a text box on a website,
 with results appearing nearly instantly.
-On the other hand, FCS typically involves installing specific softwares and dealing with a
+On the other hand, FCS typically involves installing specific software and dealing with a
 dataset representing every detected gene (~20,000 rows) and ensuring that the file
 format from upstream tools is compatible with FCS packages.
 
@@ -105,7 +105,7 @@ rendering them unreliable [@Timmons2015-ki;@Wijesooriya2022-fw].
 Unfortunately, use of an appropriate background list is reported in only a small fraction
 (~4%) of peer-reviewed articles describing enrichment analysis [@Wijesooriya2022-fw].
 Correction of p-values for multiple testing is also crucial in controlling the false positive
-rate as enrichment analysis typically involves throusands of parallel tests [@Tilford2009-vx].
+rate as enrichment analysis typically involves thousands of parallel tests [@Tilford2009-vx].
 But appropriate p-value correction is reported in only ~54% of studies [@Wijesooriya2022-fw].
 These issues have resulted in the development of best practices for end users and
 stronger reporting standards [@Zhao2023-mx].
@@ -123,16 +123,16 @@ libraries like Gene Ontology [@The_Gene_Ontology_Consortium2023-xp] which descri
 genes (figures obtained from MSigDB June 2024 [@Liberzon2015-cs]).
 
 The second problem is that adjusting p-values for multiple testing, also known as
-false-discovery rate correction is implemented improperly.
+false-discovery rate correction, is implemented improperly.
 Determining which pathways should be subject to false discovery rate correction depends on
 how a detection threshold is set.
 Ideally, a pathway should be considered detected based on the presence of a predetermined
 number of member genes in the background set.
-However some tools use the foreground set to define a pathway as detected.
-This is problematic, as the act of trying to find an intersect between a foreground gene list
-and a pathway is in itself a test, even if there are no common genes.
+However, some tools use the foreground set to define a pathway as detected.
+This is problematic, as the act of trying to find an intersection between a foreground gene list
+and a pathway is a test, even if there are no common genes.
 This results in pathways being discarded from the analysis if no common genes are found in
-the foreground, despite a large number of those genes being present in the background list.
+the foreground, despite many genes being present in the background list.
 This artificially reduces the number of tests conducted and makes FDR values appear lower
 than they should, potentially raising the rate of false positives.
 We expect this problem to have a more severe effect when the foreground list is small.
@@ -140,7 +140,7 @@ We expect this problem to have a more severe effect when the foreground list is 
 Here, we define the effect of these two problems on real RNA-seq based enrichment analysis
 results and demonstrate how these two issues impact performance using simulated expression
 data.
-Finally we classify popular tools regarding these two problems and provide general
+Finally, we classify popular tools regarding these two problems and provide general
 recommendations for end users.
 
 ## Methods
@@ -176,7 +176,7 @@ Cell markers and
 Hallmark pathways [@Liberzon2015-cs].
 To demonstrate the background problem, differentially expressed genes with
 FDR<0.05 were subset, with separate lists for up and downregulated genes.
-If fewer than 200 genes met this criteria, then the 200 genes with the smallest p-values
+If fewer than 200 genes met this criterion, then the 200 genes with the smallest p-values
 were selected, as suggested by a previous report [@Tarca2013-xh].
 These gene lists were subjected to ORA using clusterProfiler's `enricher` function
 v4.12.0, using a minimum set size of 5 and a no maximum set size.
@@ -188,7 +188,7 @@ ClusterProfiler was used with the same parameters as above, and we devised a sim
 to the background problem, which is to append the entire background list as a gene set to the
 library.
 This forces clusterProfiler to retain all background genes.
-The ORA analyses were then filtered for significant sets using a FDR threshold of 0.05.
+The ORA analyses were then filtered for significant sets using an FDR threshold of 0.05.
 Jaccard index was used to compare original and corrected analyses.
 
 ### Examining the FDR problem
@@ -237,10 +237,10 @@ fast implementation of the preranked gene set enrichment analysis (GSEA) algorit
 For the ORA functions above, significantly differentially expressed genes with FDR 0.05 were
 selected for the foreground gene set.
 If fewer than 200 genes were detected as significant, then 200 genes with the smallest
-p-values were used for ORA, similar to a previous report [@Tarca2013-xh].
+p-values were used for ORA, like a previous report [@Tarca2013-xh].
 For `fgsea`, the DESeq2 test statistic was used for scoring differential expression.
 After enrichment analysis with these approaches, the significant up and down regulated
-sets were selected and compared to the ground truth in order to calculate precision, recall
+sets were selected and compared to the ground truth to calculate precision, recall
 and F1 score.
 At each value of added variance, 1000 replications were conducted.
 No set seed was used, but results were similar when run on different computer systems.
@@ -253,12 +253,12 @@ All analyses were undertaken with R v4.4.0 in a Docker container.
 A workaround to eliminate the background problem was developed and we used it to compare the
 results of ORA of seven datasets with the original and corrected methods for nine different
 gene set libraries.
-The mean number of significant results was calculated for each of the gene set libraries
-before and after correcting the problem (**Figure 1A**).
+The mean number of statistically significant results was calculated for each of the gene set
+libraries before and after correcting the problem (**Figure 1A**).
 Each of the gene set libraries showed an uplift when correcting the background problem.
 The smallest increase was observed in Cellmarkers gene library (11.8%), while the largest
 increase was observed for HPO (224%).
-The similarity between results, as quantified with the Jaccard similarity was highest for
+The similarity between results, as quantified with the Jaccard similarity, was highest for
 Cellmarkers and GTRD at 0.76 and 0.77 respectively, and the lowest similarity was recorded for
 HPO and KEGG with 0.20 and 0.48 respectively.
 Observed Jaccard scores correlated with the number of genes annotated to one or more functional
@@ -293,7 +293,7 @@ parallel analysis with foreground lists of length between 125 and 2,000 genes (*
 A clear trend was observed for GO, Reactome, Cellmarkers and TFT GTRD, with Jaccard similarity
 being significantly reduced when foreground gene lists were shorter than 500 genes.
 Interestingly, the drop in Jaccard similarity was more severe for GO and Reactome sets as
-compared to Cellmarkers and TFT GTRD sets, and may be associated with the size of the gene
+compared to Cellmarkers and TFT GTRD sets and may be associated with the size of the gene
 sets in the library.
 Median gene set size for these are GO:18, Reactome:11, TFT GTRD:287 and Cellmarkers:115.
 These results demonstrate that the FDR problem is more severe when dealing with shorter
@@ -317,13 +317,13 @@ genes were analysed in parallel by clusterProfiler default and with mitigations 
 problems described above.
 In addition, these data underwent ORA with fora which does not suffer from these two
 problems.
-For comparison fgsea was used to compare the performance of these two ORA methods against a
+For comparison, fgsea was used to compare the performance of these two ORA methods against a
 prototypical FCS method.
 These methods were tested with different levels of introduced variation and the mean
 precision, recall and F1 scores were recorded (**Figure 3A**).
 Mitigating the background problem improved recall (by 1.8%), however it caused
 a similar-sized decrease in precision (1.6% lower).
-Addressing the FDR problem improved precison by 9.9%, but the recall dropped by 7.7%.
+Addressing the FDR problem improved precision by 9.9%, but the recall dropped by 7.7%.
 Addressing both problems improved precision by 8.2% but decreased recall by 5.4%.
 Under these conditions, the FDR problem affected results more severely than the background
 problem.
@@ -368,7 +368,7 @@ The background problem came to our attention when a doctoral student in our depa
 was puzzled by results obtained from clusterProfiler when using a custom set of pathways.
 This exact issue was the subject of several posts to online bioinformatics forums dating to
 ~2020 where confused users were wondering why the number of background genes changed so much.
-The results shown here show that the background problem effects smaller gene set libraries
+The results shown here show that the background problem affects smaller gene set libraries
 like KEGG and HPO more severely as compared to Cellmarkers and GO libraries which describe
 a larger proportion of all genes.
 ClusterProfiler maintainers recently provided an option to prevent the loss of unannotated
@@ -376,11 +376,11 @@ genes from the background `options(enrichment_force_universe = TRUE)`, however t
 isn't yet described in the official documentation.
 
 The second problem is potentially more serious in that it could lead to increasing false
-positives under specific conditions; when the foreground list is short and the median pathway
+positives under specific conditions; when the foreground list is short, and the median pathway
 size is relatively small.
 These false positives arise due to an underestimate of the actual number of tests conducted.
-In extreme cases, correction of this problem can lead to around half of the significant
-results changing.
+In extreme cases, correction of this problem can lead to around half of the statistically
+significant results changing.
 
 ClusterProfiler is not the only tool to suffer from these problems, they are widespread
 (**Table 1**), but there are also several tools free of these problems.
@@ -413,7 +413,7 @@ correction and methodological misreporting [@Timmons2015-ki;@Wijesooriya2022-fw]
 that ORA should be discouraged in most situations, and replaced by other methods such as FCS.
 Where it makes sense to use ORA would be when FCS is not applicable, for example when
 investigating the over-represented categories in gene expression modules defined by packages
-like WGCNA (Weighted Gene Correlation Network Analysis)[@Langfelder2008-hu], or when
+like WGCNA (Weighted Gene Correlation Network Analysis) [@Langfelder2008-hu], or when
 investigating over-represented functional categories among genes with variants associated
 with a disease.
 
