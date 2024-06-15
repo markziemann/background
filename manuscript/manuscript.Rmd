@@ -403,11 +403,12 @@ This means researchers can be more confident with FCS results, even if the data 
 noisy.
 Higher recall of FCS also means that researchers will have more power to identify pathways
 relevant to the biological processes being studied.
-
-The lack of enrichment scores hampers interpretation.
-
+Secondly, many ORA tools do not provide enrichment scores in their default output tables.
+Enrichment scores are a surrogate for effect size, and without them, users may over-rely
+on significance scores when interpreting enrichment results [@Ziemann2024-ts].
 Lastly, ORA results can vary dramatically depending on the number of genes selected in the
 foreground, a mostly arbitrary choice.
+
 These issues together with previously mentioned pitfalls such as lack of background
 correction and methodological misreporting [@Timmons2015-ki;@Wijesooriya2022-fw], suggest
 that ORA should be discouraged in most situations, and replaced by other methods such as FCS.
