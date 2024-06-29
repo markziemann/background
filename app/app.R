@@ -4,6 +4,7 @@ library("rmarkdown")
 library("shiny")
 library("broom")
 library("RhpcBLASctl")
+library("eulerr")
 
 # Define UI
 ui <- fluidPage(
@@ -30,8 +31,8 @@ ui <- fluidPage(
                  "Background",verbatimTextOutput("contents2"),
                  "No. genes in foregorund", verbatimTextOutput("summary1"),
                  "No. genes in background", verbatimTextOutput("summary2")),
-        tabPanel("Comparative Analysis", tableOutput("comparativeanalysis")),
-        tabPanel("Regression Summary", verbatimTextOutput("regression_summary"))
+        tabPanel("Comparative Analysis", tableOutput("tbl1")),
+        tabPanel("Charts", textOutput("counts"),plotOutput("euler"))
       )
     )
   )
@@ -84,7 +85,6 @@ server <- function(input, output, session) {
                             "Reactome Pathways","WikiPathways"))
   })
   
-  
   mygs <- reactive({
     gs <- readRDS("genesets/gs.Rds")
     if ( input$genesetlibrary == "CellMarkers") {
@@ -117,11 +117,11 @@ server <- function(input, output, session) {
     return(mygs)
   })
     
-  output$comparativeanalysis <- renderTable({
+  original <- reactive({
     req(fg())
     req(bg())
     req(mygs())
-    #length(unique(mygs()[,1]))
+    options(enrichment_force_universe = FALSE)
     ora <- as.data.frame(enricher(gene = fg() ,
                                      universe = bg(), minGSSize = 5, maxGSSize = 500000, TERM2GENE = mygs(),
                                      pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
@@ -135,11 +135,67 @@ server <- function(input, output, session) {
     ora$ES <- gr/br
     ora$ID = ora$geneID = ora$p.adjust = ora$Count = NULL
     colnames(ora) <- gsub("qvalue","FDR",colnames(ora))
-    ora <- ora[,c("Description","GeneRatio","BgRatio","ES","pvalue","FDR")]
+    colnames(ora) <- gsub("GeneRatio","FgRatio",colnames(ora))
+    ora <- ora[,c("Description","FgRatio","BgRatio","ES","pvalue","FDR")]
     return(ora)
   })
   
+  bgfix <- reactive({
+    req(fg())
+    req(bg())
+    req(mygs())
+    options(enrichment_force_universe = TRUE)
+    ora <- as.data.frame(enricher(gene = fg() ,
+                                  universe = bg(), minGSSize = 5, maxGSSize = 500000, TERM2GENE = mygs(),
+                                  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+    
+    gr <- as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",1)) /
+      as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",2))
+    
+    br <- as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",1)) /
+      as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",2))
+    
+    ora$ES <- gr/br
+    ora$ID = ora$geneID = ora$p.adjust = ora$Count = NULL
+    colnames(ora) <- gsub("qvalue","FDR",colnames(ora))
+    colnames(ora) <- gsub("GeneRatio","FgRatio",colnames(ora))
+    ora <- ora[,c("Description","FgRatio","BgRatio","ES","pvalue","FDR")]
+    return(ora)
+  })
+
+  bgfixtbl <- reactive({
+    orig_df <- original()
+    bgfix_df <- bgfix()
+    m <- merge(orig_df,bgfix_df,by="Description")
+    m <- m[,c("Description","FgRatio.x","FgRatio.y","BgRatio.x","BgRatio.y","ES.x","ES.y","FDR.x","FDR.y")]
+    diff <- abs(m$FDR.x - m$FDR.y)
+    m <- m[order(-diff),]
+    return(m)
+  })
   
+  output$tbl1 <- renderTable({
+    if ( input$comparison == "Background error" ) {
+      tbl <- head(bgfixtbl(),20)
+    }
+    return(tbl)
+  })  
+  
+  output$counts <- renderText({
+    oricnt <- nrow(subset(original(),FDR<0.05))
+    bgfixcnt <- nrow(subset(bgfix(),FDR<0.05))
+    out <- paste("Original:",oricnt,", and BG fixed:",bgfixcnt,"@FDR<0.05")
+    return(out)
+  })
+  
+  output$euler <- renderPlot({
+    orig_df <- original()
+    bgfix_df <- bgfix()
+    orig_sets <- subset(orig_df,FDR < 0.05)$Description
+    bgfix_sets <- subset(bgfix_df,FDR < 0.05)$Description
+    v1 <- list("Original"=orig_sets, "BG fix"=bgfix_sets)
+    plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2))
+  })
+
   plot_data <- reactive({
     req(data(), input$x_axis, input$y_axis)
     ggplot(data(), aes_string(x = input$x_axis, y = input$y_axis)) +
