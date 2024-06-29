@@ -1,7 +1,9 @@
-library(tidyverse)
-library(ggplot2)
-library(rmarkdown)
-library(broom)
+library("clusterProfiler")
+library("markdown")
+library("rmarkdown")
+library("shiny")
+library("broom")
+library("RhpcBLASctl")
 
 # Define UI
 ui <- fluidPage(
@@ -22,12 +24,13 @@ ui <- fluidPage(
     ),
     mainPanel(
       tabsetPanel(
+        tabPanel("Instructions", includeMarkdown("intro.md")),
         tabPanel("Data",
                  "Foreground", verbatimTextOutput("contents1"),
                  "Background",verbatimTextOutput("contents2"),
                  "No. genes in foregorund", verbatimTextOutput("summary1"),
                  "No. genes in background", verbatimTextOutput("summary2")),
-        tabPanel("Scatterplot", plotOutput("scatterplot")),
+        tabPanel("Comparative Analysis", tableOutput("comparativeanalysis")),
         tabPanel("Regression Summary", verbatimTextOutput("regression_summary"))
       )
     )
@@ -74,8 +77,68 @@ server <- function(input, output, session) {
   })
   
   output$genesetlibrary <- renderUI({
-    selectInput("genesetlibrary", "Gene set library", choices = c("Gene Ontology","Reactome Pathways","KEGG Pathways"), selected = names(data())[2])
+    selectInput("genesetlibrary", "Gene set library", 
+                choices = c("CellMarkers", "Gene Ontology","GTRD TF Targets",
+                            "Hallmark","Human Phenotype Ontology",
+                            "KEGG Pathways","miR targets",
+                            "Reactome Pathways","WikiPathways"))
   })
+  
+  
+  mygs <- reactive({
+    gs <- readRDS("genesets/gs.Rds")
+    if ( input$genesetlibrary == "CellMarkers") {
+      mygs <- gs[["CellMarkers"]]
+    }
+    if ( input$genesetlibrary == "Gene Ontology") {
+      mygs <- gs[["Gene Ontology"]]
+    }
+    if ( input$genesetlibrary == "GTRD TF Targets") {
+      mygs <- gs[["GTRD TF Targets"]]
+    }
+    if ( input$genesetlibrary == "Hallmark") {
+      mygs <- gs[["Hallmark"]]
+    }
+    if ( input$genesetlibrary == "Human Phenotype Ontology") {
+      mygs <- gs[["Human Phenotype Ontology"]]
+    }
+    if ( input$genesetlibrary == "KEGG Pathways") {
+      mygs <- gs[["KEGG Pathways"]]
+    }
+    if ( input$genesetlibrary == "miR targets") {
+      mygs <- gs[["miR targets"]]
+    }
+    if ( input$genesetlibrary == "Reactome Pathways") {
+      mygs <- gs[["Reactome Pathways"]]
+    }
+    if ( input$genesetlibrary == "WikiPathways") {
+      mygs <- gs[["WikiPathways"]]
+    }
+    return(mygs)
+  })
+    
+  output$comparativeanalysis <- renderTable({
+    req(fg())
+    req(bg())
+    req(mygs())
+    #length(unique(mygs()[,1]))
+    ora <- as.data.frame(enricher(gene = fg() ,
+                                     universe = bg(), minGSSize = 5, maxGSSize = 500000, TERM2GENE = mygs(),
+                                     pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+    
+    gr <- as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",1)) /
+      as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",2))
+    
+    br <- as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",1)) /
+      as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",2))
+    
+    ora$ES <- gr/br
+    ora$ID = ora$geneID = ora$p.adjust = ora$Count = NULL
+    colnames(ora) <- gsub("qvalue","FDR",colnames(ora))
+    ora <- ora[,c("Description","GeneRatio","BgRatio","ES","pvalue","FDR")]
+    return(ora)
+  })
+  
   
   plot_data <- reactive({
     req(data(), input$x_axis, input$y_axis)
