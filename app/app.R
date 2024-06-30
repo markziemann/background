@@ -5,6 +5,7 @@ library("shiny")
 library("broom")
 library("RhpcBLASctl")
 library("eulerr")
+library("plotly")
 
 # Define UI
 ui <- fluidPage(
@@ -37,7 +38,8 @@ ui <- fluidPage(
         tabPanel("Charts", textOutput("counts"),
                  plotOutput("euler"),
                  plotOutput("scatter_es",height=550),
-                 plotOutput("scatter_fdr",height=550)),
+                 plotOutput("scatter_fdr",height=550),
+                 plotlyOutput("scatter_es2")),
       )
     )
   )
@@ -121,15 +123,15 @@ server <- function(input, output, session) {
     }
     return(mygs)
   })
-    
+  
   original <- reactive({
     req(fg())
     req(bg())
     req(mygs())
     options(enrichment_force_universe = FALSE)
     ora <- as.data.frame(enricher(gene = fg() ,
-                                     universe = bg(), minGSSize = 5, maxGSSize = 500000, TERM2GENE = mygs(),
-                                     pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+                                  universe = bg(), minGSSize = 5, maxGSSize = 500000, TERM2GENE = mygs(),
+                                  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
     
     gr <- as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",1)) /
       as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",2))
@@ -167,7 +169,7 @@ server <- function(input, output, session) {
     ora <- ora[,c("Description","FgRatio","BgRatio","ES","pvalue","FDR")]
     return(ora)
   })
-
+  
   bgfixtbl <- reactive({
     orig_df <- original()
     bgfix_df <- bgfix()
@@ -193,6 +195,12 @@ server <- function(input, output, session) {
   })
   
   output$euler <- renderPlot({
+    if (input$comparison == "Background error") {
+      euler_bgfix()
+    }
+  })
+  
+  euler_bgfix <- reactive({
     orig_df <- original()
     bgfix_df <- bgfix()
     orig_sets <- subset(orig_df,FDR < 0.05)$Description
@@ -202,6 +210,12 @@ server <- function(input, output, session) {
   })
   
   output$scatter_es <- renderPlot({
+    if (input$comparison == "Background error") {
+      scatter_es_bgfix()
+    }
+  })
+  
+  scatter_es_bgfix <- reactive({
     orig_df <- original()
     bgfix_df <- bgfix()
     m <- merge(orig_df,bgfix_df,by="Description")
@@ -212,7 +226,7 @@ server <- function(input, output, session) {
     mtext("Fold Enrichment Scores")
     abline(a = 0, b = 1,lwd=2,lty=2,col="red")
   })
-
+  
   output$scatter_fdr <- renderPlot({
     orig_df <- original()
     bgfix_df <- bgfix()
@@ -224,6 +238,17 @@ server <- function(input, output, session) {
          xlab="Original",ylab="BG Fix")
     mtext("FDR Values")
     abline(a = 0, b = 1,lwd=2,lty=2,col="red")
+  })
+  
+  output$scatter_es2 <- renderPlotly({
+    orig_df <- original()
+    bgfix_df <- bgfix()
+    m <- merge(orig_df,bgfix_df,by="Description")
+    m <- m[,c("ES.x","ES.y")]
+    
+    fig <- plot_ly(
+      m, x = ~ES.x, y = ~ES.y
+    )
   })
   
   plot_data <- reactive({
