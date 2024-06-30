@@ -31,8 +31,13 @@ ui <- fluidPage(
                  "Background",verbatimTextOutput("contents2"),
                  "No. genes in foregorund", verbatimTextOutput("summary1"),
                  "No. genes in background", verbatimTextOutput("summary2")),
-        tabPanel("Comparative Analysis", tableOutput("tbl1")),
-        tabPanel("Charts", textOutput("counts"),plotOutput("euler"))
+        tabPanel("Comparative Analysis", 
+                 textOutput("Comparison of original and BG fixed analysis - top 20 pathways with divergent FDR values"),
+                 tableOutput("tbl1")),
+        tabPanel("Charts", textOutput("counts"),
+                 plotOutput("euler"),
+                 plotOutput("scatter_es",height=550),
+                 plotOutput("scatter_fdr",height=550)),
       )
     )
   )
@@ -195,7 +200,32 @@ server <- function(input, output, session) {
     v1 <- list("Original"=orig_sets, "BG fix"=bgfix_sets)
     plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2))
   })
+  
+  output$scatter_es <- renderPlot({
+    orig_df <- original()
+    bgfix_df <- bgfix()
+    m <- merge(orig_df,bgfix_df,by="Description")
+    m <- m[,c("ES.x","ES.y")]
+    MAX=max(c(m$ES.x,m$ES.y))
+    plot(m$ES.x,m$ES.y,xlim=c(0,MAX),ylim=c(0,MAX),
+         xlab="Original",ylab="BG Fix")
+    mtext("Fold Enrichment Scores")
+    abline(a = 0, b = 1,lwd=2,lty=2,col="red")
+  })
 
+  output$scatter_fdr <- renderPlot({
+    orig_df <- original()
+    bgfix_df <- bgfix()
+    m <- merge(orig_df,bgfix_df,by="Description")
+    m <- m[,c("FDR.x","FDR.y")]
+    MAX=max(c(-log10(m$FDR.x),-log10(m$FDR.y)))
+    plot(-log10(m$FDR.x),-log10(m$FDR.y),
+         xlim=c(0,MAX),ylim=c(0,MAX),
+         xlab="Original",ylab="BG Fix")
+    mtext("FDR Values")
+    abline(a = 0, b = 1,lwd=2,lty=2,col="red")
+  })
+  
   plot_data <- reactive({
     req(data(), input$x_axis, input$y_axis)
     ggplot(data(), aes_string(x = input$x_axis, y = input$y_axis)) +
@@ -203,10 +233,6 @@ server <- function(input, output, session) {
       geom_smooth(method = "lm", se = FALSE, color = "red") +
       labs(x = input$x_axis, y = input$y_axis) +
       ggtitle(paste(input$y_axis, "vs", input$x_axis))
-  })
-  
-  output$scatterplot <- renderPlot({
-    plot_data()
   })
   
   regression_model <- reactive({
