@@ -101,6 +101,7 @@ suppressPackageStartupMessages({
   library("eulerr")
   library("plotly")
   library("DT")
+  library("kableExtra")
 })
 
 ```
@@ -215,6 +216,7 @@ br <- as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",1)) /
   as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",2))
 
 ora$ES <- gr/br
+ora1_full <- ora
 ora$ID = ora$geneID = ora$p.adjust = ora$Count = NULL
 colnames(ora) <- gsub("qvalue","FDR",colnames(ora))
 colnames(ora) <- gsub("GeneRatio","FgRatio",colnames(ora))
@@ -229,7 +231,7 @@ ora1 <- ora
 ```{r,defaulttable}
 
 DT::datatable(
-  { ora1 },
+  { head(ora1,1000) },
   
   extensions = 'Buttons',
   filter = list(position = 'top', clear = FALSE),
@@ -247,6 +249,23 @@ DT::datatable(
 
   rownames= FALSE)  
 
+```
+
+```{r,defaultfull,results="asis",warning=FALSE}
+
+HEADER=paste("<br><details><summary><b>","Click HERE to show results for top 1000 sets","</b></summary><br><p>",sep=" " )
+
+cat(HEADER)
+
+ora1_full$ID = ora1_full$p.adjust = NULL
+colnames(ora1_full) <- gsub("qvalue","FDR",colnames(ora1_full))
+ora1_full$geneID <- gsub("/"," ",ora1_full$geneID)
+ora1_full <- ora1_full[,c("Description","GeneRatio","BgRatio","Count","ES","pvalue","FDR","geneID")]
+kbl(head(ora1_full,1000), format="html", row.names=FALSE, caption = "Complete results",digits=100) %>%
+kable_styling("hover", full_width = FALSE)
+
+cat("<br></p></details>")
+cat("<hr><br>")
 ```
 
 Bar chart.
@@ -295,6 +314,7 @@ if (comparison == "Background error") {
     as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",2))
   
   ora$ES <- gr/br
+  ora2_full <- ora
   ora$ID = ora$geneID = ora$p.adjust = ora$Count = NULL
   colnames(ora) <- gsub("qvalue","FDR",colnames(ora))
   colnames(ora) <- gsub("GeneRatio","FgRatio",colnames(ora))
@@ -319,6 +339,7 @@ if (comparison == "Background error") {
     as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",2))
   
   ora$ES <- gr/br
+  ora2_full <- ora
   ora$ID = ora$geneID = ora$p.adjust = ora$Count = NULL
   colnames(ora) <- gsub("qvalue","FDR",colnames(ora))
   colnames(ora) <- gsub("GeneRatio","FgRatio",colnames(ora))
@@ -330,15 +351,49 @@ if (comparison == "Background error") {
   diff <- nsets - nres
   pvals <- c(ora$pvalue,rep(1,diff))
   ora$FDR <- p.adjust(pvals,method="fdr")[1:nrow(ora)]
+  ora$ES <- signif(ora$ES,3)
+  ora$pvalue <- signif(ora$pvalue,3)
+  ora$FDR <- signif(ora$FDR,3)
+} else if (comparison == "Both errors") {
+  gs1 <- mygs
+  gs1 <- gs1[which(gs1$gene %in% bg),]
+  terms <- names(which(table(gs1$term)>5))
+  gs1 <- gs1[gs1$term %in% terms,]
+  options(enrichment_force_universe = TRUE)
+  ora <- as.data.frame(enricher(gene = fg ,
+                                universe = bg, minGSSize = 5, maxGSSize = 500000, TERM2GENE = gs1,
+                                pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+  
+  gr <- as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",1)) /
+    as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",2))
+  
+  br <- as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",1)) /
+    as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",2))
+  
+  ora$ES <- gr/br
+  ora2_full <- ora
+  ora$ID = ora$geneID = ora$p.adjust = ora$Count = NULL
+  colnames(ora) <- gsub("qvalue","FDR",colnames(ora))
+  colnames(ora) <- gsub("GeneRatio","FgRatio",colnames(ora))
+  ora <- ora[,c("Description","FgRatio","BgRatio","ES","pvalue","FDR")]
+  
+  # proper FDR correction
+  nsets <- length(which(table(gs1$term)>5))
+  nres <- nrow(ora)
+  diff <- nsets - nres
+  pvals <- c(ora$pvalue,rep(1,diff))
+  ora$FDR <- p.adjust(pvals,method="fdr")[1:nrow(ora)]
+  ora$ES <- signif(ora$ES,3)
+  ora$pvalue <- signif(ora$pvalue,3)
+  ora$FDR <- signif(ora$FDR,3)
 }
-
 ora2 <- ora
 ```
 
 ```{r,fixed2}
 
 DT::datatable(
-  { ora2 },
+  { head(ora2,1000) },
   
   extensions = 'Buttons',
   filter = list(position = 'top', clear = FALSE),
@@ -355,6 +410,25 @@ DT::datatable(
     search = list(regex = TRUE, caseInsensitive = TRUE)),
 
   rownames= FALSE)  
+
+```
+
+```{r,fixedfull,results="asis"}
+
+HEADER=paste("<br><details><summary><b>","Click HERE to show results for top 1000 sets","</b></summary><br><p>",sep=" " )
+
+cat(HEADER)
+
+ora2_full$ID = ora2_full$p.adjust = NULL
+colnames(ora2_full) <- gsub("qvalue","FDR",colnames(ora2_full))
+ora2_full$geneID <- gsub("/"," ",ora2_full$geneID)
+ora2_full <- ora2_full[,c("Description","GeneRatio","BgRatio","Count","ES","pvalue","FDR","geneID")]
+
+kbl(head(ora2_full,1000), format="html", row.names=FALSE, caption = "Complete results",digits=100) %>%
+kable_styling("hover", full_width = FALSE)
+
+cat("<br></p></details>")
+cat("<hr><br>")
 
 ```
 
@@ -413,7 +487,7 @@ DT::datatable( { m },
 
 Euler diagram of pathways with FDR<0.05.
 
-```{r,comparison2}
+```{r,comparison2,fig.height=5}
 
 ora1_sets <- subset(ora1,FDR < 0.05)$Description
 ora2_sets <- subset(ora2,FDR < 0.05)$Description
@@ -422,6 +496,8 @@ if ( comparison == "Background error") {
   v1 <- list("Original"=ora1_sets, "BG fix"=ora2_sets)
 } else if (comparison == "FDR error") {
   v1 <- list("Original"=ora1_sets, "FDR fix"=ora2_sets)
+} else if (comparison == "Both errors") {
+  v1 <- list("Original"=ora1_sets, "Both fix"=ora2_sets)
 }
 plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2))
 
@@ -478,6 +554,20 @@ if ( comparison == "Background error") {
               showlegend = FALSE, text = m$Description,
               hoverinfo = 'text') %>%
     layout(title="Enrichment score comparison")
+} else if (comparison == "Both errors") {
+  m$Original <- m$BOTHcorrected <- round(VEC[1:nrow(m)],0.1)
+  m$ES.x <- signif(m$ES.x,3)
+  m$ES.y <- signif(m$ES.y,3)
+  
+  plot_ly(
+    m, x = ~ES.x, y = ~ES.y
+  ) %>%
+    add_trace(m, x = ~Original, y = ~BOTHcorrected, type = "scatter",
+              mode="lines", line=list(color='grey')) %>%
+    add_trace(m, x = ~ES.x, y = ~ES.y, type = "scatter", mode = "markers",
+              showlegend = FALSE, text = m$Description,
+              hoverinfo = 'text') %>%
+    layout(title="Enrichment score comparison")
 }
 
 ```
@@ -519,6 +609,20 @@ if ( comparison == "Background error") {
     m, x = ~logFDR.x, y = ~logFDR.y
   ) %>%
     add_trace(m, x = ~Original, y = ~FDRcorrected, type = "scatter",
+              mode="lines", line=list(color='grey')) %>%
+    add_trace(m, x = ~logFDR.x, y = ~logFDR.y, type = "scatter", mode = "markers",
+              showlegend = FALSE, text = m$Description,
+              hoverinfo = 'text') %>%
+    layout(title="log FDR comparison")
+} else if (comparison == "Both errors") {
+  m$Original <- m$BOTHcorrected <- round(VEC[1:nrow(m)],0.1)
+  m$logFDR.x <- signif(m$logFDR.x,3)
+  m$logFDR.y <- signif(m$logFDR.y,3)
+  
+  plot_ly(
+    m, x = ~logFDR.x, y = ~logFDR.y
+  ) %>%
+    add_trace(m, x = ~Original, y = ~BOTHcorrected, type = "scatter",
               mode="lines", line=list(color='grey')) %>%
     add_trace(m, x = ~logFDR.x, y = ~logFDR.y, type = "scatter", mode = "markers",
               showlegend = FALSE, text = m$Description,

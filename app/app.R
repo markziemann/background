@@ -22,13 +22,13 @@ ui <- fluidPage(
                 accept = c("text/csv",
                            "text/comma-separated-values,text/plain",
                            ".txt")),
-      uiOutput("comparison"),
       uiOutput("genesetlibrary"),
+      uiOutput("comparison"),
       downloadButton("download_report", "Download Report")
     ),
     mainPanel(
       tabsetPanel(
-        tabPanel("Instructions", includeMarkdown("intro.md")),
+        tabPanel("Get started", includeMarkdown("intro.md")),
         tabPanel("Data",
                  "Foreground", verbatimTextOutput("contents1"),
                  "Background",verbatimTextOutput("contents2"),
@@ -177,7 +177,6 @@ server <- function(input, output, session) {
     req(fg())
     req(bg())
     req(mygs())
-    options(enrichment_force_universe = FALSE)
     
     # select sets with 5 in bg
     gs1 <- mygs()
@@ -185,6 +184,45 @@ server <- function(input, output, session) {
     terms <- names(which(table(gs1$term)>5))
     gs1 <- gs1[gs1$term %in% terms,]
     
+
+    options(enrichment_force_universe = FALSE)
+    ora <- as.data.frame(enricher(gene = fg() ,
+                                  universe = bg(), minGSSize = 5, maxGSSize = 500000, TERM2GENE = gs1,
+                                  pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+    
+    gr <- as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",1)) /
+      as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",2))
+    
+    br <- as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",1)) /
+      as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",2))
+    
+    ora$ES <- gr/br
+    ora$ID = ora$geneID = ora$p.adjust = ora$Count = NULL
+    colnames(ora) <- gsub("qvalue","FDR",colnames(ora))
+    colnames(ora) <- gsub("GeneRatio","FgRatio",colnames(ora))
+    ora <- ora[,c("Description","FgRatio","BgRatio","ES","pvalue","FDR")]
+    
+    # proper FDR correction
+    nsets <- length(which(table(gs1$term)>5))
+    nres <- nrow(ora)
+    diff <- nsets - nres
+    pvals <- c(ora$pvalue,rep(1,diff))
+    ora$FDR <- p.adjust(pvals,method="fdr")[1:nrow(ora)]
+    return(ora)
+  })
+  
+  bothfix <- reactive({
+    req(fg())
+    req(bg())
+    req(mygs())
+    
+    # select sets with 5 in bg
+    gs1 <- mygs()
+    gs1 <- gs1[which(gs1$gene %in% bg()),]
+    terms <- names(which(table(gs1$term)>5))
+    gs1 <- gs1[gs1$term %in% terms,]
+    
+    options(enrichment_force_universe = TRUE)
     ora <- as.data.frame(enricher(gene = fg() ,
                                   universe = bg(), minGSSize = 5, maxGSSize = 500000, TERM2GENE = gs1,
                                   pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
@@ -238,11 +276,27 @@ server <- function(input, output, session) {
     return(m)
   })
   
+  tbl1_bothfix <- reactive({
+    orig_df <- original()
+    bothfix_df <- bothfix()
+    m <- merge(orig_df,bothfix_df,by="Description")
+    m <- m[,c("Description","FgRatio.x","FgRatio.y","BgRatio.x","BgRatio.y","ES.x","ES.y","FDR.x","FDR.y")]
+    diff <- abs(-log10(m$FDR.x) - -log10(m$FDR.y))
+    m <- m[order(-diff),]
+    m$ES.x <- signif(m$ES.x,3)
+    m$ES.y <- signif(m$ES.y,3)
+    m$FDR.x <- signif(m$FDR.x,3)
+    m$FDR.y <- signif(m$FDR.y,3)
+    return(m)
+  })
+  
   output$tbl1 <- DT::renderDataTable({
     if ( input$comparison == "Background error" ) {
       tbl <- tbl1_bgfix()
     } else if (input$comparison == "FDR error") {
       tbl <- tbl1_fdrfix()
+    } else if (input$comparison == "Both errors") {
+      tbl <- tbl1_bothfix()
     }
     return(tbl)
   }, rownames= FALSE)  
@@ -267,11 +321,23 @@ server <- function(input, output, session) {
     return(out)
   })
   
+  counts_bothfix <- reactive({
+    oricnt <- nrow(subset(original(),FDR<0.05))
+    bothfixcnt <- nrow(subset(bothfix(),FDR<0.05))
+    orisets <- subset(original(),FDR<0.05)$Description
+    bothfixsets <- subset(bothfix(),FDR<0.05)$Description           
+    jac <- signif((length(intersect(orisets,bothfixsets)) / length(union(orisets,bothfixsets))),3)
+    out <- paste("Original:",oricnt,", and Both fixed:",bothfixcnt,"@FDR<0.05; Jaccard = ",jac)
+    return(out)
+  })
+  
   output$counts <- renderText({
     if ( input$comparison == "Background error" ) {
       out <- counts_bgfix()
     } else if (input$comparison == "FDR error") {
       out <- counts_fdrfix()
+    } else if (input$comparison == "Both errors") {
+      out <- counts_bothfix()
     }
     return(out)
   })
@@ -294,11 +360,22 @@ server <- function(input, output, session) {
     plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2))
   })
   
+  euler_bothfix <- reactive({
+    orig_df <- original()
+    bothfix_df <- bothfix()
+    orig_sets <- subset(orig_df,FDR < 0.05)$Description
+    bothfix_sets <- subset(bothfix_df,FDR < 0.05)$Description
+    v1 <- list("Original"=orig_sets, "Both fix"=bothfix_sets)
+    plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2))
+  })
+  
   output$euler <- renderPlot({
     if (input$comparison == "Background error") {
       euler_bgfix()
     } else if (input$comparison == "FDR error") {
       euler_fdrfix()
+    } else if (input$comparison == "Both errors") {
+      euler_bothfix()
     }
   })
   
@@ -326,11 +403,25 @@ server <- function(input, output, session) {
     abline(a = 0, b = 1,lwd=2,lty=2,col="red")
   })
   
+  scatter_es_bothfix <- reactive({
+    orig_df <- original()
+    bothfix_df <- bothfix()
+    m <- merge(orig_df,bothfix_df,by="Description")
+    m <- m[,c("ES.x","ES.y")]
+    MAX=max(c(m$ES.x,m$ES.y))
+    plot(m$ES.x,m$ES.y,xlim=c(0,MAX),ylim=c(0,MAX),
+         xlab="Original",ylab="Both Fix")
+    mtext("Fold Enrichment Scores")
+    abline(a = 0, b = 1,lwd=2,lty=2,col="red")
+  })
+  
   output$scatter_es <- renderPlot({
     if (input$comparison == "Background error") {
       scatter_es_bgfix()
     } else if (input$comparison == "FDR error") {
       scatter_es_fdrfix()
+    } else if (input$comparison == "Both errors") {
+      scatter_es_bothfix()
     }
   })
   
@@ -360,11 +451,26 @@ server <- function(input, output, session) {
     abline(a = 0, b = 1,lwd=2,lty=2,col="red")
   })
   
+  scatter_fdr_bothfix <- reactive({
+    orig_df <- original()
+    bothfix_df <- bothfix()
+    m <- merge(orig_df,bothfix_df,by="Description")
+    m <- m[,c("FDR.x","FDR.y")]
+    MAX=max(c(-log10(m$FDR.x),-log10(m$FDR.y)))
+    plot(-log10(m$FDR.x),-log10(m$FDR.y),
+         xlim=c(0,MAX),ylim=c(0,MAX),
+         xlab="Original",ylab="Both Fix")
+    mtext("FDR Values")
+    abline(a = 0, b = 1,lwd=2,lty=2,col="red")
+  })
+  
   output$scatter_fdr <- renderPlot({
     if (input$comparison == "Background error") {
       scatter_fdr_bgfix()
     } else if (input$comparison == "FDR error") {
       scatter_fdr_fdrfix()
+    } else if (input$comparison == "Both errors") {
+      scatter_fdr_bothfix()
     }
   })
   
@@ -413,12 +519,37 @@ server <- function(input, output, session) {
                 hoverinfo = 'text') %>%
       layout(title="Enrichment score comparison")
   })
+
+  scatter_es2_bothfix <- reactive({
+    orig_df <- original()
+    bothfix_df <- bothfix()
+    m <- merge(orig_df,bothfix_df,by="Description")
+    m <- m[,c("Description","ES.x","ES.y")]
+    MAX <- max(c(m$ES.x,m$ES.y))
+    INCREMENT <- MAX/nrow(m)
+    VEC <- seq(0,MAX,INCREMENT)
+    m$Original <- m$BOTHcorrected <- round(VEC[1:nrow(m)],0.1)
+    m$ES.x <- signif(m$ES.x,3)
+    m$ES.y <- signif(m$ES.y,3)
+    
+    fig <- plot_ly(
+      m, x = ~ES.x, y = ~ES.y
+    ) %>%
+      add_trace(m, x = ~Original, y = ~BOTHcorrected, type = "scatter",
+                mode="lines", line=list(color='grey')) %>%
+      add_trace(m, x = ~ES.x, y = ~ES.y, type = "scatter", mode = "markers",
+                showlegend = FALSE, text = m$Description,
+                hoverinfo = 'text') %>%
+      layout(title="Enrichment score comparison")
+  })
   
   output$scatter_es2 <- renderPlotly({
     if (input$comparison == "Background error") {
       scatter_es2_bgfix()
     } else if (input$comparison == "FDR error") {
       scatter_es2_fdrfix()
+    } else if (input$comparison == "Both errors") {
+      scatter_es2_bothfix()
     }
   })
   
@@ -472,11 +603,39 @@ server <- function(input, output, session) {
       layout(title="log FDR comparison")
   })
   
+  
+  scatter_fdr2_bothfix <- reactive({
+    orig_df <- original()
+    bothfix_df <- bothfix()
+    m <- merge(orig_df,bothfix_df,by="Description")
+    m <- m[,c("Description","FDR.x","FDR.y")]
+    m$logFDR.x <- -log10(m$FDR.x)
+    m$logFDR.y <- -log10(m$FDR.y)
+    MAX <- max(c(m$logFDR.x,m$logFDR.y))
+    INCREMENT <- MAX/nrow(m)
+    VEC <- seq(0,MAX,INCREMENT)
+    m$Original <- m$BOTHcorrected <- round(VEC[1:nrow(m)],0.1)
+    m$logFDR.x <- signif(m$logFDR.x,3)
+    m$logFDR.y <- signif(m$logFDR.y,3)
+    
+    fig <- plot_ly(
+      m, x = ~logFDR.x, y = ~logFDR.y
+    ) %>%
+      add_trace(m, x = ~Original, y = ~BOTHcorrected, type = "scatter",
+                mode="lines", line=list(color='grey')) %>%
+      add_trace(m, x = ~logFDR.x, y = ~logFDR.y, type = "scatter", mode = "markers",
+                showlegend = FALSE, text = m$Description,
+                hoverinfo = 'text') %>%
+      layout(title="log FDR comparison")
+  })
+  
   output$scatter_fdr2 <- renderPlotly({
     if (input$comparison == "Background error") {
       scatter_fdr2_bgfix()
     } else if (input$comparison == "FDR error") {
       scatter_fdr2_fdrfix()
+    } else if (input$comparison == "Both errors") {
+      scatter_fdr2_bothfix()
     }
   })
   
