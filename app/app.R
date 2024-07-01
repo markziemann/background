@@ -32,14 +32,16 @@ ui <- fluidPage(
                  "Background",verbatimTextOutput("contents2"),
                  "No. genes in foregorund", verbatimTextOutput("summary1"),
                  "No. genes in background", verbatimTextOutput("summary2")),
-        tabPanel("Comparative Analysis", 
-                 textOutput("Comparison of original and BG fixed analysis - top 20 pathways with divergent FDR values"),
+        tabPanel("Comparative Analysis",
+                 "Comparison of original and BG fixed analysis - top 20 pathways with divergent FDR values.",
+                 "'x' is original, and 'y' is fixed analysis,",
                  tableOutput("tbl1")),
         tabPanel("Charts", textOutput("counts"),
                  plotOutput("euler"),
-                 plotOutput("scatter_es",height=550),
-                 plotOutput("scatter_fdr",height=550),
-                 plotlyOutput("scatter_es2")),
+                 #plotOutput("scatter_es",height=550),
+                 #plotOutput("scatter_fdr",height=550),
+                 plotlyOutput("scatter_es2",height=550),
+                 plotlyOutput("scatter_fdr2",height=550)),
       )
     )
   )
@@ -170,27 +172,37 @@ server <- function(input, output, session) {
     return(ora)
   })
   
-  bgfixtbl <- reactive({
+  tbl1_bgfix <- reactive({
     orig_df <- original()
     bgfix_df <- bgfix()
     m <- merge(orig_df,bgfix_df,by="Description")
     m <- m[,c("Description","FgRatio.x","FgRatio.y","BgRatio.x","BgRatio.y","ES.x","ES.y","FDR.x","FDR.y")]
-    diff <- abs(m$FDR.x - m$FDR.y)
+    diff <- abs(-log10(m$FDR.x) - -log10(m$FDR.y))
     m <- m[order(-diff),]
     return(m)
   })
   
   output$tbl1 <- renderTable({
     if ( input$comparison == "Background error" ) {
-      tbl <- head(bgfixtbl(),20)
+      tbl <- head(tbl1_bgfix(),100)
     }
     return(tbl)
   })  
   
-  output$counts <- renderText({
+  counts_bgfix <- reactive({
     oricnt <- nrow(subset(original(),FDR<0.05))
     bgfixcnt <- nrow(subset(bgfix(),FDR<0.05))
-    out <- paste("Original:",oricnt,", and BG fixed:",bgfixcnt,"@FDR<0.05")
+    orisets <- subset(original(),FDR<0.05)$Description
+    bgfixsets <- subset(bgfix(),FDR<0.05)$Description           
+    jac <- signif((length(intersect(orisets,bgfixsets)) / length(union(orisets,bgfixsets))),3)
+    out <- paste("Original:",oricnt,", and BG fixed:",bgfixcnt,"@FDR<0.05; Jaccard = ",jac)
+    return(out)
+  })
+  
+  output$counts <- renderText({
+    if ( input$comparison == "Background error" ) {
+      out <- counts_bgfix()
+    }
     return(out)
   })
   
@@ -228,6 +240,12 @@ server <- function(input, output, session) {
   })
   
   output$scatter_fdr <- renderPlot({
+    if (input$comparison == "Background error") {
+      scatter_fdr_bgfix()
+    }
+  })
+  
+  scatter_fdr_bgfix <- reactive({
     orig_df <- original()
     bgfix_df <- bgfix()
     m <- merge(orig_df,bgfix_df,by="Description")
@@ -241,14 +259,63 @@ server <- function(input, output, session) {
   })
   
   output$scatter_es2 <- renderPlotly({
+    if (input$comparison == "Background error") {
+      scatter_es2_bgfix()
+    }
+  })
+  
+  scatter_es2_bgfix <- reactive({
     orig_df <- original()
     bgfix_df <- bgfix()
     m <- merge(orig_df,bgfix_df,by="Description")
-    m <- m[,c("ES.x","ES.y")]
+    m <- m[,c("Description","ES.x","ES.y")]
+    MAX <- max(c(m$ES.x,m$ES.y))
+    INCREMENT <- MAX/nrow(m)
+    VEC <- seq(0,MAX,INCREMENT)
+    m$Original <- m$BGcorrected <- round(VEC[1:nrow(m)],0.1)
+    m$ES.x <- signif(m$ES.x,3)
+    m$ES.y <- signif(m$ES.y,3)
     
     fig <- plot_ly(
       m, x = ~ES.x, y = ~ES.y
-    )
+    ) %>%
+      add_trace(m, x = ~Original, y = ~BGcorrected, type = "scatter",
+                mode="lines", line=list(color='grey')) %>%
+      add_trace(m, x = ~ES.x, y = ~ES.y, type = "scatter", mode = "markers",
+                showlegend = FALSE, text = m$Description,
+                hoverinfo = 'text') %>%
+      layout(title="Enrichment score comparison")
+  })
+  
+  output$scatter_fdr2 <- renderPlotly({
+    if (input$comparison == "Background error") {
+      scatter_fdr2_bgfix()
+    }
+  })
+  
+  scatter_fdr2_bgfix <- reactive({
+    orig_df <- original()
+    bgfix_df <- bgfix()
+    m <- merge(orig_df,bgfix_df,by="Description")
+    m <- m[,c("Description","FDR.x","FDR.y")]
+    m$logFDR.x <- -log10(m$FDR.x)
+    m$logFDR.y <- -log10(m$FDR.y)
+    MAX <- max(c(m$logFDR.x,m$logFDR.y))
+    INCREMENT <- MAX/nrow(m)
+    VEC <- seq(0,MAX,INCREMENT)
+    m$Original <- m$BGcorrected <- round(VEC[1:nrow(m)],0.1)
+    m$logFDR.x <- signif(m$logFDR.x,3)
+    m$logFDR.y <- signif(m$logFDR.y,3)
+    
+    fig <- plot_ly(
+      m, x = ~ES.x, y = ~ES.y
+    ) %>%
+      add_trace(m, x = ~Original, y = ~BGcorrected, type = "scatter",
+                mode="lines", line=list(color='grey')) %>%
+      add_trace(m, x = ~logFDR.x, y = ~logFDR.y, type = "scatter", mode = "markers",
+                showlegend = FALSE, text = m$Description,
+                hoverinfo = 'text') %>%
+      layout(title="log FDR comparison")
   })
   
   plot_data <- reactive({
