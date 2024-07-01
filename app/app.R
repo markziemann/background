@@ -6,6 +6,8 @@ library("broom")
 library("RhpcBLASctl")
 library("eulerr")
 library("plotly")
+library("DT")
+
 
 # Define UI
 ui <- fluidPage(
@@ -35,7 +37,7 @@ ui <- fluidPage(
         tabPanel("Comparative Analysis",
                  "Comparison of original and BG fixed analysis - top 20 pathways with divergent FDR values.",
                  "'x' is original, and 'y' is fixed analysis,",
-                 tableOutput("tbl1")),
+                 DT::dataTableOutput("tbl1")),
         tabPanel("Charts", textOutput("counts"),
                  plotOutput("euler"),
                  #plotOutput("scatter_es",height=550),
@@ -179,15 +181,19 @@ server <- function(input, output, session) {
     m <- m[,c("Description","FgRatio.x","FgRatio.y","BgRatio.x","BgRatio.y","ES.x","ES.y","FDR.x","FDR.y")]
     diff <- abs(-log10(m$FDR.x) - -log10(m$FDR.y))
     m <- m[order(-diff),]
+    m$ES.x <- signif(m$ES.x,3)
+    m$ES.y <- signif(m$ES.y,3)
+    m$FDR.x <- signif(m$FDR.x,3)
+    m$FDR.y <- signif(m$FDR.y,3)
     return(m)
   })
   
-  output$tbl1 <- renderTable({
+  output$tbl1 <- DT::renderDataTable({
     if ( input$comparison == "Background error" ) {
-      tbl <- head(tbl1_bgfix(),100)
+      tbl <- tbl1_bgfix()
     }
     return(tbl)
-  })  
+  }, rownames= FALSE)  
   
   counts_bgfix <- reactive({
     oricnt <- nrow(subset(original(),FDR<0.05))
@@ -377,11 +383,10 @@ server <- function(input, output, session) {
       tempReport <- file.path(tempdir(), "report.Rmd")
       file.copy("report.Rmd", tempReport, overwrite = TRUE)
       
-      params <- list(plot = plot_data(),
-                     stats = regression_stats(),
-                     x_var = input$x_axis,
-                     y_var = input$y_axis,
-                     coefficients = summary(regression_model())$coefficients)
+      params <- list(fg = fg(),
+                     bg = bg(),
+                     comparison = input$comparison,
+                     genesetlibrary = input$genesetlibrary)
       
       rmarkdown::render(tempReport, output_file = file,
                         params = params,
