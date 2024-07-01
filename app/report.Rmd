@@ -17,7 +17,8 @@ params:
   mygs: NA
 ---
 
-Source: https://github.com/markziemann/background
+This software was developed by Mark Ziemann under an MIT licence.
+Report issues at the [GitHub repository](https://github.com/markziemann/background).
 
 ## Background
 
@@ -50,7 +51,7 @@ p-values.
 In this work we highlight two subtle issues with some popular implementations 
 of over-representation analysis.
 
-### Genes without annotated categories are discarded
+### Background problem: Genes without annotated categories are discarded
 
 The first issue related to how the background list is defined.
 If a user does the right thing and provides a background list along with the
@@ -63,7 +64,7 @@ functional annotations.
 For example KEGG has annotations for a few thousand genes, meaning most of
 the background genes get discarded.
 
-### p-value adjustment is applied incorrectly
+### FDR problem: p-value adjustment is applied incorrectly
 
 The second issue is that the false discovery rate is implemented incorrectly.
 ORA enrichment tools intersect the gene list with each functional category
@@ -90,10 +91,6 @@ genesetlibrary <- params$genesetlibrary
 mygs <- params$mygs
 minsetsize = 5
 
-```
-
-```{r,checklibraries}
-
 suppressPackageStartupMessages({
   library("clusterProfiler")
   library("markdown")
@@ -113,7 +110,14 @@ suppressPackageStartupMessages({
 Minimum set size is defined as 5.
 Sets with fewer than this number of genes are discarded.
 
-This software was developed by Mark Ziemann, report issues at the [GitHub repository](https://github.com/markziemann/background).
+The problem we are characterising is:
+
+```{r,notes}
+
+mymessage <- paste("Here we are characterising",comparison)
+message(mymessage)
+
+```
 
 ## Input gene lists
 
@@ -146,17 +150,19 @@ length(bg)
 Here is a look at the gene set library.
 
 ```{r, gsl1}
-
 genesetlibrary
+```
 
-nsets <- length(unique(mygs$term))
-message(paste("Number of sets:",nsets))
+Number of sets.
+
+```{r,gsl1a}
+length(unique(mygs$term))
 ```
 
 Summary of gene set length.
 
 ```{r,gsl2}
-summary(table(mygs$term))
+summary(as.numeric(unname(table(mygs$term))))
 ```
 
 Total number of genes with one or more annotations in the library.
@@ -296,6 +302,34 @@ if (comparison == "Background error") {
   ora$ES <- signif(ora$ES,3)
   ora$pvalue <- signif(ora$pvalue,3)
   ora$FDR <- signif(ora$FDR,3)
+} else if (comparison == "FDR error") {
+  gs1 <- mygs
+  gs1 <- gs1[which(gs1$gene %in% bg),]
+  terms <- names(which(table(gs1$term)>5))
+  gs1 <- gs1[gs1$term %in% terms,]
+  options(enrichment_force_universe = FALSE)
+  ora <- as.data.frame(enricher(gene = fg ,
+                                universe = bg, minGSSize = 5, maxGSSize = 500000, TERM2GENE = gs1,
+                                pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+  
+  gr <- as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",1)) /
+    as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",2))
+  
+  br <- as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",1)) /
+    as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",2))
+  
+  ora$ES <- gr/br
+  ora$ID = ora$geneID = ora$p.adjust = ora$Count = NULL
+  colnames(ora) <- gsub("qvalue","FDR",colnames(ora))
+  colnames(ora) <- gsub("GeneRatio","FgRatio",colnames(ora))
+  ora <- ora[,c("Description","FgRatio","BgRatio","ES","pvalue","FDR")]
+  
+  # proper FDR correction
+  nsets <- length(which(table(gs1$term)>5))
+  nres <- nrow(ora)
+  diff <- nsets - nres
+  pvals <- c(ora$pvalue,rep(1,diff))
+  ora$FDR <- p.adjust(pvals,method="fdr")[1:nrow(ora)]
 }
 
 ora2 <- ora
@@ -377,7 +411,7 @@ DT::datatable( { m },
 
 ```
 
-Euler diagram.
+Euler diagram of pathways with FDR<0.05.
 
 ```{r,comparison2}
 
@@ -386,8 +420,20 @@ ora2_sets <- subset(ora2,FDR < 0.05)$Description
 
 if ( comparison == "Background error") {
   v1 <- list("Original"=ora1_sets, "BG fix"=ora2_sets)
+} else if (comparison == "FDR error") {
+  v1 <- list("Original"=ora1_sets, "FDR fix"=ora2_sets)
 }
 plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2))
+
+```
+
+Jaccard similarity index of pathways with FDR<0.05.
+
+```{r,jac1}
+
+jac <- length(intersect(ora1_sets,ora2_sets)) / length(union(ora1_sets,ora2_sets))
+
+message(paste("Jaccard index:",signif(jac,3)))
 
 ```
 
@@ -405,19 +451,33 @@ VEC <- seq(0,MAX,INCREMENT)
 
 if ( comparison == "Background error") {
   
-m$Original <- m$BGcorrected <- round(VEC[1:nrow(m)],0.1)
-m$ES.x <- signif(m$ES.x,3)
-m$ES.y <- signif(m$ES.y,3)
-
-plot_ly(
-  m, x = ~ES.x, y = ~ES.y
-) %>%
-  add_trace(m, x = ~Original, y = ~BGcorrected, type = "scatter",
-            mode="lines", line=list(color='grey')) %>%
-  add_trace(m, x = ~ES.x, y = ~ES.y, type = "scatter", mode = "markers",
-            showlegend = FALSE, text = m$Description,
-            hoverinfo = 'text') %>%
-  layout(title="Enrichment score comparison")
+  m$Original <- m$BGcorrected <- round(VEC[1:nrow(m)],0.1)
+  m$ES.x <- signif(m$ES.x,3)
+  m$ES.y <- signif(m$ES.y,3)
+  
+  plot_ly(
+    m, x = ~ES.x, y = ~ES.y
+  ) %>%
+    add_trace(m, x = ~Original, y = ~BGcorrected, type = "scatter",
+              mode="lines", line=list(color='grey')) %>%
+    add_trace(m, x = ~ES.x, y = ~ES.y, type = "scatter", mode = "markers",
+              showlegend = FALSE, text = m$Description,
+              hoverinfo = 'text') %>%
+    layout(title="Enrichment score comparison")
+} else if (comparison == "FDR error") {
+  m$Original <- m$FDRcorrected <- round(VEC[1:nrow(m)],0.1)
+  m$ES.x <- signif(m$ES.x,3)
+  m$ES.y <- signif(m$ES.y,3)
+  
+  plot_ly(
+    m, x = ~ES.x, y = ~ES.y
+  ) %>%
+    add_trace(m, x = ~Original, y = ~FDRcorrected, type = "scatter",
+              mode="lines", line=list(color='grey')) %>%
+    add_trace(m, x = ~ES.x, y = ~ES.y, type = "scatter", mode = "markers",
+              showlegend = FALSE, text = m$Description,
+              hoverinfo = 'text') %>%
+    layout(title="Enrichment score comparison")
 }
 
 ```
@@ -450,6 +510,20 @@ if ( comparison == "Background error") {
               hoverinfo = 'text') %>%
     layout(title="log FDR comparison")
   
+} else if (comparison == "FDR error") {
+  m$Original <- m$FDRcorrected <- round(VEC[1:nrow(m)],0.1)
+  m$logFDR.x <- signif(m$logFDR.x,3)
+  m$logFDR.y <- signif(m$logFDR.y,3)
+  
+  plot_ly(
+    m, x = ~logFDR.x, y = ~logFDR.y
+  ) %>%
+    add_trace(m, x = ~Original, y = ~FDRcorrected, type = "scatter",
+              mode="lines", line=list(color='grey')) %>%
+    add_trace(m, x = ~logFDR.x, y = ~logFDR.y, type = "scatter", mode = "markers",
+              showlegend = FALSE, text = m$Description,
+              hoverinfo = 'text') %>%
+    layout(title="log FDR comparison")
 }
 
 ```
