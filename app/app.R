@@ -314,7 +314,7 @@ server <- function(input, output, session) {
     m$logFDR.y <- signif(m$logFDR.y,3)
     
     fig <- plot_ly(
-      m, x = ~ES.x, y = ~ES.y
+      m, x = ~logFDR.x, y = ~logFDR.y
     ) %>%
       add_trace(m, x = ~Original, y = ~BGcorrected, type = "scatter",
                 mode="lines", line=list(color='grey')) %>%
@@ -386,7 +386,8 @@ server <- function(input, output, session) {
       params <- list(fg = fg(),
                      bg = bg(),
                      comparison = input$comparison,
-                     genesetlibrary = input$genesetlibrary)
+                     genesetlibrary = input$genesetlibrary,
+                     mygs = mygs())
       
       rmarkdown::render(tempReport, output_file = file,
                         params = params,

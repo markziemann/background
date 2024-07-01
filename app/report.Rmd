@@ -14,6 +14,7 @@ params:
   bg: NA
   comparison: NA
   genesetlibrary: NA
+  mygs: NA
 ---
 
 Source: https://github.com/markziemann/background
@@ -49,7 +50,7 @@ p-values.
 In this work we highlight two subtle issues with some popular implementations 
 of over-representation analysis.
 
-## Genes without annotated categories are discarded
+### Genes without annotated categories are discarded
 
 The first issue related to how the background list is defined.
 If a user does the right thing and provides a background list along with the
@@ -62,7 +63,7 @@ functional annotations.
 For example KEGG has annotations for a few thousand genes, meaning most of
 the background genes get discarded.
 
-## p-value adjustment is applied incorrectly
+### p-value adjustment is applied incorrectly
 
 The second issue is that the false discovery rate is implemented incorrectly.
 ORA enrichment tools intersect the gene list with each functional category
@@ -80,28 +81,16 @@ with 3000 members, but it might be serious when it is small, like <200
 members.
 This results in adjusted p-values being slightly smaller than they should be.
 
-This software was developed by Mark Ziemann, report issues at the [GitHub repository](https://github.com/markziemann/background).
-
-Some information about the parameters used:
-
 ```{r, start}
 
 fg <- params$fg
 bg <- params$bg
 comparison <- params$comparison
 genesetlibrary <- params$genesetlibrary
-minsetsize <- 5
-
-message(paste("Minimum gene set size:",minsetsize))
+mygs <- params$mygs
+minsetsize = 5
 
 ```
-
-Minimum set size is defined as 5.
-Sets with fewer than this number of genes are discarded.
-
-## Input gene lists
-
-Here is the first few lines of the input foreground and background lists.
 
 ```{r,checklibraries}
 
@@ -119,21 +108,40 @@ suppressPackageStartupMessages({
 
 ```
 
-```{r,peek}
+### Notes 
 
-message("First 10 genes in the foreground")
+Minimum set size is defined as 5.
+Sets with fewer than this number of genes are discarded.
+
+This software was developed by Mark Ziemann, report issues at the [GitHub repository](https://github.com/markziemann/background).
+
+## Input gene lists
+
+First 10 genes in the foreground.
+
+```{r,peek1}
 head(fg,10)
-
-message("First 10 genes in the background")
-head(bg,10)
-
-message("Num genes in foreground")
-length(fg)
-
-message("Num genes in background")
-length(bg)
-
 ```
+
+First 10 genes in the background.
+
+```{r,peek2}
+head(bg,10)
+```
+
+Number of genes in the foreground list.
+
+```{r,peek3}
+length(fg)
+```
+
+Number of genes in the background list.
+
+```{r,peek4}
+length(bg)
+```
+
+## Gene set library
 
 Here is a look at the gene set library.
 
@@ -141,13 +149,47 @@ Here is a look at the gene set library.
 
 genesetlibrary
 
+nsets <- length(unique(mygs$term))
+message(paste("Number of sets:",nsets))
 ```
 
-Overlap of genes in the gene set library.
+Summary of gene set length.
 
 ```{r,gsl2}
+summary(table(mygs$term))
+```
 
-print("abc")
+Total number of genes with one or more annotations in the library.
+
+```{r,gsl3}
+length(unique(mygs$gene))
+```
+
+Total number of annotations in the gene set library.
+
+```{r,gsl4}
+nrow(mygs)
+```
+
+Overlap of foreground genes in the gene set library.
+
+```{r,gsl5}
+
+mygs_genes <- unique(mygs$gene)
+
+I <- length(intersect(fg,mygs_genes))
+
+message(paste(I,"from",length(fg)))
+
+```
+
+Overlap of background genes in the gene set library.
+
+```{r,gsl6}
+
+I <- length(intersect(bg,mygs_genes))
+
+message(paste(I,"from",length(bg)))
 
 ```
 
@@ -155,17 +197,70 @@ print("abc")
 
 ```{r,default }
 
-print("run clusterprofiler default")
+options(enrichment_force_universe = FALSE)
+ora <- as.data.frame(enricher(gene = fg ,
+                              universe = bg, minGSSize = 5, maxGSSize = 500000, TERM2GENE = mygs,
+                              pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
 
-print("allow download?")
+gr <- as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",2))
+
+br <- as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",1)) /
+  as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",2))
+
+ora$ES <- gr/br
+ora$ID = ora$geneID = ora$p.adjust = ora$Count = NULL
+colnames(ora) <- gsub("qvalue","FDR",colnames(ora))
+colnames(ora) <- gsub("GeneRatio","FgRatio",colnames(ora))
+ora <- ora[,c("Description","FgRatio","BgRatio","ES","pvalue","FDR")]
+ora$ES <- signif(ora$ES,3)
+ora$pvalue <- signif(ora$pvalue,3)
+ora$FDR <- signif(ora$FDR,3)
+ora1 <- ora
 
 ```
 
-Make bar chart.
+```{r,defaulttable}
+
+DT::datatable(
+  { ora1 },
+  
+  extensions = 'Buttons',
+  filter = list(position = 'top', clear = FALSE),
+
+  options = list(
+    paging = TRUE,
+    searching = TRUE,
+    fixedColumns = TRUE,
+    autoWidth = TRUE,
+    ordering = TRUE,
+    dom = 'tB',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 50,
+    search = list(regex = TRUE, caseInsensitive = TRUE)),
+
+  rownames= FALSE)  
+
+```
+
+Bar chart.
 
 ```{r,default_bars}
 
-barplot(c(1,2,3))
+edata <- head(subset(ora1,FDR<0.05),20)
+if (nrow(edata)>1) {
+  edata <- edata[order(edata$ES),]
+  vec <- edata$ES
+  names(vec) <- edata$Description
+  names(vec) <- substr(names(vec), start = 1, stop = 60)
+  names(vec) <- gsub("_"," ",names(vec))
+  par(mar=c(4,27,1,1))
+  barplot(vec,horiz=TRUE,las=1,cex.names=0.8,
+          xlab="Enrichment Score")
+  mtext("Default ORA",side=3,adj=1)
+} else {
+  message("No gene sets with FDR<0.05 found")
+}
 
 ```
 
@@ -176,34 +271,188 @@ The one being characterised here is shown in the text below:
 
 ```{r,fixed1 }
 
-mymessage <- paste("Here we are characterising","comparison")
+mymessage <- paste("Here we are characterising",comparison)
 message(mymessage)
 
-print("run clusterprofiler fixed")
-# actually there will be three different types of analysis possible here
-# depending on the selection
+#Background error
 
-print("allow download?")
+if (comparison == "Background error") {
+  options(enrichment_force_universe = TRUE)
+  ora <- as.data.frame(enricher(gene = fg ,
+                                universe = bg, minGSSize = 5, maxGSSize = 500000, TERM2GENE = mygs,
+                                pAdjustMethod="fdr",  pvalueCutoff = 1, qvalueCutoff = 1  ))
+  
+  gr <- as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",1)) /
+    as.numeric(sapply(strsplit(ora$GeneRatio,"/"),"[[",2))
+  
+  br <- as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",1)) /
+    as.numeric(sapply(strsplit(ora$BgRatio,"/"),"[[",2))
+  
+  ora$ES <- gr/br
+  ora$ID = ora$geneID = ora$p.adjust = ora$Count = NULL
+  colnames(ora) <- gsub("qvalue","FDR",colnames(ora))
+  colnames(ora) <- gsub("GeneRatio","FgRatio",colnames(ora))
+  ora <- ora[,c("Description","FgRatio","BgRatio","ES","pvalue","FDR")]
+  ora$ES <- signif(ora$ES,3)
+  ora$pvalue <- signif(ora$pvalue,3)
+  ora$FDR <- signif(ora$FDR,3)
+}
+
+ora2 <- ora
+```
+
+```{r,fixed2}
+
+DT::datatable(
+  { ora2 },
+  
+  extensions = 'Buttons',
+  filter = list(position = 'top', clear = FALSE),
+
+  options = list(
+    paging = TRUE,
+    searching = TRUE,
+    fixedColumns = TRUE,
+    autoWidth = TRUE,
+    ordering = TRUE,
+    dom = 'tB',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 50,
+    search = list(regex = TRUE, caseInsensitive = TRUE)),
+
+  rownames= FALSE)  
 
 ```
 
-Make bar chart.
+Fixed bar chart.
 
 ```{r,fixed_bars}
 
-barplot(c(1,2,3))
+edata <- head(subset(ora2,FDR<0.05),20)
+if (nrow(edata)>1) {
+  edata <- edata[order(edata$ES),]
+  vec <- edata$ES
+  names(vec) <- edata$Description
+  names(vec) <- substr(names(vec), start = 1, stop = 60)
+  names(vec) <- gsub("_"," ",names(vec))
+  par(mar=c(4,27,1,1))
+  barplot(vec,horiz=TRUE,las=1,cex.names=0.8,
+          xlab="Enrichment Score")
+  mtext("Fixed ORA",side=3,adj=1)
+} else {
+  message("No gene sets with FDR<0.05 found")
+}
 
 ```
 
 ## Comparison of default and fixed analysis
 
-* Data table
+Side by side data table.
+Columns labeled 'x' are original algorithm, and 'y' are fixed.
 
-* Euler diagram
+```{r,comparison1}
+m <- merge(ora1,ora2,by="Description")
+m <- m[,c("Description","FgRatio.x","FgRatio.y","BgRatio.x","BgRatio.y","ES.x","ES.y","FDR.x","FDR.y")]
+diff <- abs(-log10(m$FDR.x) - -log10(m$FDR.y))
+m <- m[order(-diff),]
+m$ES.x <- signif(m$ES.x,3)
+m$ES.y <- signif(m$ES.y,3)
+m$FDR.x <- signif(m$FDR.x,3)
+m$FDR.y <- signif(m$FDR.y,3)
 
-* Scatterplot of ES
+DT::datatable( { m },
+  extensions = 'Buttons',
+  filter = list(position = 'top', clear = FALSE),
+  options = list(
+    paging = TRUE,
+    searching = TRUE,
+    fixedColumns = TRUE,
+    autoWidth = TRUE,
+    ordering = TRUE,
+    dom = 'tB',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 50,
+    search = list(regex = TRUE, caseInsensitive = TRUE)),
+  rownames= FALSE)  
 
-* Scatterplot of logFDR
+```
+
+Euler diagram.
+
+```{r,comparison2}
+
+ora1_sets <- subset(ora1,FDR < 0.05)$Description
+ora2_sets <- subset(ora2,FDR < 0.05)$Description
+
+if ( comparison == "Background error") {
+  v1 <- list("Original"=ora1_sets, "BG fix"=ora2_sets)
+}
+plot(euler(v1),quantities = list(cex = 2), labels = list(cex = 2))
+
+```
+
+Scatterplot of ES.
+
+```{r,comparison3}
+
+orig_df <- ora1
+bgfix_df <- ora2
+m <- merge(orig_df,bgfix_df,by="Description")
+m <- m[,c("Description","ES.x","ES.y")]
+MAX <- max(c(m$ES.x,m$ES.y))
+INCREMENT <- MAX/nrow(m)
+VEC <- seq(0,MAX,INCREMENT)
+
+if ( comparison == "Background error") {
+  
+m$Original <- m$BGcorrected <- round(VEC[1:nrow(m)],0.1)
+m$ES.x <- signif(m$ES.x,3)
+m$ES.y <- signif(m$ES.y,3)
+
+plot_ly(
+  m, x = ~ES.x, y = ~ES.y
+) %>%
+  add_trace(m, x = ~Original, y = ~BGcorrected, type = "scatter",
+            mode="lines", line=list(color='grey')) %>%
+  add_trace(m, x = ~ES.x, y = ~ES.y, type = "scatter", mode = "markers",
+            showlegend = FALSE, text = m$Description,
+            hoverinfo = 'text') %>%
+  layout(title="Enrichment score comparison")
+}
+
+```
+
+Scatterplot of logFDR values.
+
+```{r,comparison4}
+
+m <- merge(ora1,ora2,by="Description")
+m <- m[,c("Description","FDR.x","FDR.y")]
+m$logFDR.x <- -log10(m$FDR.x)
+m$logFDR.y <- -log10(m$FDR.y)
+MAX <- max(c(m$logFDR.x,m$logFDR.y))
+INCREMENT <- MAX/nrow(m)
+VEC <- seq(0,MAX,INCREMENT)
+
+if ( comparison == "Background error") {
+
+  m$Original <- m$BGcorrected <- round(VEC[1:nrow(m)],0.1)
+  m$logFDR.x <- signif(m$logFDR.x,3)
+  m$logFDR.y <- signif(m$logFDR.y,3)
+  
+  plot_ly(
+    m, x = ~logFDR.x, y = ~logFDR.y
+  ) %>%
+    add_trace(m, x = ~Original, y = ~BGcorrected, type = "scatter",
+              mode="lines", line=list(color='grey')) %>%
+    add_trace(m, x = ~logFDR.x, y = ~logFDR.y, type = "scatter", mode = "markers",
+              showlegend = FALSE, text = m$Description,
+              hoverinfo = 'text') %>%
+    layout(title="log FDR comparison")
+  
+}
+
+```
 
 ## Session information
 
