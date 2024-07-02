@@ -18,7 +18,7 @@ The background list contains all the genes that were detected robustly in the
 omics assay.
 Here "robustly" means that the detection was good enough that it *could* have
 been part of the foreground list.
-Example [foreground]() and [background]() files are provided.
+Example [foreground](https://github.com/markziemann/background/blob/main/app/example_lists/fg3.txt) and [background](https://github.com/markziemann/background/blob/main/app/example_lists/bg.txt) files are provided.
 
 After uploading the lists, select the gene set library you want to test.
 We have sourced some popular options from [MSigDB v2023.2](https://www.gsea-msigdb.org/gsea/msigdb/human/collections.jsp).
