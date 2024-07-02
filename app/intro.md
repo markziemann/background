@@ -9,14 +9,16 @@ This tool is released under an MIT Licence and comes without any warranty.
 
 ### How to use the tool
 
-To get started, you will need to upload two `.txt` files containing gene symbols;
+To get started, you will need to upload two `.txt` files containing human gene symbols;
 one for the foreground genes and one for the background.
+Currently, only human genes are supported.
 The foreground list contains genes that were identified by some 'omics
 analysis as being interesting.
 The background list contains all the genes that were detected robustly in the
 omics assay.
 Here "robustly" means that the detection was good enough that it *could* have
 been part of the foreground list.
+Example [foreground]() and [background]() files are provided.
 
 After uploading the lists, select the gene set library you want to test.
 We have sourced some popular options from [MSigDB v2023.2](https://www.gsea-msigdb.org/gsea/msigdb/human/collections.jsp).

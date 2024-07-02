@@ -41,8 +41,8 @@ Here we demonstrate the impact of these issues on several real RNA-seq datasets 
 simulated RNA-seq data to quantify the impact of these problems.
 We show that the severity of these problems depends on the gene set library, the number of
 genes in the list, and the degree of noise in the dataset.
-These problems can be mitigated by changing packages/websites for ORA or by changing to another
-approach such as functional class scoring.
+These problems can be mitigated by changing packages/websites for ORA or by changing to
+another approach such as functional class scoring.
 
 # Keywords
 
@@ -52,7 +52,7 @@ approach such as functional class scoring.
 
 * Gene set enrichment analysis
 
-* Research integrity
+* Research rigour
 
 # Main Body
 
@@ -197,9 +197,9 @@ For this test, 2000 of the top up and down regulated genes were selected from ea
 differential expression dataset based on p-value.
 A workaround for the FDR problem was devised by filtering the gene sets by the presence of
 at least two genes in the background list prior to running clusterProfiler.
-After clusterProfiler using the parameters above, the number of gene sets in the results was
-quantified, and compared to the number that should have been reported using the two gene
-limit.
+After running clusterProfiler using the parameters above, the number of gene sets in the
+results was quantified, and compared to the number that should have been reported using the
+two gene limit.
 The difference between these numbers (*n*) represents the number of missing gene sets.
 To account for these tests, *n* values of 1 were appended to the p-values obtained by
 clusterProfiler, followed by FDR correction in R, to obtain the properly corrected FDR values.
@@ -411,12 +411,11 @@ foreground, a mostly arbitrary choice.
 
 These issues together with previously mentioned pitfalls such as lack of background
 correction and methodological misreporting [@Timmons2015-ki;@Wijesooriya2022-fw], suggest
-that ORA should be discouraged in most situations, and replaced by other methods such as FCS.
-Where it makes sense to use ORA would be when FCS is not applicable, for example when
-investigating the over-represented categories in gene expression modules defined by packages
-like WGCNA (Weighted Gene Correlation Network Analysis) [@Langfelder2008-hu], or when
-investigating over-represented functional categories among genes with variants associated
-with a disease.
+that if the data can be scored/ranked, methods like FCS are recommended over ORA.
+ORA is better suited to other cases where genes are classified into binary groups.
+For example when investigating the over-represented categories in gene expression modules
+[@Langfelder2008-hu], or when investigating over-represented functional categories among
+genes with variants associated with a disease [@White2019-ps].
 
 # Data and Software Availability
 
