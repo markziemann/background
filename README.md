@@ -115,3 +115,21 @@ docker cp  `docker ps -alq`:/background docker_results
 
 The `docker_results` should contain the completed R markdown reports
 and a compiled manuscript too.
+
+## Shiny app
+
+We have an app that can demonstrate of the effect of these two problems on your
+own data!
+Install docker on your system, pull the image below and run the app over port
+3838.
+
+```
+docker pull mziemann/background_app
+docker run -p 3838:3838 mziemann/background_app
+```
+
+Then use your web browser with the address `localhost:3838` and the app will
+appear.
+In the app you can upload your own foreground and background lists, select
+the desired gene pathway database and see the effect of these errors on the
+results.
