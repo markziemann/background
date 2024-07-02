@@ -18,13 +18,12 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install CRAN packages
-RUN Rscript -e 'install.packages(c("pkgload","markdown","rmarkdown","shiny","BiocManager","RhpcBLASctl","eulerr","plotly","DT"))'
+RUN Rscript -e 'install.packages(c("pkgload","markdown","rmarkdown","shiny","BiocManager","RhpcBLASctl","eulerr","plotly","DT","kableExtra"))'
 
 # Install bioconductor packages
 RUN Rscript -e 'BiocManager::install(c("clusterProfiler"))'
 
 # get a clone of the code
-RUN echo
 RUN git clone https://github.com/markziemann/background.git
 ENV DIRPATH /background/app
 WORKDIR $DIRPATH

@@ -96,7 +96,6 @@ suppressPackageStartupMessages({
   library("markdown")
   library("rmarkdown")
   library("shiny")
-  library("broom")
   library("RhpcBLASctl")
   library("eulerr")
   library("plotly")
