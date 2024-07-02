@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     libicu-dev \
     liblzma-dev \
     libbz2-dev \
+    libglpk-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -23,14 +24,14 @@ RUN Rscript -e 'install.packages(c("pkgload","markdown","rmarkdown","shiny","Bio
 RUN Rscript -e 'BiocManager::install(c("clusterProfiler"))'
 
 # get a clone of the code
+RUN echo
 RUN git clone https://github.com/markziemann/background.git
 ENV DIRPATH /background/app
 WORKDIR $DIRPATH
-COPY report.Rmd intro.md app.R genesets /srv/shiny-server/
-COPY favicon.ico /www/favicon.ico
+RUN cp -r * /srv/shiny-server/
 
 # Expose the application port
 USER shiny
-EXPOSE 3939
+EXPOSE 3838
 
 CMD ["/usr/bin/shiny-server"]
