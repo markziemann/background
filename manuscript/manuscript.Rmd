@@ -10,7 +10,7 @@ output:
     fig_width: 5
     fig_height: 5
 bibliography: references.bib
-csl: plos-computational-biology.csl
+csl: bmc-bioinformatics.csl
 ---
 
 [Mark Ziemann<sup>1,2</sup>*](https://orcid.org/0000-0002-7688-6974),
@@ -24,9 +24,9 @@ csl: plos-computational-biology.csl
 
 (*) Corresponding author: mark.ziemann@burnet.edu.au
 
-# Abstract
+## Abstract
 
-Over-representation analysis (ORA) is used widely to assess the enrichment of functional
+**Background**: Over-representation analysis (ORA) is used widely to assess the enrichment of functional
 categories in a gene list compared to a background list.
 ORA is therefore a critical method in the interpretation of 'omics data, relating gene lists
 to biological functions and themes.
@@ -37,14 +37,16 @@ large numbers of genes from the background list if they are not annotated as bel
 category.
 The second one we call the "false discovery rate problem", because some tools underestimate
 the true number of parallel tests conducted.
-Here we demonstrate the impact of these issues on several real RNA-seq datasets and use
+
+**Results**: Here we demonstrate the impact of these issues on several real RNA-seq datasets and use
 simulated RNA-seq data to quantify the impact of these problems.
 We show that the severity of these problems depends on the gene set library, the number of
 genes in the list, and the degree of noise in the dataset.
-These problems can be mitigated by changing packages/websites for ORA or by changing to
+
+**Conclusion**: These problems can be mitigated by changing packages/websites for ORA or by changing to
 another approach such as functional class scoring.
 
-# Keywords
+## Keywords
 
 * Bioinformatics
 
@@ -54,9 +56,7 @@ another approach such as functional class scoring.
 
 * Research rigour
 
-# Main Body
-
-## Introduction
+## Background
 
 ```{r,libs,echo=FALSE}
 
@@ -147,7 +147,7 @@ recommendations for end users.
 
 ### Expression data preparation
 
-To test the effect of these two problems on RNA-seq based enrichment analysis, data from seven
+To quantify the effect of these two problems on RNA-seq based enrichment analysis, data from seven
 transcriptomic studies were downloaded from DEE2 using the getDEE2 R/Bioconductor package
 [@Ziemann2019-ux].
 Raw data for these seven studies are available from NCBI Sequence Read Archive under the
@@ -375,7 +375,7 @@ ClusterProfiler maintainers recently provided an option to prevent the loss of u
 genes from the background `options(enrichment_force_universe = TRUE)`, however this feature
 isn't yet described in the official documentation.
 
-The second problem is potentially more serious in that it could lead to increasing false
+The FDR problem is potentially more serious in that it could lead to increasing false
 positives under specific conditions; when the foreground list is short, and the median pathway
 size is relatively small.
 These false positives arise due to an underestimate of the actual number of tests conducted.
@@ -383,7 +383,7 @@ In extreme cases, correction of this problem can lead to around half of the stat
 significant results changing.
 
 ClusterProfiler is not the only tool to suffer from these problems, they are widespread
-(**Table 1**), but there are also several tools free of these problems.
+(**Table 1**). Still, there are several tools free of these problems.
 
 | Tool | Has problems | Citation |
 | --- | --- | --- |
@@ -395,7 +395,7 @@ ClusterProfiler is not the only tool to suffer from these problems, they are wid
 
 The purpose of this work was to describe two subtle problems with ORA, but there are some
 bigger problems noted.
-Firstly, ORA was less accurate as compared to FCS in this simulation work, confirming a
+Firstly, all variations of ORA were less accurate as compared to FCS in this simulation work, confirming a
 previous report [@Kaspi2020-rn].
 Specifically, precision of ORA deteriorated with greater levels of added noise, while FCS
 was relatively stable.
@@ -417,24 +417,34 @@ For example when investigating the over-represented categories in gene expressio
 [@Langfelder2008-hu], or when investigating over-represented functional categories among
 genes with variants associated with a disease [@White2019-ps].
 
-# Data and Software Availability
+## Declarations
 
-## Underlying data
+### Ethics approval and consent to participate
 
-Publicly available data were obtained from Digital Expression Explorer 2 (dee2.io).
+Not applicable.
 
-## Software and Code
+### Consent for publication
 
-* The code repository including template Dockerfile and R Markdown script are available on
+Not applicable.
+
+### Availability of data and materials
+
+Publicly available data were obtained from Digital Expression Explorer 2 (dee2.io),
+using the accession numbers mentioned in the Methods section.
+The code repository including template Dockerfile and R Markdown script are available on
 GitHub (https://github.com/markziemann/background).
+The Docker image is available on DockerHub (https://hub.docker.com/r/mziemann/background).
+The code repository and Docker image have been uploaded to Zenodo for long-term archiving
+(https://zenodo.org/record/TODOXXX).
 
-* The example Docker image is available on DockerHub
-(https://hub.docker.com/r/mziemann/background).
+## Competing Interests
 
-* The code repository and Docker image have been uploaded to Zenodo for long-term archiving
-(https://zenodo.org/record/8170984).
+The authors declare that they have no competing interests.
 
-## Availability of other materials
+## Funding
+
+This work was supported by Burnet Institute and Deakin University.
+Authors declare that no grants were involved in supporting this work.
 
 ## Author Contributions
 
@@ -453,14 +463,6 @@ Visualization: MZ, AB.
 Writing – Original Draft Preparation: MZ, AB.
 Writing – Review & Editing: MZ, AB.
 
-## Competing Interests
-
-No competing interests were disclosed.
-
-## Grant Information
-
-The authors declared that no grants were involved in supporting this work.
-
 ## Acknowledgements
 
 We thank Ms Megan Soria and Ms Kaumadi Wijesooriya (Deakin University) for discussions on the concept and manuscript.
@@ -469,4 +471,4 @@ platform supported by the NCRIS-funded Australian Research Data Commons (ARDC).
 The authors gratefully acknowledge the contribution to this work of the
 Victorian Operational Infrastructure Support Program received by the Burnet Institute.
 
-# Bibliography
+## Bibliography
