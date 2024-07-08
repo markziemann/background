@@ -437,16 +437,16 @@ The Docker image is available on DockerHub (https://hub.docker.com/r/mziemann/ba
 The code repository and Docker image have been uploaded to Zenodo for long-term archiving
 (https://zenodo.org/record/TODOXXX).
 
-## Competing Interests
+### Competing Interests
 
 The authors declare that they have no competing interests.
 
-## Funding
+### Funding
 
 This work was supported by Burnet Institute and Deakin University.
 Authors declare that no grants were involved in supporting this work.
 
-## Author Contributions
+### Author Contributions
 
 Conceptualization: MZ, AB.
 Data Curation: MZ.
@@ -463,7 +463,7 @@ Visualization: MZ, AB.
 Writing – Original Draft Preparation: MZ, AB.
 Writing – Review & Editing: MZ, AB.
 
-## Acknowledgements
+### Acknowledgements
 
 We thank Ms Megan Soria and Ms Kaumadi Wijesooriya (Deakin University) for discussions on the concept and manuscript.
 This research was supported by use of the Nectar Research Cloud, a collaborative Australian research
