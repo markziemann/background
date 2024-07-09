@@ -22,7 +22,7 @@ csl: bmc-bioinformatics.csl
 
 2. Deakin University, School of Life and Environmental Sciences, Geelong, Australia.
 
-(*) Corresponding author: mark.ziemann@burnet.edu.au
+(*) Corresponding author: mark.ziemann@burnet.edu.au Burnet Institute, 85 Commercial Rd Melbourne VIC 3004, Australia.
 
 ## Abstract
 
@@ -368,7 +368,7 @@ The background problem came to our attention when a doctoral student in our depa
 was puzzled by results obtained from clusterProfiler when using a custom set of pathways.
 This exact issue was the subject of several posts to online bioinformatics forums dating to
 ~2020 where confused users were wondering why the number of background genes changed so much.
-The results shown here show that the background problem affects smaller gene set libraries
+The results shown here indicate the background problem affects smaller gene set libraries
 like KEGG and HPO more severely as compared to Cellmarkers and GO libraries which describe
 a larger proportion of all genes.
 ClusterProfiler maintainers recently provided an option to prevent the loss of unannotated
@@ -382,6 +382,13 @@ These false positives arise due to an underestimate of the actual number of test
 In extreme cases, correction of this problem can lead to around half of the statistically
 significant results changing.
 
+So end-users can explore the effect of these two problems on their work, we have developed
+an R/Shiny web application.
+Users can upload their foreground and background lists, select their preferred gene set
+library and compare results from default and patched analyses.
+The resource is currently available at https://oratool.ziemann-lab.net/ and available as a
+docker container (https://hub.docker.com/repository/docker/mziemann/background_app/general).
+
 ClusterProfiler is not the only tool to suffer from these problems, they are widespread
 (**Table 1**). Still, there are several tools free of these problems.
 
@@ -393,7 +400,7 @@ ClusterProfiler is not the only tool to suffer from these problems, they are wid
 
 : Table 1. Classification of several popular ORA tools for Background and FDR problems.
 
-The purpose of this work was to describe two subtle problems with ORA, but there are some
+The purpose of this work was to thoroughly characterise two subtle problems with ORA, but there are some
 bigger problems noted.
 Firstly, all variations of ORA were less accurate as compared to FCS in this simulation work, confirming a
 previous report [@Kaspi2020-rn].
