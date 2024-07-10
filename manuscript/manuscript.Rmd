@@ -380,7 +380,7 @@ positives under specific conditions; when the foreground list is short, and the 
 size is relatively small.
 These false positives arise due to an underestimate of the actual number of tests conducted.
 In extreme cases, correction of this problem can lead to around half of the statistically
-significant results changing.
+significant results changing (see Figure 2B).
 
 So end-users can explore the effect of these two problems on their work, we have developed
 an R/Shiny web application.
@@ -390,15 +390,43 @@ The resource is currently available at https://oratool.ziemann-lab.net/ and avai
 docker container (https://hub.docker.com/repository/docker/mziemann/background_app/general).
 
 ClusterProfiler is not the only tool to suffer from these problems, they are widespread
-(**Table 1**). Still, there are several tools free of these problems.
+(**Table 1**). Still, there are some tools free of such problems.
+For example, fora is a good option for R-based workflows, however the function does not calculate the fold enrichment score,
+so users will need to do it themselves [@Korotkevich2016-gd].
+ShinyGO is an excellent alternative for web based analysis [@Ge2020-lu].
+It doesn't suffer from the two issues described here, it is easy to use,
+and has a high degree of reproducibility thanks to its stand-alone versioned docker
+container option for local execution.
+One problem that all of these tools listed in Table 1 have is that a background list is optional.
+Sometimes this feature is hidden under "advanced options".
+Given the strong biological and technical biases that are present in contemporary omics such as including single cell and spatial transcriptomics,
+it should be mandatory step for users to provide a custom background list.
 
-| Tool | Has problems | Citation |
-| --- | --- | --- |
-| ClusterProfiler | Background and FDR | [@Yu2012-jj;@Wu2021-wy] |
-| DAVID | Background and FDR | [@Dennis2003-ar;@Huang2009-gi;@Sherman2022-jn] |
-| fora (fgsea) | Neither | [@Korotkevich2016-gd] |
+| Tool | Version | Type | Provides FDR values | Provides enrichment score | Proper background handling | Proper FDR | Reference |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| DAVID | v2023q4 | Web | Yes | Yes | No | Yes | [@Sherman2022-jn] |
+| Panther | v19 | Web | Yes | Yes | Yes | Yes | [@Mi2019-ak] |
+| Enrichr | June 2023 | Web | Yes | Yes | Yes | No | [@Kuleshov2016-og] |
+| KOBAS-i | KOBAS 3.0 | Web | Yes | No | Yes | No | [@Bu2021-ak] |
+| WebGestalt | 2024 | Web | Yes | Yes | No | Yes | [@Elizarraras2024-nr] |
+| g:Profiler | Feb 2024 | Web | Yes | No | No | Yes | [@Kolberg2023-nr] |
+| STRING-DB | v12.0 | Web | Yes | Yes | ? | ? | [@Szklarczyk2023-an] |
+| ShinyGO | v0.80 | Web | Yes | Yes | Yes | Yes | [@Ge2020-lu] |
+| Ingenuity Pathway Analysis | ? | ? | ? | ? | ? | ? | [@Kramer2014-kd] |
+| BinGO | v3.0.5 | Cytoscape | Yes | No | No | No | [@Maere2005-gq] |
+| ClueGO | v2.5.10 | Cytoscape | Yes | No | No | No | [@Bindea2009-jn] |
+| clusterProfiler | v4.12.0 | R package | Yes | No | No | No | [@Wu2021-wy] |
+| topGO | v2.56.0 | R package | No | No | No | Yes+ | [@Adrian_Alexa2017-nf] |
+| GOseq | v1.56.0 | R package | No | No | No* | Yes+ | [@Young2010-iw] |
+| goana/kegga | limma v3.60.3 | R package | No | No | No** | Yes+ | [@Ritchie2015-oz] |
+| fora | fgsea v1.30.0 | R package | Yes | No | Yes | Yes | [@Korotkevich2016-gd] |
 
-: Table 1. Classification of several popular ORA tools for Background and FDR problems.
+: Table 1. Classification of several popular ORA tools regarding the provision of information such as
+enrichment scores and FDR values, as well as behaviours regarding the two algorithmic issues described above.
+(*) Denotes functions where options are provided to adjust this behaviour and are documented in the user manual.
+(**) Documentation states unannotated genes are discarded with default settings using whole genome
+background, but not when a custom background is used.
+(+) Denotes that although no FDR values are provided, the results include sets where no overlaps were found, so users can adjust raw p-values themselves.
 
 The purpose of this work was to thoroughly characterise two subtle problems with ORA, but there are some
 bigger problems noted.
@@ -421,8 +449,7 @@ correction and methodological misreporting [@Timmons2015-ki;@Wijesooriya2022-fw]
 that if the data can be scored/ranked, methods like FCS are recommended over ORA.
 ORA is better suited to other cases where genes are classified into binary groups.
 For example when investigating the over-represented categories in gene expression modules
-[@Langfelder2008-hu], or when investigating over-represented functional categories among
-genes with variants associated with a disease [@White2019-ps].
+[@Langfelder2008-hu], or with variant-harbouring genes associated with a disease [@White2019-ps].
 
 ## Declarations
 
