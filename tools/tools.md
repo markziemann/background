@@ -35,6 +35,12 @@
 | Ingenuity Pathway Analysis | ? | ? | ? | ? | ? | ? | ? |
 | BinGO | v3.0.5 | Cytoscape | Yes | No | No | No | ref |
 | ClueGO | v2.5.10 | Cytoscape | Yes | No | No | No | ref |
+| clusterProfiler | v4.12.0 | R package | Yes | No | No | No | ref |
+| topGO | v2.56.0 | R package | No | No | No | Yes+ | ref |
+| GOseq | v1.56.0 | R package | No | No | No* | Yes+ | ref |
+| goana/kegga | limma v3.60.3 | No | No | No** | Yes+ | ref |
+| fora | fgsea v1.30.0 | Yes | No | Yes | Yes | ref |
+
 
 
 
