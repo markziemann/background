@@ -123,7 +123,7 @@ libraries like Gene Ontology [@The_Gene_Ontology_Consortium2023-xp] which descri
 genes (figures obtained from MSigDB June 2024 [@Liberzon2015-cs]).
 
 The second problem is that adjusting p-values for multiple testing, also known as
-false-discovery rate correction, is implemented improperly.
+false-discovery rate correction, is sometimes implemented improperly.
 Determining which pathways should be subject to false discovery rate correction depends on
 how a detection threshold is set.
 Ideally, a pathway should be considered detected based on the presence of a predetermined
