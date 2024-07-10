@@ -274,7 +274,7 @@ The percent increase in significant sets are shown.](../analysis/fig1_ORAsig.png
 shows that correcting the background bug improves the number of significant sets between 12 and
 229%.")
 
-![**Figure 1B. Impact of background problem is worse for smaller gene set libraries.** Mean
+![**Figure 1B. Impact of the background problem is worse for smaller gene set libraries.** Mean
 Jaccard similarity index was calculated for original and corrected ORA for seven independent
 datasets. The number of genes represented in one or more functional sets is shown on the x-axis,
 and the mean Jaccard index is shown on the y-axis.](../analysis/fig1_ORAjac.png "Figure 1B
@@ -304,7 +304,7 @@ are also small.
 significant sets with and without correction of the FDR problem over seven independent RNA-seq
 datasets. Foreground list consisted of 2000 genes with the smallest p-values](../analysis/fig2_ORAfdr.png "Figure 2A shows that correcting the FDR bug slightly reduces the number of significant sets.")
 
-![**Figure 2B. Impact of FDR problem is worse for shorter foreground gene lists.** Mean Jaccard
+![**Figure 2B. Impact of the FDR problem is worse for shorter foreground gene lists.** Mean Jaccard
 index between original and corrected analysis were calculated for seven RNA-seq datasets and nine
 gene set libraries. Only GO, Reactome, Cellmarkers and TFT GTRD are shown.](
 ../analysis/fig2_ORAsz.png "Figure 2B shows that the impact of the FDR bug is worse when
@@ -400,7 +400,7 @@ container option for local execution.
 One problem that all of these tools listed in Table 1 have is that a background list is optional.
 Sometimes this feature is hidden under "advanced options".
 Given the strong biological and technical biases that are present in contemporary omics such as including single cell and spatial transcriptomics,
-it should be mandatory step for users to provide a custom background list.
+it should be a mandatory step for users to provide a custom background list.
 
 | Tool | Version | Type | Provides FDR values | Provides enrichment score | Proper background handling | Proper FDR | Reference |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -440,7 +440,7 @@ Higher recall of FCS also means that researchers will have more power to identif
 relevant to the biological processes being studied.
 Secondly, many ORA tools do not provide enrichment scores in their default output tables.
 Enrichment scores are a surrogate for effect size, and without them, users may over-rely
-on significance scores when interpreting enrichment results [@Ziemann2024-ts].
+on significance scores when interpreting enrichment results.
 Lastly, ORA results can vary dramatically depending on the number of genes selected in the
 foreground, a mostly arbitrary choice.
 
