@@ -410,7 +410,7 @@ it should be a mandatory step for users to provide a custom background list.
 | KOBAS-i | KOBAS 3.0 | Web | Yes | No | Yes | No | [@Bu2021-ak] |
 | WebGestalt | 2024 | Web | Yes | Yes | No | Yes | [@Elizarraras2024-nr] |
 | g:Profiler | Feb 2024 | Web | Yes | No | No | Yes | [@Kolberg2023-nr] |
-| STRING-DB | v12.0 | Web | Yes | Yes | ? | ? | [@Szklarczyk2023-an] |
+| STRING-DB | v12.0 | Web | Yes | Yes | Yes | Yes | [@Szklarczyk2023-an] |
 | ShinyGO | v0.80 | Web | Yes | Yes | Yes | Yes | [@Ge2020-lu] |
 | Ingenuity Pathway Analysis | ? | ? | ? | ? | ? | ? | [@Kramer2014-kd] |
 | BinGO | v3.0.5 | Cytoscape | Yes | No | No | No | [@Maere2005-gq] |

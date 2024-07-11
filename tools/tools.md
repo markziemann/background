@@ -5,7 +5,7 @@
 * KOBAS-i (KOBAS 3.0): No enrichment score provided. But p-values are much mmore significant than when run on DAVID, so it looks like un-annotated genes are not removed from the background. After loading p and fdr values into R it is clear that pathways without any overlaps are not reported and are not included in FDR correction.
 * WebGestalt 2024: results similar to DAVID. Enrichment score reported (ratio). Comparison with oratool shows genes with no annotation are removed from the background. Only gene sets with overlaps reported, but analysis of adjusted p-values suggests no FDR problem.
 * g:Profiler (13 Feb 2024 update): No enrichment score. Background problem as "effective domain size" changes between databases like KEGG and Reactome. FDR values provided but no raw p-values. Analysis of p-values suggests no FDR problem.
-* STRING: Could not ascertain from the results of the tool, so I have emailed the admins.
+* STRING: Could not ascertain from the results of the tool, so I have emailed the admins. They report "Proteins without annotations are included in the default backgorund." and "We do not FDR correct or test for terms with 1 or less protein annotated, but that is for backgorund not for the (foreground) tested set."
 * Shinygo v0.80: Enrichment scores are consistent with not discarding genes without any categories. According to the code, the number of genes in pathways in background genes is found before discarding. Therefore no FDR problem.
 
 **Propriety web**
@@ -24,22 +24,22 @@
 
 | Tool | Version | Type | Provides FDR values | Provides Enrichment Score | Proper background handling | Proper FDR | Reference |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| DAVID | v2023q4 | Web | Yes | Yes | No | Yes | ref |
-| Panther | v19 | Web | Yes | Yes | Yes | Yes | ref |
-| Enrichr | June 2023 | Web | Yes | Yes | Yes | No | ref |
-| KOBAS-i | KOBAS 3.0 | Web | Yes | No | Yes | No | ref |
-| WebGestalt | 2024 | Web | Yes | Yes | No | Yes | ref |
-| g:Profiler | Feb 2024 | Web | Yes | No | No | Yes | ref |
-| STRING-DB | v12.0 | Web | Yes | Yes | ? | ? | ref |
-| ShinyGO | v0.80 | Web | Yes | Yes | Yes | Yes | ref |
-| Ingenuity Pathway Analysis | ? | ? | ? | ? | ? | ? | ? |
-| BinGO | v3.0.5 | Cytoscape | Yes | No | No | No | ref |
-| ClueGO | v2.5.10 | Cytoscape | Yes | No | No | No | ref |
-| clusterProfiler | v4.12.0 | R package | Yes | No | No | No | ref |
-| topGO | v2.56.0 | R package | No | No | No | Yes+ | ref |
-| GOseq | v1.56.0 | R package | No | No | No* | Yes+ | ref |
-| goana/kegga | limma v3.60.3 | R package | No | No | No** | Yes+ | ref |
-| fora | fgsea v1.30.0 | R package | Yes | No | Yes | Yes | ref |
+| DAVID | v2023q4 | Web | Yes | Yes | No | Yes | [@Sherman2022-jn] |
+| Panther | v19 | Web | Yes | Yes | Yes | Yes | [@Mi2019-ak] |
+| Enrichr | June 2023 | Web | Yes | Yes | Yes | No | [@Kuleshov2016-og] |
+| KOBAS-i | KOBAS 3.0 | Web | Yes | No | Yes | No | [@Bu2021-ak] |
+| WebGestalt | 2024 | Web | Yes | Yes | No | Yes | [@Elizarraras2024-nr] |
+| g:Profiler | Feb 2024 | Web | Yes | No | No | Yes | [@Kolberg2023-nr] |
+| STRING-DB | v12.0 | Web | Yes | Yes | Yes | Yes | [@Szklarczyk2023-an] |
+| ShinyGO | v0.80 | Web | Yes | Yes | Yes | Yes | [@Ge2020-lu] |
+| Ingenuity Pathway Analysis | ? | ? | ? | ? | ? | ? | [@Kramer2014-kd] |
+| BinGO | v3.0.5 | Cytoscape | Yes | No | No | No | [@Maere2005-gq] |
+| ClueGO | v2.5.10 | Cytoscape | Yes | No | No | No | [@Bindea2009-jn] |
+| clusterProfiler | v4.12.0 | R package | Yes | No | No | No | [@Wu2021-wy] |
+| topGO | v2.56.0 | R package | No | No | No | Yes+ | [@Adrian_Alexa2017-nf] |
+| GOseq | v1.56.0 | R package | No | No | No* | Yes+ | [@Young2010-iw] |
+| goana/kegga | limma v3.60.3 | R package | No | No | No** | Yes+ | [@Ritchie2015-oz] |
+| fora | fgsea v1.30.0 | R package | Yes | No | Yes | Yes | [@Korotkevich2016-gd] |
 
 
 
