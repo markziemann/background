@@ -412,21 +412,21 @@ it should be a mandatory step for users to provide a custom background list.
 | g:Profiler | Feb 2024 | Web | Yes | No | No | Yes | [@Kolberg2023-nr] |
 | STRING-DB | v12.0 | Web | Yes | Yes | Yes | Yes | [@Szklarczyk2023-an] |
 | ShinyGO | v0.80 | Web | Yes | Yes | Yes | Yes | [@Ge2020-lu] |
-| Ingenuity Pathway Analysis | ? | ? | ? | ? | ? | ? | [@Kramer2014-kd] |
 | BinGO | v3.0.5 | Cytoscape | Yes | No | No | No | [@Maere2005-gq] |
 | ClueGO | v2.5.10 | Cytoscape | Yes | No | No | No | [@Bindea2009-jn] |
 | clusterProfiler | v4.12.0 | R package | Yes | No | No | No | [@Wu2021-wy] |
 | topGO | v2.56.0 | R package | No | No | No | Yes+ | [@Adrian_Alexa2017-nf] |
 | GOseq | v1.56.0 | R package | No | No | No* | Yes+ | [@Young2010-iw] |
 | goana/kegga | limma v3.60.3 | R package | No | No | No** | Yes+ | [@Ritchie2015-oz] |
-| fora | fgsea v1.30.0 | R package | Yes | No | Yes | Yes | [@Korotkevich2016-gd] |
+| fora | fgsea v1.30.0 | R package | Yes | No^ | Yes | Yes | [@Korotkevich2016-gd] |
 
-: Table 1. Classification of several popular ORA tools regarding the provision of information such as
+: Table 1. Classification of several popular freely available ORA tools regarding the provision of information such as
 enrichment scores and FDR values, as well as behaviours regarding the two algorithmic issues described above.
 (*) Denotes functions where options are provided to adjust this behaviour and are documented in the user manual.
 (**) Documentation states unannotated genes are discarded with default settings using whole genome
 background, but not when a custom background is used.
 (+) Denotes that although no FDR values are provided, the results include sets where no overlaps were found, so users can adjust raw p-values themselves.
+(^) Denotes enrichment scores will be included in the next Bioconductor release.
 
 The purpose of this work was to thoroughly characterise two subtle problems with ORA, but there are some
 bigger problems noted.
@@ -441,7 +441,7 @@ relevant to the biological processes being studied.
 Secondly, many ORA tools do not provide enrichment scores in their default output tables.
 Enrichment scores are a surrogate for effect size, and without them, users may over-rely
 on significance scores when interpreting enrichment results.
-Lastly, ORA results can vary dramatically depending on the number of genes selected in the
+ORA results can vary dramatically depending on the number of genes selected in the
 foreground, a mostly arbitrary choice.
 
 These issues together with previously mentioned pitfalls such as lack of background
