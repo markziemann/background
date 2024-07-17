@@ -358,10 +358,6 @@ beeswarm(ratio,add=TRUE,pch=1,cex=0.6)
 dev.off()
 
 ssres <- fgres
-dots <- lapply(ssres,function(x) { x[,"TP"] })
-fgres2 <- do.call(rbind,lapply(dots,summary))
-
-
 
 ```
 
@@ -464,6 +460,8 @@ boxplot(ratio,names=SAMPLESIZES,col="white",ylab="proportion inconsistent",xlab=
 beeswarm(ratio,add=TRUE,pch=1,cex=0.6)
 
 dev.off()
+
+```
 
 ## Summarise downnsampling
 
@@ -607,10 +605,3 @@ save.image("GSE158422_sensitivity.Rdata")
 sessionInfo()
 
 ```
-
-
-
-
-
-
-
