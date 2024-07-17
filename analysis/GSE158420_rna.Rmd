@@ -177,6 +177,8 @@ pll <- lapply(1:32,function(i) {
   tm$callback_msg
 })
 
+fres <- fgsea(pathways=gs,stats=stat,minSize=5, nproc=8)
+
 pll <- unlist(pll)
 pll <- as.numeric(sapply(strsplit(pll," "),"[[",1))
 
