@@ -212,7 +212,7 @@ head(subset(fres,padj<0.05 & ES<0),20) %>%
 
 fsets <- paste(fsig$pathway,as.character(fsig$ES > 0))
 
-fsets
+str(fsets)
 
 ```
 
