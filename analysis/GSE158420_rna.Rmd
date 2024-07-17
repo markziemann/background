@@ -38,7 +38,7 @@ CORES=16
 
 ```
 
-## Load annotations and methylation data
+## Load pathway data
 
 Reactome pathways were downloaded on the 14th Sept 2023 from MsigDB.
 
@@ -91,16 +91,29 @@ head(x)
 
 ```
 
-Now do DESeq2
+MDS plot
 
-```{r,deseq2}
-
-RhpcBLASctl::blas_set_num_threads(4) #set automatic cores to 1
+```{r,mds}
 
 patient <- head(as.character(unlist(lapply(1:ncol(x),function(i) {c(i,i)}))),ncol(x))
 tumor <- rep(c(0,1),ncol(x)/2)
 ss <- data.frame(patient,tumor)
 rownames(ss) <- colnames(x)
+
+mds <- cmdscale(dist(t(scale(x))))
+
+cols <- gsub("1","pink",gsub("0","lightblue",tumor))
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2", pch=16,col=cols,cex=2)
+
+text(mds, labels=colnames(x),cex=0.7)
+
+```
+
+Now do DESeq2
+
+```{r,deseq2}
+RhpcBLASctl::blas_set_num_threads(4) #set automatic cores to 1
 
 dds <- DESeqDataSetFromMatrix(countData = x , colData=ss, design = ~ patient + tumor)
 res <- DESeq(dds)
