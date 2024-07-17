@@ -250,12 +250,14 @@ ores <- lapply(sizes, function(size) {
   return(c(nup,ndn))
 })
 
+
+
 ores <- do.call(rbind,ores)
 rownames(ores) <- sizes
 colnames(ores) <- c("up","dn")
 ores <- as.data.frame(ores)
 ores$tot <- ores$up + ores$dn
-tot <- fres$tot
+tot <- ores$tot
 names(tot) <- sizes
 par(mar=c(mar = c(5.1, 5.1, 4.1, 2.1)))
 barplot(tot,horiz=TRUE,las=1,xlab="no. pathways FDR<0.05",ylab="no. genes selected")
