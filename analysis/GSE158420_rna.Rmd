@@ -406,9 +406,9 @@ par(mfrow=c(3,1))
 
 dots <- lapply(ssres,function(x) { x[,"TP"] })
 lapply(dots,summary)
-boxplot(dots,names=SAMPLESIZES,col="white",ylab="no. consistent",xlab="sample size",cex=0,main="fora",ylim=c(0,nrow(fsig))) ; grid()
+boxplot(dots,names=SAMPLESIZES,col="white",ylab="no. consistent",xlab="sample size",cex=0,main="fora",ylim=c(0,nrow(osig))) ; grid()
 beeswarm(dots,add=TRUE,pch=1,cex=0.6)
-abline(h=nrow(fsig))
+abline(h=nrow(osig))
 
 dots <- lapply(ssres,function(x) { x[,"FP"] })
 lapply(dots,summary)
@@ -429,9 +429,9 @@ pdf("sens_fora.pdf",height=7,width=5)
 
 dots <- lapply(ssres,function(x) { x[,"TP"] })
 lapply(dots,summary)
-boxplot(dots,names=SAMPLESIZES,col="white",ylab="no. consistent",xlab="sample size",cex=0,main="fora",ylim=c(0,nrow(fsig))) ; grid()
+boxplot(dots,names=SAMPLESIZES,col="white",ylab="no. consistent",xlab="sample size",cex=0,main="fora",ylim=c(0,nrow(osig))) ; grid()
 beeswarm(dots,add=TRUE,pch=1,cex=0.6)
-abline(h=nrow(fsig))
+abline(h=nrow(osig))
 
 dots <- lapply(ssres,function(x) { x[,"FP"] })
 lapply(dots,summary)
