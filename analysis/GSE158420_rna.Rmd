@@ -616,7 +616,7 @@ dev.off()
 
 # Thin Counts
 
-```{x,thincounts}
+```{r,thincounts}
 
 x2 <- thinCounts(x, prob=NULL, target.size=10000000)
 colSums(x2)
