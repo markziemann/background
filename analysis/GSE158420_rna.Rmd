@@ -93,6 +93,8 @@ Now do DESeq2
 
 ```{r,deseq2}
 
+RhpcBLASctl::blas_set_num_threads(4) #set automatic cores to 1
+
 patient <- head(as.character(unlist(lapply(1:ncol(x),function(i) {c(i,i)}))),ncol(x))
 tumor <- rep(c(0,1),ncol(x)/2)
 ss <- data.frame(patient,tumor)
