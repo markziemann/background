@@ -32,6 +32,7 @@ suppressPackageStartupMessages({
   library("parallel")
   library("RhpcBLASctl")
   library("tictoc")
+  library("edgeR")
 })
 
 CORES=16
