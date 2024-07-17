@@ -823,7 +823,7 @@ dev.off()
 
 ## Summarise downnsampling
 
-```{r,downsample,fig.width=10}
+```{r,downsample2,fig.width=10}
 
 par(mfrow=c(1,3))
 
