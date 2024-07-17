@@ -559,6 +559,8 @@ fores2 <- do.call(rbind,lapply(dots,summary))
 df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
 colnames(df) <- c("Sample size", "fora", "fgsea")
 
+df
+
 MAX=length(fsets)
 plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="no. pathways", main="no. consistent pathways FDR<0.05",ylim=c(0,MAX))
 points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
