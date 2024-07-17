@@ -30,6 +30,7 @@ suppressPackageStartupMessages({
   library("png")
   library("fgsea")
   library("parallel")
+  library("RhpcBLASctl")
 })
 
 CORES=16

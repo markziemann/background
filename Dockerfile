@@ -12,7 +12,7 @@ RUN apt-get update \
         && rm -rf /var/lib/apt/lists/*
 
 # Install CRAN packages
-RUN Rscript -e 'install.packages(c("eulerr","gplots","kableExtra","parallel","RColorBrewer","stringi","HGNChelper","beeswarm","gridExtra","png"))'
+RUN Rscript -e 'install.packages(c("eulerr","gplots","kableExtra","parallel","RColorBrewer","stringi","HGNChelper","beeswarm","gridExtra","png","RhpcBLASctl"))'
 
 # Install bioconductor packages
 RUN Rscript -e 'BiocManager::install(c("biomaRt","clusterProfiler","DESeq2","edgeR","fgsea","getDEE2","limma","mitch"))'
