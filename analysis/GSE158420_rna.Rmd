@@ -228,7 +228,7 @@ Assess the effect of gene number on pathway results.
 
 sizes <- c(100,200,500,1000,2000,3000,4000,5000,6000,7000,8000)
 
-fres <- lapply(sizes, function(size) {
+ores <- lapply(sizes, function(size) {
   sigup <- head(rownames(subset(dge,padj<0.05 & log2FoldChange>0)),size)
   sigdn <- head(rownames(subset(dge,padj<0.05 & log2FoldChange<0)),size)
   bg <- rownames(dge)
@@ -244,11 +244,11 @@ fres <- lapply(sizes, function(size) {
   return(c(nup,ndn))
 })
 
-fres <- do.call(rbind,fres)
-rownames(fres) <- sizes
-colnames(fres) <- c("up","dn")
-fres <- as.data.frame(fres)
-fres$tot <- fres$up + fres$dn
+ores <- do.call(rbind,ores)
+rownames(ores) <- sizes
+colnames(ores) <- c("up","dn")
+ores <- as.data.frame(ores)
+ores$tot <- ores$up + ores$dn
 tot <- fres$tot
 names(tot) <- sizes
 par(mar=c(mar = c(5.1, 5.1, 4.1, 2.1)))
@@ -265,9 +265,9 @@ This will run the LAM analysis at group sizes of 2, 3, 6, 10, 16, 22 and 30,
 
 RhpcBLASctl::blas_set_num_threads(1) #set automatic cores to 1
 
-SAMPLESIZES=c(2,3,6,10,16,22,30)
+SAMPLESIZES=c(2,3,5,10,15,20,25,30)
 #SAMPLESIZES=c(3,6,10,22)
-ssres <- lapply(SAMPLESIZES,function(n) {
+fgres <- lapply(SAMPLESIZES,function(n) {
   SEEDS <- seq(100,5000,100) # 50 repetitions
   dsres <- mclapply(SEEDS, function(SEED) {
     set.seed(SEED)
@@ -303,6 +303,7 @@ ssres <- lapply(SAMPLESIZES,function(n) {
   do.call(rbind,dsres)
 })
 
+ssres <- fgres
 par(mfrow=c(3,1))
 
 dots <- lapply(ssres,function(x) { x[,"TP"] })
@@ -323,10 +324,11 @@ FPdots <- do.call(rbind,dots)
 ratio <- t(FPdots / (TPdots + FPdots))
 ratio <- lapply(1:ncol(ratio),function(i) {ratio[,i]})
 lapply(ratio,summary)
-boxplot(ratio,names=SAMPLESIZES,col="white",ylab="proportion inconsistent",xlab="sample size",cex=0) ; grid()
+boxplot(ratio,names=SAMPLESIZES,col="white",ylab="proportion inconsistent",xlab="sample size",cex=0,ylim=c(0,0.5)) ; grid()
 beeswarm(ratio,add=TRUE,pch=1,cex=0.6)
 
 pdf("sens_fgsea.pdf",height=7,width=5)
+par(mfrow=c(3,1))
 
 dots <- lapply(ssres,function(x) { x[,"TP"] })
 lapply(dots,summary)
@@ -346,10 +348,16 @@ FPdots <- do.call(rbind,dots)
 ratio <- t(FPdots / (TPdots + FPdots))
 ratio <- lapply(1:ncol(ratio),function(i) {ratio[,i]})
 lapply(ratio,summary)
-boxplot(ratio,names=SAMPLESIZES,col="white",ylab="proportion inconsistent",xlab="sample size",cex=0) ; grid()
+boxplot(ratio,names=SAMPLESIZES,col="white",ylab="proportion inconsistent",xlab="sample size",cex=0,ylim=c(0,0.5)) ; grid()
 beeswarm(ratio,add=TRUE,pch=1,cex=0.6)
 
 dev.off()
+
+ssres <- fgres
+dots <- lapply(ssres,function(x) { x[,"TP"] })
+fgres2 <- do.call(rbind,lapply(dots,summary))
+
+
 
 ```
 
@@ -357,8 +365,8 @@ dev.off()
 
 ```{r,fora_run,fig.height=10}
 
-SAMPLESIZES=c(2,3,6,10,16,22,30)
-ssres <- lapply(SAMPLESIZES,function(n) {
+SAMPLESIZES=c(2,3,5,10,15,20,25,30)
+fores <- lapply(SAMPLESIZES,function(n) {
   SEEDS <- seq(100,5000,100) # 50 repetitions
   dsres <- mclapply(SEEDS, function(SEED) {
     set.seed(SEED)
@@ -402,13 +410,15 @@ ssres <- lapply(SAMPLESIZES,function(n) {
   do.call(rbind,dsres)
 })
 
+ssres <- fores
+
 par(mfrow=c(3,1))
 
 dots <- lapply(ssres,function(x) { x[,"TP"] })
 lapply(dots,summary)
-boxplot(dots,names=SAMPLESIZES,col="white",ylab="no. consistent",xlab="sample size",cex=0,main="fora",ylim=c(0,nrow(osig))) ; grid()
+boxplot(dots,names=SAMPLESIZES,col="white",ylab="no. consistent",xlab="sample size",cex=0,main="fora",ylim=c(0,length(osets))) ; grid()
 beeswarm(dots,add=TRUE,pch=1,cex=0.6)
-abline(h=nrow(osig))
+abline(h=length(osets))
 
 dots <- lapply(ssres,function(x) { x[,"FP"] })
 lapply(dots,summary)
@@ -422,16 +432,17 @@ FPdots <- do.call(rbind,dots)
 ratio <- t(FPdots / (TPdots + FPdots))
 ratio <- lapply(1:ncol(ratio),function(i) {ratio[,i]})
 lapply(ratio,summary)
-boxplot(ratio,names=SAMPLESIZES,col="white",ylab="proportion inconsistent",xlab="sample size",cex=0) ; grid()
+boxplot(ratio,names=SAMPLESIZES,col="white",ylab="proportion inconsistent",xlab="sample size",cex=0,ylim=c(0,0.5)) ; grid()
 beeswarm(ratio,add=TRUE,pch=1,cex=0.6)
 
 pdf("sens_fora.pdf",height=7,width=5)
+par(mfrow=c(3,1))
 
 dots <- lapply(ssres,function(x) { x[,"TP"] })
 lapply(dots,summary)
-boxplot(dots,names=SAMPLESIZES,col="white",ylab="no. consistent",xlab="sample size",cex=0,main="fora",ylim=c(0,nrow(osig))) ; grid()
+boxplot(dots,names=SAMPLESIZES,col="white",ylab="no. consistent",xlab="sample size",cex=0,main="fora",ylim=c(0,length(osets))) ; grid()
 beeswarm(dots,add=TRUE,pch=1,cex=0.6)
-abline(h=nrow(osig))
+abline(h=length(osets))
 
 dots <- lapply(ssres,function(x) { x[,"FP"] })
 lapply(dots,summary)
@@ -445,12 +456,140 @@ FPdots <- do.call(rbind,dots)
 ratio <- t(FPdots / (TPdots + FPdots))
 ratio <- lapply(1:ncol(ratio),function(i) {ratio[,i]})
 lapply(ratio,summary)
-boxplot(ratio,names=SAMPLESIZES,col="white",ylab="proportion inconsistent",xlab="sample size",cex=0) ; grid()
+boxplot(ratio,names=SAMPLESIZES,col="white",ylab="proportion inconsistent",xlab="sample size",cex=0,ylim=c(0,0.5)) ; grid()
 beeswarm(ratio,add=TRUE,pch=1,cex=0.6)
 
 dev.off()
 
+## Summarise downnsampling
 
+```{r,downsample,fig.width=10}
+
+par(mfrow=c(1,3))
+
+dots <- lapply(fgres,function(x) { x[,"TP"] })
+fgres2 <- do.call(rbind,lapply(dots,summary))
+
+dots <- lapply(fores,function(x) { x[,"TP"] })
+fores2 <- do.call(rbind,lapply(dots,summary))
+
+df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
+colnames(df) <- c("Sample size", "fora", "fgsea")
+
+MAX=length(fsets)
+plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="no. pathways", ylim=c(0,MAX))
+points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
+abline(h=length(osets),col="red")
+abline(h=length(fsets),col="blue")
+mtext("no. consistent pathways FDR<0.05")
+grid()
+
+legend("bottomright", legend=c("fgsea","fora"),
+       col=c("blue","red"), lty=1, pch=19,  cex=1)
+
+dots <- lapply(fgres,function(x) { x[,"FP"] })
+fgres2 <- do.call(rbind,lapply(dots,summary))
+
+dots <- lapply(fores,function(x) { x[,"FP"] })
+fores2 <- do.call(rbind,lapply(dots,summary))
+
+df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
+colnames(df) <- c("Sample size", "fora", "fgsea")
+
+MAX=max(c(fores2[,"Median"],fgres2[,"Median"]))
+plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="no. pathways",ylim=c(0,MAX))
+points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
+mtext("no. inconsistent pathways FDR<0.05")
+grid()
+
+dots <- lapply(fores,function(x) { x[,"TP"] })
+TPdots <- do.call(rbind,dots)
+dots <- lapply(fores,function(x) { x[,"FP"] })
+FPdots <- do.call(rbind,dots)
+ratio <- t(FPdots / (TPdots + FPdots))
+ratio <- lapply(1:ncol(ratio),function(i) {ratio[,i]})
+fores2 <- do.call(rbind,lapply(ratio,summary))
+
+dots <- lapply(fgres,function(x) { x[,"TP"] })
+TPdots <- do.call(rbind,dots)
+dots <- lapply(fgres,function(x) { x[,"FP"] })
+FPdots <- do.call(rbind,dots)
+ratio <- t(FPdots / (TPdots + FPdots))
+ratio <- lapply(1:ncol(ratio),function(i) {ratio[,i]})
+fgres2 <- do.call(rbind,lapply(ratio,summary))
+
+df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
+colnames(df) <- c("Sample size", "fora", "fgsea")
+
+MAX=max(c(fores2[,"Median"],fgres2[,"Median"]))
+plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="proportion",ylim=c(0,MAX))
+points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
+mtext("Proportion of inconsistent pathways")
+grid()
+
+### PDF
+pdf("sens.pdf",height=4,width=8)
+par(mfrow=c(1,3))
+
+dots <- lapply(fgres,function(x) { x[,"TP"] })
+fgres2 <- do.call(rbind,lapply(dots,summary))
+
+dots <- lapply(fores,function(x) { x[,"TP"] })
+fores2 <- do.call(rbind,lapply(dots,summary))
+
+df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
+colnames(df) <- c("Sample size", "fora", "fgsea")
+
+MAX=length(fsets)
+plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="no. pathways", main="no. consistent pathways FDR<0.05",ylim=c(0,MAX))
+points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
+abline(h=length(osets),col="red")
+abline(h=length(fsets),col="blue")
+grid()
+
+legend("bottomright", legend=c("fgsea","fora"),
+       col=c("blue","red"), lty=1, pch=19,  cex=1)
+
+dots <- lapply(fgres,function(x) { x[,"FP"] })
+fgres2 <- do.call(rbind,lapply(dots,summary))
+
+dots <- lapply(fores,function(x) { x[,"FP"] })
+fores2 <- do.call(rbind,lapply(dots,summary))
+
+df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
+colnames(df) <- c("Sample size", "fora", "fgsea")
+
+MAX=max(c(fores2[,"Median"],fgres2[,"Median"]))
+plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="no. pathways",main="no. inconsistent pathways FDR<0.05",ylim=c(0,MAX))
+points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
+grid()
+
+dots <- lapply(fores,function(x) { x[,"TP"] })
+TPdots <- do.call(rbind,dots)
+dots <- lapply(fores,function(x) { x[,"FP"] })
+FPdots <- do.call(rbind,dots)
+ratio <- t(FPdots / (TPdots + FPdots))
+ratio <- lapply(1:ncol(ratio),function(i) {ratio[,i]})
+fores2 <- do.call(rbind,lapply(ratio,summary))
+
+dots <- lapply(fgres,function(x) { x[,"TP"] })
+TPdots <- do.call(rbind,dots)
+dots <- lapply(fgres,function(x) { x[,"FP"] })
+FPdots <- do.call(rbind,dots)
+ratio <- t(FPdots / (TPdots + FPdots))
+ratio <- lapply(1:ncol(ratio),function(i) {ratio[,i]})
+fgres2 <- do.call(rbind,lapply(ratio,summary))
+
+df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
+colnames(df) <- c("Sample size", "fora", "fgsea")
+
+MAX=max(c(fores2[,"Median"],fgres2[,"Median"]))
+plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="proportion",main="Proportion of inconsistent pathways",ylim=c(0,MAX))
+points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
+grid()
+dev.off()
+
+```
 ## Session information
 
 ```{r,save}
