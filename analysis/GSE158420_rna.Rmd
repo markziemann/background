@@ -494,6 +494,8 @@ fores2 <- do.call(rbind,lapply(dots,summary))
 df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
 colnames(df) <- c("Sample size", "fora", "fgsea")
 
+df
+
 MAX=length(fsets)
 plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="no. pathways", ylim=c(0,MAX))
 points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
@@ -513,6 +515,8 @@ fores2 <- do.call(rbind,lapply(dots,summary))
 
 df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
 colnames(df) <- c("Sample size", "fora", "fgsea")
+
+df
 
 MAX=max(c(fores2[,"Median"],fgres2[,"Median"]))
 plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="no. pathways",ylim=c(0,MAX))
@@ -539,6 +543,8 @@ fgres2 <- do.call(rbind,lapply(ratio,summary))
 df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
 colnames(df) <- c("Sample size", "fora", "fgsea")
 
+df
+
 MAX=max(c(fores2[,"Median"],fgres2[,"Median"]))
 plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="proportion",ylim=c(0,MAX))
 points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
@@ -558,8 +564,6 @@ fores2 <- do.call(rbind,lapply(dots,summary))
 df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
 colnames(df) <- c("Sample size", "fora", "fgsea")
 
-df
-
 MAX=length(fsets)
 plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="no. pathways", main="no. consistent pathways FDR<0.05",ylim=c(0,MAX))
 points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
@@ -578,8 +582,6 @@ fores2 <- do.call(rbind,lapply(dots,summary))
 
 df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
 colnames(df) <- c("Sample size", "fora", "fgsea")
-
-df
 
 MAX=max(c(fores2[,"Median"],fgres2[,"Median"]))
 plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="no. pathways",main="no. inconsistent pathways FDR<0.05",ylim=c(0,MAX))
@@ -605,13 +607,75 @@ fgres2 <- do.call(rbind,lapply(ratio,summary))
 df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
 colnames(df) <- c("Sample size", "fora", "fgsea")
 
-df
+MAX=max(c(fores2[,"Median"],fgres2[,"Median"]))
+plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="proportion",main="Proportion of inconsistent pathways",ylim=c(0,MAX))
+points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
+grid()
+dev.off()
+
+
+### PNG
+png("fig4.png", width=7,height=5,units="in",res=150,pointsize=12)
+par(mfrow=c(1,3))
+
+dots <- lapply(fgres,function(x) { x[,"TP"] })
+fgres2 <- do.call(rbind,lapply(dots,summary))
+
+dots <- lapply(fores,function(x) { x[,"TP"] })
+fores2 <- do.call(rbind,lapply(dots,summary))
+
+df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
+colnames(df) <- c("Sample size", "fora", "fgsea")
+
+MAX=length(fsets)
+plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="no. pathways", main="no. consistent pathways FDR<0.05",ylim=c(0,MAX))
+points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
+abline(h=length(osets),col="red")
+abline(h=length(fsets),col="blue")
+grid()
+
+legend("bottomright", legend=c("fgsea","fora"),
+       col=c("blue","red"), lty=1, pch=19,  cex=1)
+
+dots <- lapply(fgres,function(x) { x[,"FP"] })
+fgres2 <- do.call(rbind,lapply(dots,summary))
+
+dots <- lapply(fores,function(x) { x[,"FP"] })
+fores2 <- do.call(rbind,lapply(dots,summary))
+
+df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
+colnames(df) <- c("Sample size", "fora", "fgsea")
+
+MAX=max(c(fores2[,"Median"],fgres2[,"Median"]))
+plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="no. pathways",main="no. inconsistent pathways FDR<0.05",ylim=c(0,MAX))
+points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
+grid()
+
+dots <- lapply(fores,function(x) { x[,"TP"] })
+TPdots <- do.call(rbind,dots)
+dots <- lapply(fores,function(x) { x[,"FP"] })
+FPdots <- do.call(rbind,dots)
+ratio <- t(FPdots / (TPdots + FPdots))
+ratio <- lapply(1:ncol(ratio),function(i) {ratio[,i]})
+fores2 <- do.call(rbind,lapply(ratio,summary))
+
+dots <- lapply(fgres,function(x) { x[,"TP"] })
+TPdots <- do.call(rbind,dots)
+dots <- lapply(fgres,function(x) { x[,"FP"] })
+FPdots <- do.call(rbind,dots)
+ratio <- t(FPdots / (TPdots + FPdots))
+ratio <- lapply(1:ncol(ratio),function(i) {ratio[,i]})
+fgres2 <- do.call(rbind,lapply(ratio,summary))
+
+df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
+colnames(df) <- c("Sample size", "fora", "fgsea")
 
 MAX=max(c(fores2[,"Median"],fgres2[,"Median"]))
 plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="proportion",main="Proportion of inconsistent pathways",ylim=c(0,MAX))
 points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
 grid()
 dev.off()
+
 
 ```
 
@@ -837,6 +901,8 @@ fores2 <- do.call(rbind,lapply(dots,summary))
 df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
 colnames(df) <- c("Sample size", "fora", "fgsea")
 
+df
+
 MAX=length(fsets)
 plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="no. pathways", ylim=c(0,MAX))
 points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
@@ -856,6 +922,8 @@ fores2 <- do.call(rbind,lapply(dots,summary))
 
 df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
 colnames(df) <- c("Sample size", "fora", "fgsea")
+
+df
 
 MAX=max(c(fores2[,"Median"],fgres2[,"Median"]))
 plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="no. pathways",ylim=c(0,MAX))
@@ -882,6 +950,8 @@ fgres2 <- do.call(rbind,lapply(ratio,summary))
 df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
 colnames(df) <- c("Sample size", "fora", "fgsea")
 
+df
+
 MAX=max(c(fores2[,"Median"],fgres2[,"Median"]))
 plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="proportion",ylim=c(0,MAX))
 points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
@@ -901,8 +971,6 @@ fores2 <- do.call(rbind,lapply(dots,summary))
 df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
 colnames(df) <- c("Sample size", "fora", "fgsea")
 
-df
-
 MAX=length(fsets)
 plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="no. pathways", main="no. consistent pathways FDR<0.05",ylim=c(0,MAX))
 points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
@@ -921,8 +989,6 @@ fores2 <- do.call(rbind,lapply(dots,summary))
 
 df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
 colnames(df) <- c("Sample size", "fora", "fgsea")
-
-df
 
 MAX=max(c(fores2[,"Median"],fgres2[,"Median"]))
 plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="no. pathways",main="no. inconsistent pathways FDR<0.05",ylim=c(0,MAX))
@@ -947,8 +1013,6 @@ fgres2 <- do.call(rbind,lapply(ratio,summary))
 
 df <- data.frame(SAMPLESIZES,fores2[,"Median"],fgres2[,"Median"])
 colnames(df) <- c("Sample size", "fora", "fgsea")
-
-df
 
 MAX=max(c(fores2[,"Median"],fgres2[,"Median"]))
 plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="proportion",main="Proportion of inconsistent pathways",ylim=c(0,MAX))
