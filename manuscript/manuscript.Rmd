@@ -362,7 +362,7 @@ performance was identical to fora.
 ](../analysis/sim/fig3_sim.png "Figure 3B shows that ORA methods have deteriorating accuracy
 with noisy data as compared to fgsea, a FCS method.")
 
-## Does FCS have better sensitivity than ORA with real RNA-seq data?
+### Exploring sensitivity in real RNA-seq data
 
 To understand whether FCS has better sensitivity than ORA in a real setting, we conducted a
 systematic downsampling of a gene expression dataset cosisting of normal and tumor samples
@@ -380,7 +380,7 @@ However, inconsistent pathways were a smaller proportion of all findings for fgs
 compared to fora (**Figure 4C**), indicating an overall lower false positive rate for FCS
 compared to ORA methods.
 
-![**Figure 4. Downsampling confirms higher sensitivity for FCS over ORA.
+![**Figure 4. Downsampling confirms higher sensitivity for FCS over ORA.**
 (A) The number of significant pathways identified in downsampled data that are consistent
 with findings in the full dataset, using FCS (fgsea) and ORA (fora) methods.
 (B) The number of significant pathways identified in downsampled data that are not
