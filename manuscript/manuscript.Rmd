@@ -235,7 +235,7 @@ from `fgsea` bioconductor package v1.30.0 that does not suffer these problems, a
 fast implementation of the preranked gene set enrichment analysis (GSEA) algorithm
 [@Korotkevich2016-gd].
 For the ORA functions above, significantly differentially expressed genes with FDR 0.05 were
-selected for the foreground gene set.
++selected for the foreground gene set.
 If fewer than 200 genes were detected as significant, then 200 genes with the smallest
 p-values were used for ORA, like a previous report [@Tarca2013-xh].
 For `fgsea`, the DESeq2 test statistic was used for scoring differential expression.
@@ -362,6 +362,33 @@ performance was identical to fora.
 ](../analysis/sim/fig3_sim.png "Figure 3B shows that ORA methods have deteriorating accuracy
 with noisy data as compared to fgsea, a FCS method.")
 
+## Does FCS have better sensitivity than ORA with real RNA-seq data?
+
+To understand whether FCS has better sensitivity than ORA in a real setting, we conducted a
+systematic downsampling of a gene expression dataset cosisting of normal and tumor samples
+of 37 lung cancer patients.
+In the full set of patient samples, fora (ORA) yielded 375 significantly differentially
+regulated Reactomes, while fgsea (FCS) gave 470 (FDR<0.05).
+Fgsea yielded consistently more significant pathways than fora in downsampled data
+(**Figure 4A**).
+Fgsea also identified a larger proportion of pathways in downsampled data compared to fora.
+For example at a sample size of 5, fgsea identified 74.5% of pathways from the full set as
+compared to 41.5% for fora, confirming better recall for FCS over ORA.
+It was noted that fgsea identified more pathways in downsampled data that were
+inconsistent with the full dataset as compared to fora (**Figure 4B**).
+However, inconsistent pathways were a smaller proportion of all findings for fgsea as
+compared to fora (**Figure 4C**), indicating an overall lower false positive rate for FCS
+compared to ORA methods.
+
+![**Figure 4. Downsampling confirms higher sensitivity for FCS over ORA.
+(A) The number of significant pathways identified in downsampled data that are consistent
+with findings in the full dataset, using FCS (fgsea) and ORA (fora) methods.
+(B) The number of significant pathways identified in downsampled data that are not
+consistent the full dataset.
+(C) The proportion of pathways in downsampled data that are inconsistent with the full
+dataset.
+All values are the median of 50 simulations.](../analysis/fig4.png "Figure 4A shows that fgsea is more sensitive than fora. Figure 4B shows fgsea has higher absule number of false positives, but Figure 4C shows that as a proportion of all findings fgsea has lower false positive rate than fora.")
+
 ## Discussion
 
 The background problem came to our attention when a doctoral student in our department
@@ -436,7 +463,8 @@ Specifically, precision of ORA deteriorated with greater levels of added noise, 
 was relatively stable.
 This means researchers can be more confident with FCS results, even if the data are
 noisy.
-Higher recall of FCS also means that researchers will have more power to identify pathways
+The higher recall of FCS demonstrated in simulated differential expression profiles and confirmed with
+downsampled real cancer RNA-seq data means that researchers will have more power to identify pathways
 relevant to the biological processes being studied.
 Secondly, many ORA tools do not provide enrichment scores in their default output tables.
 Enrichment scores are a surrogate for effect size, and without them, users may over-rely
