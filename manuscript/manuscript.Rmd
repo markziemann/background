@@ -235,7 +235,7 @@ from `fgsea` bioconductor package v1.30.0 that does not suffer these problems, a
 fast implementation of the preranked gene set enrichment analysis (GSEA) algorithm
 [@Korotkevich2016-gd].
 For the ORA functions above, significantly differentially expressed genes with FDR 0.05 were
-+selected for the foreground gene set.
+selected for the foreground gene set.
 If fewer than 200 genes were detected as significant, then 200 genes with the smallest
 p-values were used for ORA, like a previous report [@Tarca2013-xh].
 For `fgsea`, the DESeq2 test statistic was used for scoring differential expression.
@@ -245,6 +245,33 @@ and F1 score.
 At each value of added variance, 1000 replications were conducted.
 No set seed was used, but results were similar when run on different computer systems.
 All analyses were undertaken with R v4.4.0 in a Docker container.
+
+### Comparing ORA and FCS methods by downsampling real RNA-seq data
+
+To understand the sensitivity and false positive rate of ORA and FCS methods, we employed a downsampling
+approach to a previously published dataset derived from 37 lung cancer patients, having tumor and normal
+tissues for each patient [@Cho2022-ri].
+These RNA-seq based gene expression counts were downloaded from NCBI GEO under accession number GSE158420.
+After reading them into R, we noticed some gene names converted to dates [@Abeysooriya2021-qt], so we
+used the HGNChelper package to fix them [@Oh2022-gj].
+DESeq2 was then used for differential expression analysis correcting for patient-of-origin to identify genes
+differentially expressed in tumor compared to normal tissue.
+FCS was conducted using fgsea using the DESeq2 test statistic to score each gene.
+ORA was conducted using fora, using genes with differential expression FDR<0.05.
+Separate tests were conducted for up- and down-regulated genes.
+For the ORA background, genes with a mean of 10 or more reads per sample on average across the comparison were
+included.
+Reactome pathways were used.
+For downsampling, sample size was varied between 2 and 30 patients, selected pseudorandomly with a set seed,
+followed by parallel analysis with fgsea and fora pipelines, using a significance filter of FDR<0.05.
+We then calculated the number of pathways identified in downsampled data that were consistent with the full
+dataset.
+The number of consistent pathways gives an indication of sensitivity of each method.
+Then, we calculated the number of pathways identified in the downsampled data that were inconsistent with the
+full dataset.
+The proportion of significant pathways classified as inconsistent provides an estimate of the real false
+discovery rate.
+This was repeated 50 times at each sample size, and the median values were reported.
 
 ## Results
 
@@ -383,6 +410,8 @@ compared to ORA methods.
 ![**Figure 4. Downsampling confirms higher sensitivity for FCS over ORA.**
 (A) The number of significant pathways identified in downsampled data that are consistent
 with findings in the full dataset, using FCS (fgsea) and ORA (fora) methods.
+The blue and red horizontal lines indicate the number of significant pathways identified
+in the full set of 27 patients using fgsea and fora respectively.
 (B) The number of significant pathways identified in downsampled data that are not
 consistent the full dataset.
 (C) The proportion of pathways in downsampled data that are inconsistent with the full
@@ -410,15 +439,14 @@ In extreme cases, correction of this problem can lead to around half of the stat
 significant results changing (see Figure 2B).
 
 So end-users can explore the effect of these two problems on their work, we have developed
-an R/Shiny web application.
+an R/Shiny web application (see "Availability of data and materials" below).
 Users can upload their foreground and background lists, select their preferred gene set
 library and compare results from default and patched analyses.
-The resource is currently available at https://oratool.ziemann-lab.net/ and available as a
-docker container (https://hub.docker.com/repository/docker/mziemann/background_app/general).
 
 ClusterProfiler is not the only tool to suffer from these problems, they are widespread
 (**Table 1**). Still, there are some tools free of such problems.
-For example, fora is a good option for R-based workflows, however the function does not calculate the fold enrichment score,
+For example, fora is a good option for R-based workflows, however the function does not calculate
+the fold enrichment score,
 so users will need to do it themselves [@Korotkevich2016-gd].
 ShinyGO is an excellent alternative for web based analysis [@Ge2020-lu].
 It doesn't suffer from the two issues described here, it is easy to use,
@@ -455,26 +483,27 @@ background, but not when a custom background is used.
 (+) Denotes that although no FDR values are provided, the results include sets where no overlaps were found, so users can adjust raw p-values themselves.
 (^) Denotes enrichment scores will be included in the next Bioconductor release.
 
-The purpose of this work was to thoroughly characterise two subtle problems with ORA, but there are some
-bigger problems noted.
-Firstly, all variations of ORA were less accurate as compared to FCS in this simulation work, confirming a
-previous report [@Kaspi2020-rn].
+The purpose of this work was to thoroughly characterise two subtle problems with ORA, but there
+are some bigger problems noted.
+Firstly, all variations of ORA were less accurate (based on F1 score) as compared to FCS in this
+simulation work, confirming a previous report [@Kaspi2020-rn].
 Specifically, precision of ORA deteriorated with greater levels of added noise, while FCS
 was relatively stable.
 This means researchers can be more confident with FCS results, even if the data are
 noisy.
-The higher recall of FCS demonstrated in simulated differential expression profiles and confirmed with
-downsampled real cancer RNA-seq data means that researchers will have more power to identify pathways
-relevant to the biological processes being studied.
-Secondly, many ORA tools do not provide enrichment scores in their default output tables.
+The higher recall of FCS demonstrated in simulated differential expression profiles and confirmed
+with downsampled real cancer RNA-seq data means that researchers will have more power to identify
+pathways relevant to the biological processes being studied.
+Secondly, many popular ORA tools listed in Table 1 do not provide enrichment scores in their
+default output tables.
 Enrichment scores are a surrogate for effect size, and without them, users may over-rely
 on significance scores when interpreting enrichment results.
-ORA results can vary dramatically depending on the number of genes selected in the
+Lastly, ORA results can vary dramatically depending on the number of genes selected in the
 foreground, a mostly arbitrary choice.
 
 These issues together with previously mentioned pitfalls such as lack of background
 correction and methodological misreporting [@Timmons2015-ki;@Wijesooriya2022-fw], suggest
-that if the data can be scored/ranked, methods like FCS are recommended over ORA.
+that if the data can be scored/ranked, methods like FCS are strongly recommended over ORA.
 ORA is better suited to other cases where genes are classified into binary groups.
 For example when investigating the over-represented categories in gene expression modules
 [@Langfelder2008-hu], or with variant-harbouring genes associated with a disease [@White2019-ps].
@@ -491,13 +520,18 @@ Not applicable.
 
 ### Availability of data and materials
 
-Publicly available data were obtained from Digital Expression Explorer 2 (dee2.io),
-using the accession numbers mentioned in the Methods section.
-The code repository including template Dockerfile and R Markdown script are available on
-GitHub (https://github.com/markziemann/background).
-The Docker image is available on DockerHub (https://hub.docker.com/r/mziemann/background).
-The code repository and Docker image have been uploaded to Zenodo for long-term archiving
-(https://zenodo.org/record/TODOXXX).
+Publicly available data were obtained from Digital Expression Explorer 2 (dee2.io) and
+NCBI GEO using the accession numbers mentioned in the Methods section.
+
+Reproduction of the results here can be achieved using the GitHub code repository GitHub
+(https://github.com/markziemann/background) and Docker image
+(https://hub.docker.com/r/mziemann/background), which have both been deposited to Zenodo
+for long-term preservation (https://zenodo.org/record/TODOXXX).
+
+The R/Shiny tool for comparing ORA with and without the two problems is currently
+online at https://oratool.ziemann-lab.net/ and available as a
+downloadable docker container for local execution
+(https://hub.docker.com/repository/docker/mziemann/background_app/general).
 
 ### Competing Interests
 
