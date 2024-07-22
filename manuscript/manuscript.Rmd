@@ -188,7 +188,7 @@ ClusterProfiler was used with the same parameters as above, and we devised a sim
 to the background problem, which is to append the entire background list as a gene set to the
 library.
 This forces clusterProfiler to retain all background genes.
-The ORA analyses were then filtered for significant sets using an FDR threshold of 0.05.
+The ORA results were then filtered for significant sets using an FDR threshold of 0.05.
 Jaccard index was used to compare original and corrected analyses.
 
 ### Examining the FDR problem
@@ -252,7 +252,7 @@ To understand the sensitivity and false positive rate of ORA and FCS methods, we
 approach to a previously published dataset derived from 37 lung cancer patients, having tumour and normal
 tissues for each patient [@Cho2022-ri].
 These RNA-seq based gene expression counts were downloaded from NCBI GEO under accession number GSE158420.
-After reading them into R, we noticed some gene names converted to dates [@Abeysooriya2021-qt], so we
+After reading them into R, we noticed some gene names were converted to dates [@Abeysooriya2021-qt], so we
 used the HGNChelper package to fix them [@Oh2022-gj].
 DESeq2 was then used for differential expression analysis correcting for patient-of-origin to identify genes
 differentially expressed in tumour compared to normal tissue.
@@ -282,7 +282,7 @@ results of ORA of seven datasets with the original and corrected methods for nin
 gene set libraries.
 The mean number of statistically significant results was calculated for each of the gene set
 libraries before and after correcting the problem (**Figure 1A**).
-Each of the gene set libraries showed an uplift when correcting the background problem.
+Each of the gene set libraries showed an uplift in the number of significant gene sets when correcting the background problem.
 The smallest increase was observed in Cellmarkers gene library (11.8%), while the largest
 increase was observed for HPO (224%).
 The similarity between results, as quantified with the Jaccard similarity, was highest for
@@ -315,7 +315,7 @@ analyses were conducted for the seven datasets and nine gene set libraries.
 Results showed no major differences in the number of significant sets between
 original and corrected analyses (**Figure 2A**).
 
-We posited that the foreground gene list length might exacerbate the problem, so we performed
+We posited that a shorter foreground gene list length might exacerbate the problem, so we performed
 parallel analysis with foreground lists of length between 125 and 2,000 genes (**Figure 2B**).
 A clear trend was observed for GO, Reactome, Cellmarkers and TFT GTRD, with Jaccard similarity
 being significantly reduced when foreground gene lists were shorter than 500 genes.
