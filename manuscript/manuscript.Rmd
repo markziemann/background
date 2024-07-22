@@ -249,13 +249,13 @@ All analyses were undertaken with R v4.4.0 in a Docker container.
 ### Comparing ORA and FCS methods by downsampling real RNA-seq data
 
 To understand the sensitivity and false positive rate of ORA and FCS methods, we employed a downsampling
-approach to a previously published dataset derived from 37 lung cancer patients, having tumor and normal
+approach to a previously published dataset derived from 37 lung cancer patients, having tumour and normal
 tissues for each patient [@Cho2022-ri].
 These RNA-seq based gene expression counts were downloaded from NCBI GEO under accession number GSE158420.
 After reading them into R, we noticed some gene names converted to dates [@Abeysooriya2021-qt], so we
 used the HGNChelper package to fix them [@Oh2022-gj].
 DESeq2 was then used for differential expression analysis correcting for patient-of-origin to identify genes
-differentially expressed in tumor compared to normal tissue.
+differentially expressed in tumour compared to normal tissue.
 FCS was conducted using fgsea using the DESeq2 test statistic to score each gene.
 ORA was conducted using fora, using genes with differential expression FDR<0.05.
 Separate tests were conducted for up- and down-regulated genes.
@@ -392,7 +392,7 @@ with noisy data as compared to fgsea, a FCS method.")
 ### Exploring sensitivity in real RNA-seq data
 
 To understand whether FCS has better sensitivity than ORA in a real setting, we conducted a
-systematic downsampling of a gene expression dataset cosisting of normal and tumor samples
+systematic downsampling of a gene expression dataset consisting of normal and tumour samples
 of 37 lung cancer patients.
 In the full set of patient samples, fora (ORA) yielded 375 significantly differentially
 regulated Reactomes, while fgsea (FCS) gave 470 (FDR<0.05).
@@ -411,9 +411,9 @@ compared to ORA methods.
 (A) The number of significant pathways identified in downsampled data that are consistent
 with findings in the full dataset, using FCS (fgsea) and ORA (fora) methods.
 The blue and red horizontal lines indicate the number of significant pathways identified
-in the full set of 27 patients using fgsea and fora respectively.
+in the full set of 37 patients using fgsea and fora respectively.
 (B) The number of significant pathways identified in downsampled data that are not
-consistent the full dataset.
+consistent with the full dataset.
 (C) The proportion of pathways in downsampled data that are inconsistent with the full
 dataset.
 All values are the median of 50 simulations.](../analysis/fig4.png "Figure 4A shows that fgsea is more sensitive than fora. Figure 4B shows fgsea has higher absule number of false positives, but Figure 4C shows that as a proportion of all findings fgsea has lower false positive rate than fora.")
@@ -454,7 +454,7 @@ and has a high degree of reproducibility thanks to its stand-alone versioned doc
 container option for local execution.
 One problem that all of these tools listed in Table 1 have is that a background list is optional.
 Sometimes this feature is hidden under "advanced options".
-Given the strong biological and technical biases that are present in contemporary omics such as including single cell and spatial transcriptomics,
+Given the strong biological and technical biases that are present in contemporary omics like single cell and spatial transcriptomics,
 it should be a mandatory step for users to provide a custom background list.
 
 | Tool | Version | Type | Provides FDR values | Provides enrichment score | Proper background handling | Proper FDR | Reference |
