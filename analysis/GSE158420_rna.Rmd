@@ -183,7 +183,6 @@ dge$stat[which(is.na(dge$stat))] <- 1
 stat <- dge$stat
 names(stat) <- rownames(dge)
 
-
 pll <- lapply(1:32,function(i) {
   tic()
   fres <- fgsea(pathways=gs,stats=stat,minSize=5, nproc=i)
