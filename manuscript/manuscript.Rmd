@@ -497,7 +497,7 @@ pathways relevant to the biological processes being studied.
 Secondly, many popular ORA tools listed in Table 1 do not provide enrichment scores in their
 default output tables.
 Enrichment scores are a surrogate for effect size, and without them, users may over-rely
-on significance scores when interpreting enrichment results.
+on significance values when interpreting enrichment results.
 Lastly, ORA results can vary dramatically depending on the number of genes selected in the
 foreground, a mostly arbitrary choice.
 
