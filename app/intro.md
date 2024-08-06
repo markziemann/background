@@ -1,8 +1,8 @@
 
-We have noticed two subtle problems with some ORA tools.
-The first problem we call the "Background problem", and involves genes without
+We and others have noticed two subtle problems with some ORA tools.
+The first problem we call the "Background error", and involves genes without
 annotated categories being discarded erroneously.
-The second problem we call the "FDR problem" because some tools incorrectly
+The second problem we call the "FDR error" because some tools incorrectly
 apply false discovery rate correction of p-values.
 For more information, refer to our [README](https://github.com/markziemann/background/tree/main).
 This tool is released under an MIT Licence and comes without any warranty.
@@ -22,7 +22,7 @@ Example [foreground](https://github.com/markziemann/background/blob/main/app/exa
 
 After uploading the lists, select the gene set library you want to test.
 We have sourced some popular options from [MSigDB v2023.2](https://www.gsea-msigdb.org/gsea/msigdb/human/collections.jsp).
-Then select the problem/error you would like to characterise; the options are
+Then select the error you would like to characterise; the options are
 "Background error", "FDR error" and "Both errors".
 
 Then click on the "Data" tab which will summarise the gene lists that have been
@@ -31,10 +31,12 @@ It is a good idea to check these values to ensure that the list was uploaded in
 its entirety.
 Then click on the "Comparative Analysis" tab which will kick off the enrichment
 analysis.
-This part could take up to 30 seconds to complete, so be patient and avoid
-clicking away or reloading the page.
+This part could take up to 30 seconds to complete, so be patient and wait for the
+spinning circle in the top-right corner to stop.
+In this time, avoid clicking away or reloading the page.
 The table will eventually appear.
-By default it is sorted with sets that have divergent FDR values at the top.
+By default, the results are sorted to show sets that have divergent FDR values
+at the top.
 Then click on the "Charts" tab to view some plots.
 
 The "Download Report" button can then be used to generate a full report for 

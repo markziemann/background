@@ -2,6 +2,7 @@ library("clusterProfiler")
 library("markdown")
 library("rmarkdown")
 library("shiny")
+library("shinybusy")
 library("RhpcBLASctl")
 library("eulerr")
 library("plotly")
@@ -10,7 +11,7 @@ library("DT")
 
 # Define UI
 ui <- fluidPage(
-  titlePanel("Two subtle issues with over-representation analysis: Demonstration"),
+  titlePanel("Two subtle issues with over-representation analysis: Demonstration v0.1"),
   sidebarLayout(
     sidebarPanel(
       fileInput("fg", "Choose foreground gene list",
@@ -44,7 +45,7 @@ ui <- fluidPage(
                  plotlyOutput("scatter_fdr2",height=550)),
       )
     )
-  )
+  ), shinybusy::add_busy_spinner(spin = "fading-circle")
 )
 
 # Define server logic
