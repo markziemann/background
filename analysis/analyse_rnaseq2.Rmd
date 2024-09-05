@@ -624,6 +624,32 @@ lapply(1:length(gs), function(i) {
 
 ```
 
+## Table for reviewer
+
+```{r,table}
+
+library(reshape2)
+res2a <- as.matrix(acast(res1, Var1~Var2, fun.aggregate = sum, value.var="nsig_bad"))
+rownames(res2a) <- gsub("bulkrna","d",rownames(res2a))
+rownames(res2a) <- gsub(".Rds"," original",rownames(res2a))
+
+res2b <- as.matrix(acast(res1, Var1~Var2, fun.aggregate = sum, value.var="nsig_good"))
+rownames(res2b) <- gsub("bulkrna","d",rownames(res2b))
+rownames(res2b) <- gsub(".Rds"," corrected",rownames(res2b))
+
+res2 <- rbind(res2a,res2b)
+res2 <- res2[order(rownames(res2)),]
+res2c <- rowMeans(res2)
+res2 <- cbind(res2,res2c)
+
+res2 %>%
+  kbl(row.names = TRUE, caption="Effect of FDR problem correction across seven studies and nine gene set libraries") %>%
+  kable_paper("hover", full_width = F)
+
+saveRDS(res2,"fdrprob.rds")
+
+```
+
 ## Session information
 
 For reproducibility
