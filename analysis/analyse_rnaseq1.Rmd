@@ -652,6 +652,66 @@ mtext(HEADER)
 dev.off()
 ```
 
+
+## Characterise sets specific to original and uncorrected analysis
+
+```{r,spec}
+
+compare_ora2 <- function(bad,good){
+  badup <- bad$orabad_up
+  baddn <- bad$orabad_dn
+  goodup <- good$oragood_up
+  gooddn <- good$oragood_dn
+  mup <- merge(badup,goodup,by=0)
+  mdn <- merge(baddn,gooddn,by=0)
+  bup <- subset(mup,p.adjust.x<0.05)$Row.names
+  gup <- subset(mup,p.adjust.y<0.05)$Row.names
+  bdn <- subset(mdn,p.adjust.x<0.05)$Row.names
+  gdn <- subset(mdn,p.adjust.y<0.05)$Row.names
+  sig_bad <- unique(c(bup,bdn))
+  sig_good <- unique(c(gup,gdn))
+  itx <- intersect(sig_bad,sig_good)
+  spec_good <- setdiff(sig_good,sig_bad)
+  result=list("intersect"=itx,"spec_good"=spec_good)
+  return(result)
+}
+
+params <- expand.grid(1:length(d),1:length(gs))
+params2 <- expand.grid(names(d),names(gs))
+
+colnames(params) <- c("d","gs")
+
+ora_dat3 <- mclapply(1:nrow(params), function(i) {
+  j=params[i,1]
+  k=params[i,2]
+  bad <- orabad(d[[j]],gs[[k]])
+  good <- oragood(d[[j]],gs[[k]])
+  res <- compare_ora2(bad,good)
+  return(res)
+} , mc.cores=8)
+
+gslengths <- unlist(lapply(gs,function(x) { lapply(x,length) } ) )
+names(gslengths) <- sapply((strsplit(names(gslengths),"\\.")),"[[",2)
+
+speclen <- lapply(ora_dat3, function(j) {
+  itxlen <- mean(gslengths[which(names(gslengths) %in% j[[1]])])
+  speclen <- mean(gslengths[which(names(gslengths) %in% j[[2]])])
+  return(c("itxlen"=itxlen,"spec"=speclen))
+})
+
+itxlenmx <- matrix(sapply(speclen,"[[",1),nrow=7)
+speclenmx <- matrix(sapply(speclen,"[[",2),nrow=7)
+
+colMeans(itxlenmx,na.rm=TRUE) / colMeans(speclenmx,na.rm=TRUE)
+
+mean( ( colMeans(speclenmx,na.rm=TRUE) - colMeans(itxlenmx,na.rm=TRUE) ) / colMeans(itxlenmx,na.rm=TRUE) )
+
+```
+
+Overall, the size of gene sets specific to the "fixed" analysis were 9.3% smaller than
+the intersect.
+
+
 ## Make charts showing changes in pvalues
 
 For bulk RNA-seq data set #1, run enrichment with all the gene set libraries.
