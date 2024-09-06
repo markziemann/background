@@ -549,7 +549,6 @@ ns2
 df <- data.frame(ns1,ns2)
 df <- df[order(df$ns1),]
 
-
 par(mar=c(c(5.1, 7.1, 4.1, 2.1) ))
 barplot(t(df),beside=TRUE,horiz=TRUE,las=1,xlim=c(0,1250),
   xlab="no. significant sets",
@@ -715,6 +714,34 @@ mean( ( rowMeans(speclenmx,na.rm=TRUE) - rowMeans(itxlenmx,na.rm=TRUE) ) / rowMe
 Overall, the size of gene sets specific to the "fixed" analysis were 9.3% smaller than
 the intersect.
 
+
+## Make beeswarm chart
+
+```{r,beeswarms}
+
+gslibs <- unique(params2$Var2)
+
+nsl <- lapply(gslibs,function(g) {
+  orig <- subset(res1,Var2==g)$nsig_bad
+  corr <- subset(res1,Var2==g)$nsig_good
+  df1 <- data.frame("gsl"=g,"type"="orig","count"=orig)
+  df2 <- data.frame("gsl"=g,"type"="corr","count"=corr)
+  return(rbind(df1,df2))
+} )
+
+nsl <- do.call(rbind,nsl)
+nsl$set <- paste(nsl$gsl,nsl$type)
+
+unsl <- unstack(nsl[,c(3,4)])
+
+par(mar = c(5.1, 8.1, 4.1, 2.1))
+library(beeswarm)
+boxplot(unsl,horizontal=TRUE,las=1,col=c("lightblue","pink"),cex=0,xlab="no. significant sets FDR<0.05")
+beeswarm(unsl,horizontal=TRUE,add=TRUE,col=c("blue","red"),pch=19,cex=0.6)
+
+par(mar = c(5.1, 4.1, 4.1, 2.1))
+
+```
 
 ## Make charts showing changes in pvalues
 
