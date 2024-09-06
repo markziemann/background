@@ -584,6 +584,67 @@ dev.off()
 
 ```
 
+## Investigate which gene sets are specific to the ORIGINAL and FIXED analysis
+
+Will focus on the 500 gene analysis if GO in the seven datasets.
+
+j=1:7
+
+k=gs=6
+
+l=ngenes=500
+
+```{r,deepdive}
+
+compare_ora2 <- function(bad,good){
+  badup <- bad$orabad_up
+  baddn <- bad$orabad_dn
+  goodup <- good$oragood_up
+  gooddn <- good$oragood_dn
+  bup <- rownames(subset(badup,p.adjust<0.05))
+  gup <- rownames(subset(goodup,p.adjust<0.05))
+  bdn <- rownames(subset(baddn,p.adjust<0.05))
+  gdn <- rownames(subset(gooddn,p.adjust<0.05))
+  sig_bad <- unique(c(bup,bdn))
+  sig_good <- unique(c(gup,gdn))
+  spec_good <- setdiff(sig_good,sig_bad)
+  spec_bad <- setdiff(sig_bad,sig_good)
+  itx <- intersect(sig_bad,sig_good)
+  result=list("spec_bad"=spec_bad,"itx"=itx)
+  return(result)
+}
+
+ora_dat3 <- mclapply(1:7, function(i) {
+  j=params[i,1]
+  k=6
+  l=500
+  bad <- orabad(d[[j]],gs[[k]],l)
+  good <- oragood(d[[j]],gs[[k]],l)
+  res <- compare_ora2(bad,good)
+  return(res)
+} , mc.cores=8)
+
+gslengths <- unlist(lapply(gs,function(x) { lapply(x,length) } ) )
+names(gslengths) <- sapply((strsplit(names(gslengths),"\\.")),"[[",2)
+
+i=1
+
+spec <- lapply(1:7,function(i) {
+  itx_lens <- gslengths[names(gslengths) %in% ora_dat3[[i]][[2]]]
+  spec_bad_lens <- gslengths[names(gslengths) %in% ora_dat3[[i]][[1]]]
+  if ( length(itx_lens) >= 10 & length(spec_bad_lens) >= 10 ) {
+    return(c("spec_bad"=mean(spec_bad_lens),"itx"=mean(itx_lens)))
+  } else {
+    return(c("spec_bad"=NA,"itx"=NA))
+  }
+})
+
+spec <- as.data.frame(do.call(rbind,spec))
+
+( spec$spec_bad - spec$itx ) / spec$itx
+
+```
+
 ## Make charts showing changes in pvalues
 
 For bulk RNA-seq data set #1, run enrichment with all the gene set libraries.
