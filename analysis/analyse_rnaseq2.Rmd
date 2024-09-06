@@ -532,6 +532,26 @@ names(jac) <- ngenes
 
 jac
 
+jac3 <- do.call(rbind,lapply(jac,function(x) {x[,"GO"] } ))
+
+apply(jac3,1,function(x) { mean(x, na.rm=TRUE) } )
+apply(jac3,1,function(x) { sd(x, na.rm=TRUE) } )
+
+jsd <- lapply(jac,function(y) {
+  res <- apply(y,2,function(x) {
+    x <- x[!is.na(x)]
+    x <- x[is.finite(x)]
+    sd(x)
+  } )
+  return(res)
+})
+
+jsd <- do.call(rbind,jsd)
+
+jsd %>%
+  kbl(row.names = TRUE, caption="Standard deviation in Jaccard stats across gene list length") %>%
+  kable_paper("hover", full_width = F)
+
 jac <- lapply(jac,function(y) {
   res <- apply(y,2,function(x) {
     x <- x[!is.na(x)]
@@ -544,6 +564,30 @@ jac <- lapply(jac,function(y) {
 jac
 
 jac <- do.call(rbind,jac)
+
+jac %>%
+  kbl(row.names = TRUE, caption="Jaccard stats across gene list length") %>%
+  kable_paper("hover", full_width = F)
+
+# GO with error bars
+plot(jac[,"GO"],type="b", pch=19,cex=1.5,lwd=2,
+  xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected")
+axis(1, at = seq(1, 5, by = 1),
+     labels = ngenes)
+mysd <- jsd[,"GO"]
+arrows(x0=1:5, y0=(jac[,"GO"] - mysd) ,  x1=1:5, y1=(jac[,"GO"] + mysd), code=3, angle=90, length=0.1 )
+
+mysd <- jsd[,"Reactome"]
+points(jac[,"Reactome"],type="b",col="red",pch=19,cex=1.5,lwd=2)
+arrows(x0=1:5, y0=(jac[,"Reactome"] - mysd) ,  x1=1:5, y1=(jac[,"Reactome"] + mysd), code=3, angle=90, length=0.1 ,col="red")
+
+mysd <- jsd[,"Cellmarkers"]
+points(jac[,"Cellmarkers"],type="b",col="blue",pch=19,cex=1.5,lwd=2)
+arrows(x0=1:5, y0=(jac[,"Cellmarkers"] - mysd) ,  x1=1:5, y1=(jac[,"Cellmarkers"] + mysd), code=3, angle=90, length=0.1 , col="blue")
+
+mysd <- jsd[,"TFT GTRD"]
+points(jac[,"TFT GTRD"],type="b",col="gray50",pch=19,cex=1.5,lwd=2)
+arrows(x0=1:5, y0=(jac[,"TFT GTRD"] - mysd) ,  x1=1:5, y1=(jac[,"TFT GTRD"] + mysd), code=3, angle=90, length=0.1 , col="gray50" )
 
 plot(jac[,"GO"],type="b", pch=19,cex=1.5,lwd=2,
   xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected")
@@ -687,27 +731,47 @@ lapply(1:length(gs), function(i) {
 
 ## Table for reviewer
 
+Table when using 2000 genes.
+
 ```{r,table}
 
 library(reshape2)
-res2a <- as.matrix(acast(res1, Var1~Var2, fun.aggregate = sum, value.var="nsig_bad"))
-rownames(res2a) <- gsub("bulkrna","d",rownames(res2a))
-rownames(res2a) <- gsub(".Rds"," original",rownames(res2a))
+res2000 <- subset(res1,Var3==2000)
 
-res2b <- as.matrix(acast(res1, Var1~Var2, fun.aggregate = sum, value.var="nsig_good"))
-rownames(res2b) <- gsub("bulkrna","d",rownames(res2b))
-rownames(res2b) <- gsub(".Rds"," corrected",rownames(res2b))
+res3a <- as.matrix(acast(res2000, Var1~Var2, fun.aggregate = sum, value.var="nsig_bad"))
+rownames(res3a) <- gsub("bulkrna","d",rownames(res3a))
+rownames(res3a) <- gsub(".Rds"," original",rownames(res3a))
 
-res2 <- rbind(res2a,res2b)
-res2 <- res2[order(rownames(res2)),]
-res2c <- rowMeans(res2)
-res2 <- cbind(res2,res2c)
+res3b <- as.matrix(acast(res2000, Var1~Var2, fun.aggregate = sum, value.var="nsig_good"))
+rownames(res3b) <- gsub("bulkrna","d",rownames(res3b))
+rownames(res3b) <- gsub(".Rds"," corrected",rownames(res3b))
 
-res2 %>%
+res3 <- rbind(res3a,res3b)
+res3 <- res3[order(rownames(res3)),]
+res3c <- rowMeans(res3)
+res3 <- cbind(res3,res3c)
+
+res3 %>%
   kbl(row.names = TRUE, caption="Effect of FDR problem correction across seven studies and nine gene set libraries") %>%
   kable_paper("hover", full_width = F)
 
-saveRDS(res2,"fdrprob.rds")
+saveRDS(res3,"fdrprob.rds")
+
+```
+
+Another table showing downsampling result.
+
+```{r,dstable}
+
+ds <- res1
+
+colnames(ds) <- c("Dataset","GeneSetLibrary","GeneListSize","nSig_original","nSig_corrected","Jaccard")
+
+ds %>%
+  kbl(row.names = TRUE, caption="FDR problem worsens when the input gene list is shorter") %>%
+  kable_paper("hover", full_width = F)
+
+saveRDS(ds,"downsample_fdr.rds")
 
 ```
 

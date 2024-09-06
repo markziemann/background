@@ -702,9 +702,13 @@ speclen <- lapply(ora_dat3, function(j) {
 itxlenmx <- matrix(sapply(speclen,"[[",1),nrow=7)
 speclenmx <- matrix(sapply(speclen,"[[",2),nrow=7)
 
-colMeans(itxlenmx,na.rm=TRUE) / colMeans(speclenmx,na.rm=TRUE)
+rowMeans(itxlenmx,na.rm=TRUE)
 
-mean( ( colMeans(speclenmx,na.rm=TRUE) - colMeans(itxlenmx,na.rm=TRUE) ) / colMeans(itxlenmx,na.rm=TRUE) )
+rowMeans(speclenmx,na.rm=TRUE)
+
+( rowMeans(speclenmx,na.rm=TRUE) - rowMeans(itxlenmx,na.rm=TRUE) ) / rowMeans(itxlenmx,na.rm=TRUE)
+
+mean( ( rowMeans(speclenmx,na.rm=TRUE) - rowMeans(itxlenmx,na.rm=TRUE) ) / rowMeans(itxlenmx,na.rm=TRUE) )
 
 ```
 
@@ -751,6 +755,8 @@ res2 %>%
   kable_paper("hover", full_width = F)
 
 saveRDS(res2,"bgprob.rds")
+
+rowMeans( ( res2b - res2a ) / res2a ) * 100
 
 ```
 
