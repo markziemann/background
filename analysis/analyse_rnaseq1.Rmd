@@ -649,6 +649,55 @@ RSQ=signif(summary(mylm)$r.squared,3)
 HEADER=paste("Rsq =",RSQ,"; p-val =",PVAL)
 mtext(HEADER)
 dev.off()
+
+# with SD
+mysd <- apply(jac,2,function(x) { sd(x,na.rm=TRUE) } )
+par(mar=c(c(5.1, 5.1, 2.1, 2.1) ))
+plot(cov,jac2,xlim=c(0,30000),ylim=c(0,1),pch=19,col="lightgray",cex=3,
+  xlab="gene coverage",ylab="Jaccard index")
+text(cov,jac2,labels=names(cov))
+mylm <- lm(jac2~cov)
+abline(mylm,lty=2,lwd=2)
+SLOPE=unname(signif(mylm$coefficients[2],3))
+INT=unname(signif(mylm$coefficients[1],3))
+PVAL=signif(summary(mylm)$coefficients[4],3)
+RSQ=signif(summary(mylm)$r.squared,3)
+HEADER=paste("Rsq =",RSQ,"; p-val =",PVAL)
+mtext(HEADER)
+arrows(x0=cov,x1=cov,y0=jac2+mysd,y1=jac2-mysd,code=3, angle=90, length=0.1 , col="gray40")
+
+png("fig1_ORAjacsd.png")
+par(mar=c(c(5.1, 5.1, 2.1, 2.1) ))
+plot(cov,jac2,xlim=c(0,30000),ylim=c(0,1),pch=19,col="lightgray",cex=3,
+  xlab="gene coverage",ylab="Jaccard index")
+text(cov,jac2,labels=names(cov))
+mylm <- lm(jac2~cov)
+abline(mylm,lty=2,lwd=2)
+SLOPE=unname(signif(mylm$coefficients[2],3))
+INT=unname(signif(mylm$coefficients[1],3))
+PVAL=signif(summary(mylm)$coefficients[4],3)
+RSQ=signif(summary(mylm)$r.squared,3)
+HEADER=paste("Rsq =",RSQ,"; p-val =",PVAL)
+mtext(HEADER)
+arrows(x0=cov,x1=cov,y0=jac2+mysd,y1=jac2-mysd,code=3, angle=90, length=0.1 , col="gray40")
+dev.off()
+
+pdf("fig1_ORAjacsd.pdf",width=7, height=7)
+par(mar=c(c(5.1, 5.1, 2.1, 2.1) ))
+plot(cov,jac2,xlim=c(0,30000),ylim=c(0,1),pch=19,col="lightgray",cex=3,
+  xlab="gene coverage",ylab="Jaccard index")
+text(cov,jac2,labels=names(cov))
+mylm <- lm(jac2~cov)
+abline(mylm,lty=2,lwd=2)
+SLOPE=unname(signif(mylm$coefficients[2],3))
+INT=unname(signif(mylm$coefficients[1],3))
+PVAL=signif(summary(mylm)$coefficients[4],3)
+RSQ=signif(summary(mylm)$r.squared,3)
+HEADER=paste("Rsq =",RSQ,"; p-val =",PVAL)
+mtext(HEADER)
+arrows(x0=cov,x1=cov,y0=jac2+mysd,y1=jac2-mysd,code=3, angle=90, length=0.1 , col="gray40")
+dev.off()
+
 ```
 
 
@@ -734,10 +783,35 @@ nsl$set <- paste(nsl$gsl,nsl$type)
 
 unsl <- unstack(nsl[,c(3,4)])
 
+#rearrange KEGG, Hallmark, HPO, Wikipath, miR, TFT, Reactome, Cellmarkers, GO
+unsl <- unsl[,c(10,9, 6,5, 8,7, 18,17, 12,11, 16,15, 14,13, 2,1, 4,3)]
+
 par(mar = c(5.1, 8.1, 4.1, 2.1))
 library(beeswarm)
-boxplot(unsl,horizontal=TRUE,las=1,col=c("lightblue","pink"),cex=0,xlab="no. significant sets FDR<0.05")
-beeswarm(unsl,horizontal=TRUE,add=TRUE,col=c("blue","red"),pch=19,cex=0.6)
+boxplot(unsl,horizontal=TRUE,las=1,col=c("pink","lightblue"),cex=0,xlab="no. significant sets FDR<0.05")
+beeswarm(unsl,horizontal=TRUE,add=TRUE,col=c("red","blue"),pch=19,cex=0.6)
+
+unsl1 <- unsl+1
+boxplot(unsl1,horizontal=TRUE,log="x",las=1,col=c("pink","lightblue"),cex=0,xlab="no. significant sets FDR<0.05*")
+beeswarm(unsl1,horizontal=TRUE,add=TRUE,col=c("red","blue"),pch=19,cex=0.6)
+
+legend("bottomright", inset=.02, legend=c("corrected","original"),
+  fill=c("lightblue","pink"),col=c("blue","red"), horiz=FALSE, cex=1.1)
+
+png("fig1_ORAsigbox.png")
+boxplot(unsl1,horizontal=TRUE,log="x",las=1,col=c("pink","lightblue"),cex=0,xlab="no. significant sets FDR<0.05*")
+beeswarm(unsl1,horizontal=TRUE,add=TRUE,col=c("red","blue"),pch=19,cex=0.6)
+legend("bottomright", inset=.02, legend=c("corrected","original"),
+  fill=c("lightblue","pink"),col=c("blue","red"), horiz=FALSE, cex=1.1)
+dev.off()
+
+pdf("fig1_ORAsigbox.pdf",width=7, height=7)
+par(mar = c(5.1, 8.1, 4.1, 2.1))
+boxplot(unsl1,horizontal=TRUE,log="x",las=1,col=c("pink","lightblue"),cex=0,xlab="no. significant sets FDR<0.05*")
+beeswarm(unsl1,horizontal=TRUE,add=TRUE,col=c("red","blue"),pch=19,cex=0.6)
+legend("bottomright", inset=.02, legend=c("corrected","original"),
+  fill=c("lightblue","pink"),col=c("blue","red"), horiz=FALSE, cex=1.1)
+dev.off()
 
 par(mar = c(5.1, 4.1, 4.1, 2.1))
 

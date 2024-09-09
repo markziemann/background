@@ -569,26 +569,146 @@ jac %>%
   kbl(row.names = TRUE, caption="Jaccard stats across gene list length") %>%
   kable_paper("hover", full_width = F)
 
-# GO with error bars
-plot(jac[,"GO"],type="b", pch=19,cex=1.5,lwd=2,
-  xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected")
-axis(1, at = seq(1, 5, by = 1),
-     labels = ngenes)
+# with error bars 2x2 charts
+ubtrim <- function(x) { if(is.na(x)) { x} else if(x > 1) { 1 } else { x } }
+lbtrim <- function(x) { if(is.na(x)) { x} else if(x < 0) { 0 } else { x } }
+
+
+par(mfrow=c(2,2))
+
+# GO
+plot(jac[,"GO"],type="b", pch=19,cex=1.5,lwd=2, xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected",main="GO")
+axis(1, at = seq(1, 5, by = 1), labels = ngenes)
 mysd <- jsd[,"GO"]
-arrows(x0=1:5, y0=(jac[,"GO"] - mysd) ,  x1=1:5, y1=(jac[,"GO"] + mysd), code=3, angle=90, length=0.1 )
+ub <- (jac[,"GO"] + mysd)
+ub <- sapply(ub,ubtrim)
+lb <-(jac[,"GO"] - mysd)
+lb <- sapply(lb,lbtrim)
+arrows(x0=1:5, y0=lb ,  x1=1:5, y1=ub, code=3, angle=90, length=0.1 )
 
+# REACTOME
 mysd <- jsd[,"Reactome"]
-points(jac[,"Reactome"],type="b",col="red",pch=19,cex=1.5,lwd=2)
-arrows(x0=1:5, y0=(jac[,"Reactome"] - mysd) ,  x1=1:5, y1=(jac[,"Reactome"] + mysd), code=3, angle=90, length=0.1 ,col="red")
+plot(jac[,"Reactome"],type="b", col="red", pch=19,cex=1.5,lwd=2, xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected",main="Reactome")
+axis(1, at = seq(1, 5, by = 1), labels = ngenes)
+ub <- (jac[,"Reactome"] + mysd)
+ub <- sapply(ub,ubtrim)
+lb <-(jac[,"Reactome"] - mysd)
+lb <- sapply(lb,lbtrim)
+arrows(x0=1:5, y0=lb ,  x1=1:5, y1=ub, code=3, angle=90, length=0.1 ,col="red")
 
+# Cellmarkers
 mysd <- jsd[,"Cellmarkers"]
-points(jac[,"Cellmarkers"],type="b",col="blue",pch=19,cex=1.5,lwd=2)
-arrows(x0=1:5, y0=(jac[,"Cellmarkers"] - mysd) ,  x1=1:5, y1=(jac[,"Cellmarkers"] + mysd), code=3, angle=90, length=0.1 , col="blue")
+plot(jac[,"Cellmarkers"],type="b", col="blue", pch=19,cex=1.5,lwd=2, xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected",main="Cellmarkers")
+mysd <- jsd[,"GO"]
+ub <- (jac[,"Cellmarkers"] + mysd)
+ub <- sapply(ub,ubtrim)
+lb <-(jac[,"Cellmarkers"] - mysd)
+lb <- sapply(lb,lbtrim)
+axis(1, at = seq(1, 5, by = 1), labels = ngenes)
+arrows(x0=1:5, y0=lb,  x1=1:5, y1=ub, code=3, angle=90, length=0.1 , col="blue")
 
+# TFT
 mysd <- jsd[,"TFT GTRD"]
-points(jac[,"TFT GTRD"],type="b",col="gray50",pch=19,cex=1.5,lwd=2)
-arrows(x0=1:5, y0=(jac[,"TFT GTRD"] - mysd) ,  x1=1:5, y1=(jac[,"TFT GTRD"] + mysd), code=3, angle=90, length=0.1 , col="gray50" )
+plot(jac[,"TFT GTRD"],type="b", col="gray50", pch=19,cex=1.5,lwd=2, xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected",main="TFT GTRD")
+axis(1, at = seq(1, 5, by = 1), labels = ngenes)
+ub <- (jac[,"TFT GTRD"] + mysd)
+ub <- sapply(ub,ubtrim)
+lb <-(jac[,"TFT GTRD"] - mysd)
+lb <- sapply(lb,lbtrim)
+arrows(x0=1:5, y0=lb,  x1=1:5, y1=ub, code=3, angle=90, length=0.1 , col="gray50" )
 
+png("fig2_ORAszsd.png")
+# GO
+plot(jac[,"GO"],type="b", pch=19,cex=1.5,lwd=2, xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected",main="GO")
+axis(1, at = seq(1, 5, by = 1), labels = ngenes)
+mysd <- jsd[,"GO"]
+ub <- (jac[,"GO"] + mysd)
+ub <- sapply(ub,ubtrim)
+lb <-(jac[,"GO"] - mysd)
+lb <- sapply(lb,lbtrim)
+arrows(x0=1:5, y0=lb ,  x1=1:5, y1=ub, code=3, angle=90, length=0.1 )
+
+# REACTOME
+mysd <- jsd[,"Reactome"]
+plot(jac[,"Reactome"],type="b", col="red", pch=19,cex=1.5,lwd=2, xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected",main="Reactome")
+axis(1, at = seq(1, 5, by = 1), labels = ngenes)
+ub <- (jac[,"Reactome"] + mysd)
+ub <- sapply(ub,ubtrim)
+lb <-(jac[,"Reactome"] - mysd)
+lb <- sapply(lb,lbtrim)
+arrows(x0=1:5, y0=lb ,  x1=1:5, y1=ub, code=3, angle=90, length=0.1 ,col="red")
+
+# Cellmarkers
+mysd <- jsd[,"Cellmarkers"]
+plot(jac[,"Cellmarkers"],type="b", col="blue", pch=19,cex=1.5,lwd=2, xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected",main="Cellmarkers")
+mysd <- jsd[,"GO"]
+ub <- (jac[,"Cellmarkers"] + mysd)
+ub <- sapply(ub,ubtrim)
+lb <-(jac[,"Cellmarkers"] - mysd)
+lb <- sapply(lb,lbtrim)
+axis(1, at = seq(1, 5, by = 1), labels = ngenes)
+arrows(x0=1:5, y0=lb,  x1=1:5, y1=ub, code=3, angle=90, length=0.1 , col="blue")
+
+# TFT
+mysd <- jsd[,"TFT GTRD"]
+plot(jac[,"TFT GTRD"],type="b", col="gray50", pch=19,cex=1.5,lwd=2, xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected",main="TFT GTRD")
+axis(1, at = seq(1, 5, by = 1), labels = ngenes)
+ub <- (jac[,"TFT GTRD"] + mysd)
+ub <- sapply(ub,ubtrim)
+lb <-(jac[,"TFT GTRD"] - mysd)
+lb <- sapply(lb,lbtrim)
+arrows(x0=1:5, y0=lb,  x1=1:5, y1=ub, code=3, angle=90, length=0.1 , col="gray50" )
+dev.off()
+
+pdf("fig2_ORAszsd.pdf",width=7, height=7)
+par(mfrow=c(2,2))
+# GO
+plot(jac[,"GO"],type="b", pch=19,cex=1.5,lwd=2, xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected",main="GO")
+axis(1, at = seq(1, 5, by = 1), labels = ngenes)
+mysd <- jsd[,"GO"]
+ub <- (jac[,"GO"] + mysd)
+ub <- sapply(ub,ubtrim)
+lb <-(jac[,"GO"] - mysd)
+lb <- sapply(lb,lbtrim)
+arrows(x0=1:5, y0=lb ,  x1=1:5, y1=ub, code=3, angle=90, length=0.1 )
+
+# REACTOME
+mysd <- jsd[,"Reactome"]
+plot(jac[,"Reactome"],type="b", col="red", pch=19,cex=1.5,lwd=2, xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected",main="Reactome")
+axis(1, at = seq(1, 5, by = 1), labels = ngenes)
+ub <- (jac[,"Reactome"] + mysd)
+ub <- sapply(ub,ubtrim)
+lb <-(jac[,"Reactome"] - mysd)
+lb <- sapply(lb,lbtrim)
+arrows(x0=1:5, y0=lb ,  x1=1:5, y1=ub, code=3, angle=90, length=0.1 ,col="red")
+
+# Cellmarkers
+mysd <- jsd[,"Cellmarkers"]
+plot(jac[,"Cellmarkers"],type="b", col="blue", pch=19,cex=1.5,lwd=2, xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected",main="Cellmarkers")
+mysd <- jsd[,"GO"]
+ub <- (jac[,"Cellmarkers"] + mysd)
+ub <- sapply(ub,ubtrim)
+lb <-(jac[,"Cellmarkers"] - mysd)
+lb <- sapply(lb,lbtrim)
+axis(1, at = seq(1, 5, by = 1), labels = ngenes)
+arrows(x0=1:5, y0=lb,  x1=1:5, y1=ub, code=3, angle=90, length=0.1 , col="blue")
+
+# TFT
+mysd <- jsd[,"TFT GTRD"]
+plot(jac[,"TFT GTRD"],type="b", col="gray50", pch=19,cex=1.5,lwd=2, xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected",main="TFT GTRD")
+axis(1, at = seq(1, 5, by = 1), labels = ngenes)
+ub <- (jac[,"TFT GTRD"] + mysd)
+ub <- sapply(ub,ubtrim)
+lb <-(jac[,"TFT GTRD"] - mysd)
+lb <- sapply(lb,lbtrim)
+arrows(x0=1:5, y0=lb,  x1=1:5, y1=ub, code=3, angle=90, length=0.1 , col="gray50" )
+dev.off()
+
+
+
+par(mfrow=c(1,1))
+
+# original
 plot(jac[,"GO"],type="b", pch=19,cex=1.5,lwd=2,
   xaxt = "n",ylim=c(0,1),ylab="Jaccard index",xlab="no. genes selected")
 axis(1, at = seq(1, 5, by = 1),
@@ -756,6 +876,52 @@ res3 %>%
   kable_paper("hover", full_width = F)
 
 saveRDS(res3,"fdrprob.rds")
+
+```
+
+Boxplot.
+
+```{r,boxplot}
+
+colnames(res3a) <- paste(colnames(res3a),"orig")
+colnames(res3b) <- paste(colnames(res3b),"corr")
+res3d <- cbind(res3a,res3b)
+
+res3d <- as.data.frame(res3d[,c(7,16, 1,10, 9,18, 3,12, 4,13, 5,14, 8,17, 2,11, 6,15)])
+
+par(mar = c(5.1, 8.1, 4.1, 2.1))
+library(beeswarm)
+boxplot(res3d,horizontal=TRUE,las=1,col=c("pink","lightblue"),cex=0,xlab="no. significant sets FDR<0.05")
+beeswarm(res3d,horizontal=TRUE,add=TRUE,col=c("red","blue"),pch=19,cex=0.6)
+
+res3d1 <- res3d + 1
+boxplot(res3d1,log="x",horizontal=TRUE,las=1,col=c("pink","lightblue"),cex=0,xlab="no. significant sets FDR<0.05*")
+beeswarm(res3d1,horizontal=TRUE,add=TRUE,col=c("red","blue"),pch=19,cex=0.6)
+
+legend("bottomright", inset=.02, legend=c("corrected","original"),
+  fill=c("lightblue","pink"),col=c("blue","red"), horiz=FALSE, cex=1.1)
+
+png("fig2_ORAfdrbox.png")
+par(mar=c(c(5.1, 7.1, 2.1, 2.1) ))
+
+boxplot(res3d1,log="x",horizontal=TRUE,las=1,col=c("pink","lightblue"),cex=0,xlab="no. significant sets FDR<0.05*")
+beeswarm(res3d1,horizontal=TRUE,add=TRUE,col=c("red","blue"),pch=19,cex=0.6)
+
+legend("bottomright", inset=.02, legend=c("corrected","original"),
+  fill=c("lightblue","pink"),col=c("blue","red"), horiz=FALSE, cex=1.1)
+
+dev.off()
+
+pdf("fig2_ORAfdrbox.pdf",width=7,height=7)
+par(mar=c(c(5.1, 7.1, 2.1, 2.1) ))
+
+boxplot(res3d1,log="x",horizontal=TRUE,las=1,col=c("pink","lightblue"),cex=0,xlab="no. significant sets FDR<0.05*")
+beeswarm(res3d1,horizontal=TRUE,add=TRUE,col=c("red","blue"),pch=19,cex=0.6)
+
+legend("bottomright", inset=.02, legend=c("corrected","original"),
+  fill=c("lightblue","pink"),col=c("blue","red"), horiz=FALSE, cex=1.1)
+
+dev.off()
 
 ```
 
