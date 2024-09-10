@@ -95,8 +95,8 @@ gsets <- randomGeneSets(a,setsize=30,nsets=200)
 
 ```{r,setparameters}
 
-SIMS=1000
-#run 500 sims
+SIMS=50
+#run 1000 sims
 FRAC_DE=0.05
 FC=0.5
 N_REPS=3
@@ -122,19 +122,233 @@ res <- lapply(1:nrow(mygrid), function(i) {
   DGE_FUNC=as.character(mygrid[i,"DGE_FUNC"])
   SUM_COUNT=mygrid[i,"SUM_COUNT"]
   VARIANCE=mygrid[i,"VARIANCE"]
-  x <- agg_dge(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,gsets,cores=32)
-  as.data.frame(do.call(rbind, x))
+  agg_dge(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,gsets,cores=16)
 })
 
-res <- do.call(rbind,res)
-
 saveRDS(res,file="res.Rds")
+
+```
+
+## Aggregate data for charting as vioplot
+
+```{r,vioagg}
+
+library(vioplot)
+par(mfrow=c(3,3))
+
+## clusterprofiler default
+cp <- lapply(res,"[[",1)
+cp2 <- lapply(cp,function(df) {
+  df$p <- df$true_pos/(df$true_pos+ df$false_pos)
+  df$r <- df$true_pos/(df$true_pos+ df$false_neg)
+  df$f <- 2*df$p*df$r/(df$p+df$r)
+  df
+} )
+
+cp2p <- lapply(cp2,"[[","p")
+cp2p <- lapply(cp2p,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+cp2r <- lapply(cp2,"[[","r")
+cp2r <- lapply(cp2r,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+cp2f <- lapply(cp2,"[[","f")
+cp2f <- lapply(cp2f,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+names(cp2p) <- names(cp2r) <- names(cp2f) <- c("0","0.1","0.2","0.3","0.4","0.5","0.6")
+
+vioplot(cp2p,xlab="introduced noise",ylab="precision",main="clusterProfiler") ; grid()
+vioplot(cp2r,xlab="introduced noise",ylab="recall",main="clusterProfiler") ; grid()
+vioplot(cp2f,xlab="introduced noise",ylab="F1",main="clusterProfiler") ; grid()
+
+## clusterprofiler bgfix
+cpbg <- lapply(res,"[[",2)
+cpbg2 <- lapply(cpbg,function(df) {
+  df$p <- df$true_pos/(df$true_pos+ df$false_pos)
+  df$r <- df$true_pos/(df$true_pos+ df$false_neg)
+  df$f <- 2*df$p*df$r/(df$p+df$r)
+  df
+} )
+
+cpbg2p <- lapply(cpbg2,"[[","p")
+cpbg2p <- lapply(cpbg2p,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+cpbg2r <- lapply(cpbg2,"[[","r")
+cpbg2r <- lapply(cpbg2r,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+cpbg2f <- lapply(cpbg2,"[[","f")
+cpbg2f <- lapply(cpbg2f,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+names(cpbg2p) <- names(cpbg2r) <- names(cpbg2f) <- c("0","0.1","0.2","0.3","0.4","0.5","0.6")
+
+vioplot(cpbg2p,xlab="introduced noise",ylab="precision",main="clusterProfiler BG fix") ; grid()
+vioplot(cpbg2r,xlab="introduced noise",ylab="recall",main="clusterProfiler BG fix") ; grid()
+vioplot(cpbg2f,xlab="introduced noise",ylab="F1",main="clusterProfiler BG fix") ; grid()
+
+## clusterprofiler FDR fix
+cpfdr <- lapply(res,"[[",3)
+cpfdr2 <- lapply(cpfdr,function(df) {
+  df$p <- df$true_pos/(df$true_pos+ df$false_pos)
+  df$r <- df$true_pos/(df$true_pos+ df$false_neg)
+  df$f <- 2*df$p*df$r/(df$p+df$r)
+  df
+} )
+
+cpfdr2p <- lapply(cpfdr2,"[[","p")
+cpfdr2p <- lapply(cpfdr2p,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+cpfdr2r <- lapply(cpfdr2,"[[","r")
+cpfdr2r <- lapply(cpfdr2r,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+cpfdr2f <- lapply(cpfdr2,"[[","f")
+cpfdr2f <- lapply(cpfdr2f,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+names(cpfdr2p) <- names(cpfdr2r) <- names(cpfdr2f) <- c("0","0.1","0.2","0.3","0.4","0.5","0.6")
+
+vioplot(cpfdr2p,xlab="introduced noise",ylab="precision",main="clusterProfiler FDR fix") ; grid()
+vioplot(cpfdr2r,xlab="introduced noise",ylab="recall",main="clusterProfiler FDR fix") ; grid()
+vioplot(cpfdr2f,xlab="introduced noise",ylab="F1",main="clusterProfiler FDR fix") ; grid()
+
+## clusterprofiler BG and FDR fix
+cpbgfdr <- lapply(res,"[[",4)
+cpbgfdr2 <- lapply(cpbgfdr,function(df) {
+  df$p <- df$true_pos/(df$true_pos+ df$false_pos)
+  df$r <- df$true_pos/(df$true_pos+ df$false_neg)
+  df$f <- 2*df$p*df$r/(df$p+df$r)
+  df
+} )
+
+cpbgfdr2p <- lapply(cpbgfdr2,"[[","p")
+cpbgfdr2p <- lapply(cpbgfdr2p,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+cpbgfdr2r <- lapply(cpbgfdr2,"[[","r")
+cpbgfdr2r <- lapply(cpbgfdr2r,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+cpbgfdr2f <- lapply(cpbgfdr2,"[[","f")
+cpbgfdr2f <- lapply(cpbgfdr2f,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+names(cpbgfdr2p) <- names(cpbgfdr2r) <- names(cpbgfdr2f) <- c("0","0.1","0.2","0.3","0.4","0.5","0.6")
+
+vioplot(cpbgfdr2p,xlab="introduced noise",ylab="precision",main="clusterProfiler BG and FDR fix") ; grid()
+vioplot(cpbgfdr2r,xlab="introduced noise",ylab="recall",main="clusterProfiler BG and FDR fix") ; grid()
+vioplot(cpbgfdr2f,xlab="introduced noise",ylab="F1",main="clusterProfiler BG and FDR fix") ; grid()
+
+## FORA
+fo <- lapply(res,"[[",5)
+fo2 <- lapply(fo,function(df) {
+  df$p <- df$true_pos/(df$true_pos+ df$false_pos)
+  df$r <- df$true_pos/(df$true_pos+ df$false_neg)
+  df$f <- 2*df$p*df$r/(df$p+df$r)
+  df
+} )
+
+fo2p <- lapply(fo2,"[[","p")
+fo2p <- lapply(fo2p,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+fo2r <- lapply(fo2,"[[","r")
+fo2r <- lapply(fo2r,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+fo2f <- lapply(fo2,"[[","f")
+fo2f <- lapply(fo2f,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+names(fo2p) <- names(fo2r) <- names(fo2f) <- c("0","0.1","0.2","0.3","0.4","0.5","0.6")
+
+vioplot(fo2p,xlab="introduced noise",ylab="precision",main="fora") ; grid()
+vioplot(fo2r,xlab="introduced noise",ylab="recall",main="fora") ; grid()
+vioplot(fo2f,xlab="introduced noise",ylab="F1",main="fora") ; grid()
+
+
+## FGSEA
+fg <- lapply(res,"[[",6)
+fg2 <- lapply(fg,function(df) {
+  df$p <- df$true_pos/(df$true_pos+ df$false_pos)
+  df$r <- df$true_pos/(df$true_pos+ df$false_neg)
+  df$f <- 2*df$p*df$r/(df$p+df$r)
+  df
+} )
+
+fg2p <- lapply(fg2,"[[","p")
+fg2p <- lapply(fg2p,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+fg2r <- lapply(fg2,"[[","r")
+fg2r <- lapply(fg2r,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+fg2f <- lapply(fg2,"[[","f")
+fg2f <- lapply(fg2f,function(x) { x[is.na(x) ]<- 0 ; x } )
+
+names(fg2p) <- names(fg2r) <- names(fg2f) <- c("0","0.1","0.2","0.3","0.4","0.5","0.6")
+
+vioplot(fg2p,xlab="introduced noise",ylab="precision",main="fgsea") ; grid()
+vioplot(fg2r,xlab="introduced noise",ylab="recall",main="fgsea") ; grid()
+vioplot(fg2f,xlab="introduced noise",ylab="F1",main="fgsea") ; grid()
+
+png("fig3_vio.png", width=7,height=7,units="in",res=150,pointsize=12)
+par(mfrow=c(3,3))
+vioplot(cp2p,xlab="introduced noise",ylab="precision",main="clusterProfiler") ; grid()
+vioplot(cp2r,xlab="introduced noise",ylab="recall",main="clusterProfiler") ; grid()
+vioplot(cp2f,xlab="introduced noise",ylab="F1",main="clusterProfiler") ; grid()
+vioplot(cpbg2p,xlab="introduced noise",ylab="precision",main="clusterProfiler BG fix") ; grid()
+vioplot(cpbg2r,xlab="introduced noise",ylab="recall",main="clusterProfiler BG fix") ; grid()
+vioplot(cpbg2f,xlab="introduced noise",ylab="F1",main="clusterProfiler BG fix") ; grid()
+vioplot(cpfdr2p,xlab="introduced noise",ylab="precision",main="clusterProfiler FDR fix") ; grid()
+vioplot(cpfdr2r,xlab="introduced noise",ylab="recall",main="clusterProfiler FDR fix") ; grid()
+vioplot(cpfdr2f,xlab="introduced noise",ylab="F1",main="clusterProfiler FDR fix") ; grid()
+dev.off()
+png("fig3_vio2.png", width=7,height=7,units="in",res=150,pointsize=12)
+par(mfrow=c(3,3))
+vioplot(cpbgfdr2p,xlab="introduced noise",ylab="precision",main="clusterProfiler BG and FDR fix") ; grid()
+vioplot(cpbgfdr2r,xlab="introduced noise",ylab="recall",main="clusterProfiler BG and FDR fix") ; grid()
+vioplot(cpbgfdr2f,xlab="introduced noise",ylab="F1",main="clusterProfiler BG and FDR fix") ; grid()
+vioplot(fo2p,xlab="introduced noise",ylab="precision",main="fora") ; grid()
+vioplot(fo2r,xlab="introduced noise",ylab="recall",main="fora") ; grid()
+vioplot(fo2f,xlab="introduced noise",ylab="F1",main="fora") ; grid()
+vioplot(fo2p,xlab="introduced noise",ylab="precision",main="fora") ; grid()
+vioplot(fo2r,xlab="introduced noise",ylab="recall",main="fora") ; grid()
+vioplot(fo2f,xlab="introduced noise",ylab="F1",main="fora") ; grid()
+dev.off()
+
+
+
+pdf("fig3_vio.pdf", width=7,height=7,pointsize=12)
+par(mfrow=c(3,3))
+vioplot(cp2p,xlab="introduced noise",ylab="precision",main="clusterProfiler") ; grid()
+vioplot(cp2r,xlab="introduced noise",ylab="recall",main="clusterProfiler") ; grid()
+vioplot(cp2f,xlab="introduced noise",ylab="F1",main="clusterProfiler") ; grid()
+vioplot(cpbg2p,xlab="introduced noise",ylab="precision",main="clusterProfiler BG fix") ; grid()
+vioplot(cpbg2r,xlab="introduced noise",ylab="recall",main="clusterProfiler BG fix") ; grid()
+vioplot(cpbg2f,xlab="introduced noise",ylab="F1",main="clusterProfiler BG fix") ; grid()
+vioplot(cpfdr2p,xlab="introduced noise",ylab="precision",main="clusterProfiler FDR fix") ; grid()
+vioplot(cpfdr2r,xlab="introduced noise",ylab="recall",main="clusterProfiler FDR fix") ; grid()
+vioplot(cpfdr2f,xlab="introduced noise",ylab="F1",main="clusterProfiler FDR fix") ; grid()
+vioplot(cpbgfdr2p,xlab="introduced noise",ylab="precision",main="clusterProfiler BG and FDR fix") ; grid()
+vioplot(cpbgfdr2r,xlab="introduced noise",ylab="recall",main="clusterProfiler BG and FDR fix") ; grid()
+vioplot(cpbgfdr2f,xlab="introduced noise",ylab="F1",main="clusterProfiler BG and FDR fix") ; grid()
+vioplot(fo2p,xlab="introduced noise",ylab="precision",main="fora") ; grid()
+vioplot(fo2r,xlab="introduced noise",ylab="recall",main="fora") ; grid()
+vioplot(fo2f,xlab="introduced noise",ylab="F1",main="fora") ; grid()
+vioplot(fo2p,xlab="introduced noise",ylab="precision",main="fora") ; grid()
+vioplot(fo2r,xlab="introduced noise",ylab="recall",main="fora") ; grid()
+vioplot(fo2f,xlab="introduced noise",ylab="F1",main="fora") ; grid()
+dev.off()
+
 
 ```
 
 Now show the results.
 
 ```{r,results}
+
+res2 <- lapply(res,function(x) { lapply(x,function(y) { colMeans(y[,1:3]) } ) } )
+res2 <- lapply(res2,function(x) {
+  out <- as.data.frame(do.call(rbind,x))
+  pw <- c("cp","cpbg","cpfdr","cpbgfdr","fora","fgsea")
+  out$pw <- pw
+  out
+} )
+res3 <- do.call(rbind,res2)
+res3$var <- c(rep(0,6),rep(0.1,6),rep(0.2,6),rep(0.3,6),rep(0.4,6),rep(0.5,6),rep(0.6,6))
+
+
+
 
 res %>% kbl(caption="simulation_results") %>% kable_paper("hover", full_width = F)
 
@@ -299,7 +513,45 @@ barplot(f1,ylim=c(0,1.1),las=2,main="F1",ylab="")
 text((1:6*1.18)-0.45,f1+0.02,labels=signif(f1,3))
 dev.off()
 
+######################################
+# Now as boxplot
+library(beeswarm)
 
+prec <- list("CP default"=cp$p,"CP BG fix"=cpbg$p,"CP FDR fix"=cpfdr$p,"CP BG and FDR fix"=cpbgfdr$p,"fora"=fo$p,"fgsea"=fg$p)
+rec <- list("CP default"=cp$r,"CP BG fix"=cpbg$r,"CP FDR fix"=cpfdr$r,"CP BG and FDR fix"=cpbgfdr$r,"fora"=fo$r,"fgsea"=fg$r)
+f1 <- lapply(1:length(prec), function(i) { 2/(1/rec[[i]]+1/prec[[i]]) })
+names(f1) <- names(prec)
+
+par(mfrow=c(1,3))
+par(mar=c(c(9.1, 3.5, 2.1, 1.1) ))
+boxplot(prec,cex=0,main="precision",ylab="",col="white",las=2)
+beeswarm(prec,add=TRUE,col="black",pch=19)
+boxplot(rec,cex=0,main="recall",ylab="",col="white",las=2)
+beeswarm(rec,add=TRUE,col="black",pch=19)
+boxplot(f1,cex=0,main="F1 index",ylab="",col="white",las=2)
+beeswarm(f1,add=TRUE,col="black",pch=19)
+
+png("fig3_box.png", width=7,height=5,units="in",res=150,pointsize=12)
+par(mar=c(c(9.1, 3.5, 2.1, 1.1) ))
+par(mfrow=c(1,3))
+boxplot(prec,cex=0,main="precision",ylab="",col="white",las=2)
+beeswarm(prec,add=TRUE,col="black",pch=19)
+boxplot(rec,cex=0,main="recall",ylab="",col="white",las=2)
+beeswarm(rec,add=TRUE,col="black",pch=19)
+boxplot(f1,cex=0,main="F1 index",ylab="",col="white",las=2)
+beeswarm(f1,add=TRUE,col="black",pch=19)
+dev.off()
+
+pdf("fig3_bars.pdf", width=7,height=5,pointsize=12)
+par(mar=c(c(9.1, 3.5, 2.1, 1.1) ))
+par(mfrow=c(1,3))
+boxplot(prec,cex=0,main="precision",ylab="",col="white",las=2)
+beeswarm(prec,add=TRUE,col="black",pch=19)
+boxplot(rec,cex=0,main="recall",ylab="",col="white",las=2)
+beeswarm(rec,add=TRUE,col="black",pch=19)
+boxplot(f1,cex=0,main="F1 index",ylab="",col="white",las=2)
+beeswarm(f1,add=TRUE,col="black",pch=19)
+dev.off()
 
 ```
 

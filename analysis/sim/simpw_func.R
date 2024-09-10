@@ -187,7 +187,7 @@ deseq2<-function(x) {
 # clusterprofiler default function
 ##################################
 # Note that clusterprofiler requires different gene set format
-run_clusterprofiler_default <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16){
+run_clusterprofiler_default <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32){
 
 gsets2 <- stack(gsets)[,c(2,1)]
 colnames(gsets2) <- c("term","gene")
@@ -248,22 +248,15 @@ gt_dn <- lapply( gt_dn , names)
 
 true_pos_up <- as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_up ,  gt_up ))
 true_pos_dn <- as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_dn ,  gt_dn ))
+true_pos <- true_pos_up + true_pos_dn
 false_pos_up <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_up ,  gt_up ))
 false_pos_dn <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_dn , gt_dn ))
+false_pos <- false_pos_up + false_pos_dn
 false_neg_up <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_up ,  obs_up ))
 false_neg_dn <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_dn ,  obs_dn ))
+false_neg <- false_neg_up + false_neg_dn
 
-true_pos <- mean(true_pos_up+true_pos_dn)
-false_pos <- mean(false_pos_up+false_pos_dn)
-false_neg <- mean(false_neg_up+false_neg_dn)
-nrows <- as.numeric(lapply( sapply(x,"[",1 ), nrow))
-true_neg <- mean(nrows-(true_pos+false_pos+false_neg))
-
-p <- true_pos/(true_pos+false_pos)
-r <- true_pos/(true_pos+false_neg)
-f <- 2*p*r/(p+r)
-
-attr(x,'clusterProfiler default') <- data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,true_pos,false_pos,true_neg,false_neg,p,r,f)
+attr(x,'clusterProfiler default') <- data.frame(true_pos,false_pos,false_neg)
 x
 
 }
@@ -272,7 +265,7 @@ x
 # clusterprofiler BG fix function
 ##################################
 # Note that clusterprofiler requires different gene set format
-run_clusterprofiler_bgfix <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16){
+run_clusterprofiler_bgfix <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32){
 
 gsets2 <- stack(gsets)[,c(2,1)]
 colnames(gsets2) <- c("term","gene")
@@ -343,22 +336,15 @@ gt_dn <- lapply( gt_dn , names)
 
 true_pos_up <- as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_up ,  gt_up ))
 true_pos_dn <- as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_dn ,  gt_dn ))
+true_pos <- true_pos_up + true_pos_dn
 false_pos_up <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_up ,  gt_up ))
 false_pos_dn <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_dn , gt_dn ))
+false_pos <- false_pos_up + false_pos_dn
 false_neg_up <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_up ,  obs_up ))
 false_neg_dn <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_dn ,  obs_dn ))
+false_neg <- false_neg_up + false_neg_dn
 
-true_pos <- mean(true_pos_up+true_pos_dn)
-false_pos <- mean(false_pos_up+false_pos_dn)
-false_neg <- mean(false_neg_up+false_neg_dn)
-nrows <- as.numeric(lapply( sapply(x,"[",1 ), nrow))
-true_neg <- mean(nrows-(true_pos+false_pos+false_neg))
-
-p <- true_pos/(true_pos+false_pos)
-r <- true_pos/(true_pos+false_neg)
-f <- 2*p*r/(p+r)
-
-attr(x,'clusterProfiler BG fix') <- data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,true_pos,false_pos,true_neg,false_neg,p,r,f)
+attr(x,'clusterProfiler BG fix') <- data.frame(true_pos,false_pos,false_neg)
 x
 
 }
@@ -367,7 +353,7 @@ x
 # clusterprofiler FDR fix
 ##################################
 # Note that clusterprofiler requires different gene set format
-run_clusterprofiler_fdrfix <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16){
+run_clusterprofiler_fdrfix <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32){
 
 gsets2 <- stack(gsets)[,c(2,1)]
 colnames(gsets2) <- c("term","gene")
@@ -440,22 +426,15 @@ gt_dn <- lapply( gt_dn , names)
 
 true_pos_up <- as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_up ,  gt_up ))
 true_pos_dn <- as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_dn ,  gt_dn ))
+true_pos <- true_pos_up + true_pos_dn
 false_pos_up <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_up ,  gt_up ))
 false_pos_dn <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_dn , gt_dn ))
+false_pos <- false_pos_up + false_pos_dn
 false_neg_up <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_up ,  obs_up ))
 false_neg_dn <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_dn ,  obs_dn ))
+false_neg <- false_neg_up + false_neg_dn
 
-true_pos <- mean(true_pos_up+true_pos_dn)
-false_pos <- mean(false_pos_up+false_pos_dn)
-false_neg <- mean(false_neg_up+false_neg_dn)
-nrows <- as.numeric(lapply( sapply(x,"[",1 ), nrow))
-true_neg <- mean(nrows-(true_pos+false_pos+false_neg))
-
-p <- true_pos/(true_pos+false_pos)
-r <- true_pos/(true_pos+false_neg)
-f <- 2*p*r/(p+r)
-
-attr(x,'clusterProfiler FDR fix') <- data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,true_pos,false_pos,true_neg,false_neg,p,r,f)
+attr(x,'clusterProfiler FDR fix') <- data.frame(true_pos,false_pos,false_neg)
 x
 
 }
@@ -464,7 +443,7 @@ x
 # clusterprofiler BG and FDR fixes
 ##################################
 # Note that clusterprofiler requires different gene set format
-run_clusterprofiler_bgfdrfix <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16){
+run_clusterprofiler_bgfdrfix <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32){
 
 gsets2 <- stack(gsets)[,c(2,1)]
 colnames(gsets2) <- c("term","gene")
@@ -547,22 +526,15 @@ gt_dn <- lapply( gt_dn , names)
 
 true_pos_up <- as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_up ,  gt_up ))
 true_pos_dn <- as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_dn ,  gt_dn ))
+true_pos <- true_pos_up + true_pos_dn
 false_pos_up <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_up ,  gt_up ))
 false_pos_dn <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_dn , gt_dn ))
+false_pos <- false_pos_up + false_pos_dn
 false_neg_up <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_up ,  obs_up ))
 false_neg_dn <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_dn ,  obs_dn ))
+false_neg <- false_neg_up + false_neg_dn
 
-true_pos <- mean(true_pos_up+true_pos_dn)
-false_pos <- mean(false_pos_up+false_pos_dn)
-false_neg <- mean(false_neg_up+false_neg_dn)
-nrows <- as.numeric(lapply( sapply(x,"[",1 ), nrow))
-true_neg <- mean(nrows-(true_pos+false_pos+false_neg))
-
-p <- true_pos/(true_pos+false_pos)
-r <- true_pos/(true_pos+false_neg)
-f <- 2*p*r/(p+r)
-
-attr(x,'clusterProfiler BG and FDR fix') <- data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,true_pos,false_pos,true_neg,false_neg,p,r,f)
+attr(x,'clusterProfiler BG and FDR fix') <- data.frame(true_pos,false_pos,false_neg)
 x
 
 }
@@ -570,7 +542,7 @@ x
 ##################################
 # FORA function
 ##################################
-run_fora <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16){
+run_fora <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32){
 
 dge <- sapply(x,"[",6)
 
@@ -602,22 +574,15 @@ gt_dn <- lapply( gt_dn , names)
 
 true_pos_up <- as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_up ,  gt_up ))
 true_pos_dn <- as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_dn ,  gt_dn ))
+true_pos <- true_pos_up + true_pos_dn
 false_pos_up <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_up ,  gt_up ))
 false_pos_dn <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_dn , gt_dn ))
+false_pos <- false_pos_up + false_pos_dn
 false_neg_up <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_up ,  obs_up ))
 false_neg_dn <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_dn ,  obs_dn ))
+false_neg <- false_neg_up + false_neg_dn
 
-true_pos <- mean(true_pos_up+true_pos_dn)
-false_pos <- mean(false_pos_up+false_pos_dn)
-false_neg <- mean(false_neg_up+false_neg_dn)
-nrows <- as.numeric(lapply( sapply(x,"[",1 ), nrow))
-true_neg <- mean(nrows-(true_pos+false_pos+false_neg))
-
-p <- true_pos/(true_pos+false_pos)
-r <- true_pos/(true_pos+false_neg)
-f <- 2*p*r/(p+r)
-
-attr(x,'fora') <- data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,true_pos,false_pos,true_neg,false_neg,p,r,f)
+attr(x,'fora') <- data.frame(true_pos,false_pos,false_neg)
 x
 
 }
@@ -625,7 +590,7 @@ x
 ##################################
 # FGSEA function
 ##################################
-run_fgsea <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16 ){
+run_fgsea <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32 ){
 
 dge <- sapply(x,"[",6)
 
@@ -651,22 +616,15 @@ gt_dn <- lapply( gt_dn , names)
 
 true_pos_up <- as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_up ,  gt_up ))
 true_pos_dn <- as.numeric(mapply( function(x,y) length(intersect(x,y)) , obs_dn ,  gt_dn ))
+true_pos <- true_pos_up + true_pos_dn
 false_pos_up <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_up ,  gt_up ))
 false_pos_dn <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , obs_dn , gt_dn ))
+false_pos <- false_pos_up + false_pos_dn
 false_neg_up <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_up ,  obs_up ))
 false_neg_dn <- as.numeric(mapply( function(x,y) length(setdiff(x,y)) , gt_dn ,  obs_dn ))
+false_neg <- false_neg_up + false_neg_dn
 
-true_pos <- mean(true_pos_up+true_pos_dn)
-false_pos <- mean(false_pos_up+false_pos_dn)
-false_neg <- mean(false_neg_up+false_neg_dn)
-nrows <- as.numeric(lapply( sapply(x,"[",1 ), nrow))
-true_neg <- mean(nrows-(true_pos+false_pos+false_neg))
-
-p <- true_pos/(true_pos+false_pos)
-r <- true_pos/(true_pos+false_neg)
-f <- 2*p*r/(p+r)
-
-attr(x,'fgsea') <- data.frame(N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,true_pos,false_pos,true_neg,false_neg,p,r,f)
+attr(x,'fgsea') <- data.frame(true_pos,false_pos,false_neg)
 x
 
 }
