@@ -458,7 +458,7 @@ boxplot(f1,cex=0,main="F1 index",ylab="",col="white",las=2)
 beeswarm(f1,add=TRUE,col="black",pch=19)
 dev.off()
 
-pdf("fig3_bars.pdf", width=7,height=5,pointsize=12)
+pdf("fig3_box.pdf", width=7,height=5,pointsize=12)
 par(mar=c(c(9.1, 3.5, 2.1, 1.1) ))
 par(mfrow=c(1,3))
 boxplot(prec,cex=0,main="precision",ylab="",col="white",las=2)
