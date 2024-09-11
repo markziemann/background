@@ -32,7 +32,10 @@ suppressPackageStartupMessages({
   library("kableExtra")
   library("eulerr")
   library("biomaRt")
+  library("RhpcBLASctl")
 })
+
+RhpcBLASctl::blas_set_num_threads(1)
 
 ```
 
