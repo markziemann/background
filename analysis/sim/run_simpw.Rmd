@@ -191,7 +191,7 @@ fo <- lapply(res,"[[",5)
 fo2 <- prf(fo)
 vioplot(fo2[["p"]],xlab="introduced noise",ylab="precision",main="fora") ; grid()
 vioplot(fo2[["r"]],xlab="introduced noise",ylab="recall",main="fora") ; grid()
-vioplot(fo2[["x"]],xlab="introduced noise",ylab="F1",main="fora") ; grid()
+vioplot(fo2[["f"]],xlab="introduced noise",ylab="F1",main="fora") ; grid()
 
 ## FGSEA
 fg <- lapply(res,"[[",6)
