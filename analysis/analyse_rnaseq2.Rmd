@@ -42,7 +42,10 @@ suppressPackageStartupMessages({
   library("eulerr")
   library("gplots")
   library("parallel")
+  library("RhpcBLASctl")
 })
+
+RhpcBLASctl::blas_set_num_threads(1)
 
 ```
 
