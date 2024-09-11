@@ -25,6 +25,9 @@ library("kableExtra")
 library("fgsea")
 library("clusterProfiler")
 source("simpw_func.R")
+library("RhpcBLASctl")
+
+RhpcBLASctl::blas_set_num_threads(1)
 
 ```
 
@@ -95,7 +98,7 @@ gsets <- randomGeneSets(a,setsize=30,nsets=200)
 
 ```{r,setparameters}
 
-SIMS=50
+SIMS=32
 #run 1000 sims
 FRAC_DE=0.05
 FC=0.5
@@ -122,7 +125,7 @@ res <- lapply(1:nrow(mygrid), function(i) {
   DGE_FUNC=as.character(mygrid[i,"DGE_FUNC"])
   SUM_COUNT=mygrid[i,"SUM_COUNT"]
   VARIANCE=mygrid[i,"VARIANCE"]
-  agg_dge(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,gsets,cores=16)
+  agg_dge(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,gsets,cores=32)
 })
 
 saveRDS(res,file="res.Rds")

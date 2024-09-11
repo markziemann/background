@@ -7,6 +7,9 @@ library("stringi")
 library("mitch")
 library("fgsea")
 library("clusterProfiler")
+library("RhpcBLASctl")
+
+RhpcBLASctl::blas_set_num_threads(1)
 
 ########################################
 # get some counts
