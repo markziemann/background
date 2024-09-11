@@ -68,7 +68,7 @@ setwd("..")
 
 ## Figure 4 - Quantifying sensitivity in real cancer data
 
-```{r,mainfig3}
+```{r,mainfig4}
 
 rmarkdown::render("GSE158420_rna.Rmd")
 
