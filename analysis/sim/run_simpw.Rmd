@@ -120,6 +120,12 @@ Now run the analysis.
 
 ```{r,sims}
 
+if (file.exists("res.Rds") ) {
+
+  res <- readRDS("res.Rds")
+
+} else {
+
 res <- lapply(1:nrow(mygrid), function(i) {
   FRAC_DE=mygrid[i,"FRAC_DE"]
   FC=mygrid[i,"FC"]
@@ -131,6 +137,8 @@ res <- lapply(1:nrow(mygrid), function(i) {
 })
 
 saveRDS(res,file="res.Rds")
+
+}
 
 ```
 
