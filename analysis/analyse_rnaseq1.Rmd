@@ -793,10 +793,12 @@ par(mar = c(5.1, 8.1, 4.1, 2.1))
 library(beeswarm)
 boxplot(unsl,horizontal=TRUE,las=1,col=c("pink","lightblue"),cex=0,xlab="no. significant sets FDR<0.05")
 beeswarm(unsl,horizontal=TRUE,add=TRUE,col=c("red","blue"),pch=19,cex=0.6)
+beeswarm(as.list(colMeans(unsl)),horizontal=TRUE,add=TRUE,col="black",pch="x",cex=1.0)
 
 unsl1 <- unsl+1
 boxplot(unsl1,horizontal=TRUE,log="x",las=1,col=c("pink","lightblue"),cex=0,xlab="no. significant sets FDR<0.05*")
 beeswarm(unsl1,horizontal=TRUE,add=TRUE,col=c("red","blue"),pch=19,cex=0.6)
+beeswarm(as.list(colMeans(unsl1)),horizontal=TRUE,add=TRUE,col="black",pch="x",cex=1.0)
 
 legend("bottomright", inset=.02, legend=c("corrected","original"),
   fill=c("lightblue","pink"),col=c("blue","red"), horiz=FALSE, cex=1.1)
@@ -804,6 +806,7 @@ legend("bottomright", inset=.02, legend=c("corrected","original"),
 png("fig1_ORAsigbox.png")
 boxplot(unsl1,horizontal=TRUE,log="x",las=1,col=c("pink","lightblue"),cex=0,xlab="no. significant sets FDR<0.05*")
 beeswarm(unsl1,horizontal=TRUE,add=TRUE,col=c("red","blue"),pch=19,cex=0.6)
+beeswarm(as.list(colMeans(unsl1)),horizontal=TRUE,add=TRUE,col="black",pch="x",cex=1.0)
 legend("bottomright", inset=.02, legend=c("corrected","original"),
   fill=c("lightblue","pink"),col=c("blue","red"), horiz=FALSE, cex=1.1)
 dev.off()
@@ -812,6 +815,7 @@ pdf("fig1_ORAsigbox.pdf",width=7, height=7)
 par(mar = c(5.1, 8.1, 4.1, 2.1))
 boxplot(unsl1,horizontal=TRUE,log="x",las=1,col=c("pink","lightblue"),cex=0,xlab="no. significant sets FDR<0.05*")
 beeswarm(unsl1,horizontal=TRUE,add=TRUE,col=c("red","blue"),pch=19,cex=0.6)
+beeswarm(as.list(colMeans(unsl1)),horizontal=TRUE,add=TRUE,col="black",pch="x",cex=1.0)
 legend("bottomright", inset=.02, legend=c("corrected","original"),
   fill=c("lightblue","pink"),col=c("blue","red"), horiz=FALSE, cex=1.1)
 dev.off()
