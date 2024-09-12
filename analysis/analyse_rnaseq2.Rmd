@@ -896,10 +896,12 @@ par(mar = c(5.1, 8.1, 4.1, 2.1))
 library(beeswarm)
 boxplot(res3d,horizontal=TRUE,las=1,col=c("pink","lightblue"),cex=0,xlab="no. significant sets FDR<0.05")
 beeswarm(res3d,horizontal=TRUE,add=TRUE,col=c("red","blue"),pch=19,cex=0.6)
+beeswarm(as.list(colMeans(res3d)),horizontal=TRUE,add=TRUE,col="black",pch="x",cex=1.0)
 
 res3d1 <- res3d + 1
 boxplot(res3d1,log="x",horizontal=TRUE,las=1,col=c("pink","lightblue"),cex=0,xlab="no. significant sets FDR<0.05*")
 beeswarm(res3d1,horizontal=TRUE,add=TRUE,col=c("red","blue"),pch=19,cex=0.6)
+beeswarm(as.list(colMeans(res3d1)),horizontal=TRUE,add=TRUE,col="black",pch="x",cex=1.0)
 
 legend("bottomright", inset=.02, legend=c("corrected","original"),
   fill=c("lightblue","pink"),col=c("blue","red"), horiz=FALSE, cex=1.1)
@@ -909,6 +911,7 @@ par(mar=c(c(5.1, 7.1, 2.1, 2.1) ))
 
 boxplot(res3d1,log="x",horizontal=TRUE,las=1,col=c("pink","lightblue"),cex=0,xlab="no. significant sets FDR<0.05*")
 beeswarm(res3d1,horizontal=TRUE,add=TRUE,col=c("red","blue"),pch=19,cex=0.6)
+beeswarm(as.list(colMeans(res3d1)),horizontal=TRUE,add=TRUE,col="black",pch="x",cex=1.0)
 
 legend("bottomright", inset=.02, legend=c("corrected","original"),
   fill=c("lightblue","pink"),col=c("blue","red"), horiz=FALSE, cex=1.1)
@@ -920,6 +923,7 @@ par(mar=c(c(5.1, 7.1, 2.1, 2.1) ))
 
 boxplot(res3d1,log="x",horizontal=TRUE,las=1,col=c("pink","lightblue"),cex=0,xlab="no. significant sets FDR<0.05*")
 beeswarm(res3d1,horizontal=TRUE,add=TRUE,col=c("red","blue"),pch=19,cex=0.6)
+beeswarm(as.list(colMeans(res3d1)),horizontal=TRUE,add=TRUE,col="black",pch="x",cex=1.0)
 
 legend("bottomright", inset=.02, legend=c("corrected","original"),
   fill=c("lightblue","pink"),col=c("blue","red"), horiz=FALSE, cex=1.1)
