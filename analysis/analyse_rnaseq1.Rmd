@@ -874,6 +874,8 @@ For reproducibility
 
 ```{r,session}
 
+save.image("analyse_rnaseq1.Rdata")
+
 sessionInfo()
 
 ```

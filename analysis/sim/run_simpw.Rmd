@@ -476,6 +476,8 @@ dev.off()
 
 ```{r,session}
 
+save.image("run_simpw.Rdata")
+
 sessionInfo()
 
 ```
