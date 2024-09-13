@@ -33,6 +33,7 @@ suppressPackageStartupMessages({
   library("RhpcBLASctl")
   library("tictoc")
   library("edgeR")
+  library("vioplot")
 })
 
 CORES=16
@@ -283,7 +284,7 @@ barplot(tot,horiz=TRUE,las=1,xlab="no. pathways FDR<0.05",ylab="no. genes select
 
 ## Downsample FGSEA
 
-This will run the FGSEA analysis at group sizes of 2, 3, 6, 10, 16, 22 and 30,
+This will run the FGSEA analysis at group sizes of 2, 3, 5, 10, 16, 22 and 30,
 50 times each, with pseudorandom seeds from 100 to 5000 jumping up by 100.
 
 ```{r,fgsea_run,fig.height=10}
@@ -1017,6 +1018,69 @@ MAX=max(c(fores2[,"Median"],fgres2[,"Median"]))
 plot(df$`Sample size`,df$fora,type="b",col="red",pch=19,xlab="Sample size",ylab="proportion",main="Proportion of inconsistent pathways",ylim=c(0,MAX))
 points(df$`Sample size`,df$fgsea,type="b",col="blue",pch=19 )
 grid()
+dev.off()
+
+```
+
+## Make violin plot
+
+```{r,vioplot}
+
+length(osets)
+length(fsets)
+
+names(fores) <- names(fgres) <- as.character(c(2,3,5,10,15,20,25,30))
+
+par(mfrow=c(1,3))
+
+vioplot(lapply(fores,function(mx) { mx[,2] } ) , side="left" , col="white" , border = "red",
+  plotCentre = "line", ylim=c(0,457), xlab="Sample size", ylab="no. pathways")
+  mtext("no. consistent pathways FDR<0.05" )
+vioplot(lapply(fgres,function(mx) { mx[,2] } ) , side="right" , col="white", border="blue" ,
+   add = TRUE, plotCentre = "line")
+
+abline(h=length(osets),col="red")
+abline(h=length(fsets),col="blue")
+
+vioplot(lapply(fores,function(mx) { mx[,3] } ) , side="left" , col="white" , border="red",
+  plotCentre = "line", ylim=c(0,210), xlab="Sample size", ylab="no. pathways")
+  mtext("no. inconsistent pathways FDR<0.05" )
+vioplot(lapply(fgres,function(mx) { mx[,3] } ) , side="right" , col="white", border="blue",
+  add = TRUE , plotCentre = "line")
+
+fg1 <- lapply(fgres,function(mx) { TP <- mx[,2] ; FP <- mx[,3]  ; FP / (TP + FP) } )
+fo1 <- lapply(fores,function(mx) { TP <- mx[,2] ; FP <- mx[,3]  ; FP / (TP + FP) } )
+
+vioplot(fo1 , side="left" , col="white", border="red", plotCentre = "line",
+  ylim=c(0,0.5), xlab="Sample size", ylab="no. pathways")
+  mtext("proportion inconsistent pathways" )
+vioplot(fg1 , side="right" , col="white", border="blue", add = TRUE , plotCentre = "line")
+
+### PDF CHART
+pdf("sens_vio.pdf",height=4,width=8)
+par(mfrow=c(1,3))
+vioplot(lapply(fores,function(mx) { mx[,2] } ) , side="left" , col="white" , border = "red",
+  plotCentre = "line", ylim=c(0,457), xlab="Sample size", ylab="no. pathways")
+  mtext("no. consistent pathways FDR<0.05" ,cex=0.8)
+vioplot(lapply(fgres,function(mx) { mx[,2] } ) , side="right" , col="white", border="blue" ,
+   add = TRUE, plotCentre = "line")
+
+abline(h=length(osets),col="red")
+abline(h=length(fsets),col="blue")
+
+vioplot(lapply(fores,function(mx) { mx[,3] } ) , side="left" , col="white" , border="red",
+  plotCentre = "line", ylim=c(0,210), xlab="Sample size", ylab="no. pathways")
+  mtext("no. inconsistent pathways FDR<0.05" , cex=0.8)
+vioplot(lapply(fgres,function(mx) { mx[,3] } ) , side="right" , col="white", border="blue",
+  add = TRUE , plotCentre = "line")
+
+fg1 <- lapply(fgres,function(mx) { TP <- mx[,2] ; FP <- mx[,3]  ; FP / (TP + FP) } )
+fo1 <- lapply(fores,function(mx) { TP <- mx[,2] ; FP <- mx[,3]  ; FP / (TP + FP) } )
+
+vioplot(fo1 , side="left" , col="white", border="red", plotCentre = "line",
+  ylim=c(0,0.5), xlab="Sample size", ylab="no. pathways")
+  mtext("proportion inconsistent pathways",, cex=0.8)
+vioplot(fg1 , side="right" , col="white", border="blue", add = TRUE , plotCentre = "line")
 dev.off()
 
 ```
