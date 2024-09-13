@@ -1058,8 +1058,7 @@ vioplot(fg1 , side="right" , col="white", border="blue", add = TRUE , plotCentre
 
 # output some data for the paper
 head(fores[[1]])
-message(
-message("FORA TP") ; lapply(fores,function(mx) { summary( mx[,2] ) } )
+message("FORA TP")lapply(fores,function(mx) { summary( mx[,2] ) } )
 message("FGSEA TP") ; lapply(fgres,function(mx) { summary( mx[,2] ) } )
 message("FORA FP") ; lapply(fores,function(mx) { summary( mx[,3] ) } )
 message("FGSEA FP") ; lapply(fores,function(mx) { summary( mx[,3] ) } )
