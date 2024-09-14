@@ -1069,7 +1069,7 @@ message("FGSEA FP proportion") ; lapply(fg1,summary)
 pdf("sens_vio.pdf",height=4,width=8)
 par(mfrow=c(1,3))
 vioplot(lapply(fores,function(mx) { mx[,2] } ) , side="left" , col="white" , border = "red",
-  plotCentre = "line", ylim=c(0,457), xlab="Sample size", ylab="no. pathways")
+  plotCentre = "line", ylim=c(0,length(fsets)), xlab="Sample size", ylab="no. pathways")
   mtext("no. consistent pathways FDR<0.05" ,cex=0.8)
 vioplot(lapply(fgres,function(mx) { mx[,2] } ) , side="right" , col="white", border="blue" ,
    add = TRUE, plotCentre = "line")
