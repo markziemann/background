@@ -1042,6 +1042,9 @@ vioplot(lapply(fgres,function(mx) { mx[,2] } ) , side="right" , col="white", bor
 abline(h=length(osets),col="red")
 abline(h=length(fsets),col="blue")
 
+legend("bottomright", legend=c("fgsea","fora"), pch=0,
+       col=c("blue","red"), cex=1)
+
 vioplot(lapply(fores,function(mx) { mx[,3] } ) , side="left" , col="white" , border="red",
   plotCentre = "line", ylim=c(0,210), xlab="Sample size", ylab="no. pathways")
   mtext("no. inconsistent pathways FDR<0.05" )
@@ -1076,6 +1079,9 @@ vioplot(lapply(fgres,function(mx) { mx[,2] } ) , side="right" , col="white", bor
 
 abline(h=length(osets),col="red")
 abline(h=length(fsets),col="blue")
+
+legend("bottomright", legend=c("fgsea","fora"), pch=0,
+       col=c("blue","red"), cex=1)
 
 vioplot(lapply(fores,function(mx) { mx[,3] } ) , side="left" , col="white" , border="red",
   plotCentre = "line", ylim=c(0,210), xlab="Sample size", ylab="no. pathways")
