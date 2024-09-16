@@ -166,6 +166,7 @@ Remaining genes passing this selection were included in the background gene set.
 Differential expression analysis was conducted with DESeq2 v1.44.0 [@Love2014-wg], with
 genes identified by their Ensembl identifiers.
 Gene symbols were then fetched using biomaRt v2.60.0, based on Ensembl version 112 [@Durinck2009-dr].
+Descriptive information of the seven datasets is provided in Table 1.
 
 | SRA accession | Control accessions | Case accessions | Comparison | No. detected genes | No. genes with FDR<0.05 | Reference |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -261,7 +262,7 @@ sets were selected and compared to the ground truth to calculate precision, reca
 and F1 score.
 At each value of added variance, 1000 replications were conducted.
 No set seed was used, but results were similar when run on different computer systems.
-All analyses were undertaken with R v4.4.0 in a Docker container.
+All analyses were undertaken with R v4.4.1 in a Docker container.
 
 ### Comparing ORA and FCS methods by downsampling real RNA-seq data
 
@@ -297,11 +298,10 @@ This was repeated 50 times at each sample size, and the median values were repor
 A workaround to eliminate the background problem was developed and we used it to compare the
 results of ORA of seven datasets with the original and corrected methods for nine different
 gene set libraries.
-The mean number of statistically significant results was calculated for each of the gene set
+The number of statistically significant results was calculated for each of the gene set
 libraries before and after correcting the problem (**Figure 1A**).
-Each of the gene set libraries showed an uplift in the number of significant gene sets when correcting the background problem.
-The smallest increase was observed in Cellmarkers gene library (11.8%), while the largest
-increase was observed for HPO (224%).
+Each study was affected to a similar degree (mean uplift 125% ±199%), except for #5 which saw the number of
+significant GO terms increase from 8 to 54 after correction (**Table S1**).
 The similarity between results, as quantified with the Jaccard similarity, was highest for
 Cellmarkers and GTRD at 0.76 and 0.77 respectively, and the lowest similarity was recorded for
 HPO and KEGG with 0.20 and 0.48 respectively.
@@ -309,21 +309,32 @@ Observed Jaccard scores correlated with the number of genes annotated to one or 
 categories in the gene set library (**Figure 1B**).
 This result suggests that ORA with smaller gene set libraries like HPO and KEGG are impacted
 more severely.
+We investigated discrepant results for data set #1 (SRP128998) downregulated genes in HPO gene sets.
+A scatterplot of significance scores (**Figure 1C**) shows severe deviation in p-values in gene sets in the largest
+quintile (109-1382 members detected), suggesting larger gene sets are more severely affected by the background
+problem.
 
-![**Figure 1A. Effect of correcting the background problem.** Figures represent the mean number
-of statistically significant sets (FDR<0.05) over seven independent datasets detected with
-clusterProfiler with and without correcting the background problem.
-Separate tests for up- and down-regulated gene lists were conducted.
-The percent increase in significant sets are shown.](../analysis/fig1_ORAsig.png "Figure 1A
+![**Figure 1A. Number of statistically significant pathways (FDR<0.05) in seven independent RNA-seq studies with and
+without correction of the background problem.
+Separate tests were conducted for up- and down-regulated gene lists.
+Mean values are depicted as an “x”. The percent increase in the mean number of significant sets are shown.
+“*” indicates that 1 has been added to all values before log transformation.](
+../analysis/fig1_ORAsig.png "Figure 1A
 shows that correcting the background bug improves the number of significant sets between 12 and
 229%.")
 
-![**Figure 1B. Impact of the background problem is worse for smaller gene set libraries.** Mean
-Jaccard similarity index was calculated for original and corrected ORA for seven independent
-datasets. The number of genes represented in one or more functional sets is shown on the x-axis,
-and the mean Jaccard index is shown on the y-axis.](../analysis/fig1_ORAjac.png "Figure 1B
-shows that the background bug impacts smaller gene sets libraries like KEGG and HPO more
-severely.")
+![**Figure 1B. Impact of the background problem is worse for smaller gene set libraries.**
+Mean Jaccard similarity index was calculated for original and corrected ORA for seven independent datasets.
+The number of genes represented in one or more functional sets is shown on the x-axis, and the mean Jaccard index is
+shown on the y-axis; whiskers represent the standard deviation.](
+../analysis/fig1_ORAjac.png "Figure 1B shows that the background bug impacts smaller gene sets libraries like KEGG
+and HPO more severely.")
+
+![**Figure 1C. Significance values (-log10 p-values) for dataset #1 (SRP128998) enrichment analysis
+using HPO gene sets with and without correction of the background problem.**
+Gene sets were divided into quintiles based on the number of genes detected in the dataset.](
+../analysis/fig1_HPOdn.png "Figure 1C shows that larger gene sets are affect the p-values more severely by the
+background bug.")
 
 ### Understanding the FDR problem
 
@@ -331,6 +342,7 @@ A workaround for the FDR problem was developed, then original and corrected
 analyses were conducted for the seven datasets and nine gene set libraries.
 Results showed no major differences in the number of significant sets between
 original and corrected analyses (**Figure 2A**).
+The impact of the FDR problem was similar across these seven datasets (**Table S2**).
 
 We posited that a shorter foreground gene list length might exacerbate the problem, so we performed
 parallel analysis with foreground lists of length between 125 and 2,000 genes (**Figure 2B**).
@@ -344,13 +356,18 @@ These results demonstrate that the FDR problem is more severe when dealing with 
 foreground lists, and this is exacerbated when functional categories in the gene set library
 are also small.
 
-![**Figure 2A. Effect of correcting the FDR problem.** Figures represent the mean number of
-significant sets with and without correction of the FDR problem over seven independent RNA-seq
-datasets. Foreground list consisted of 2000 genes with the smallest p-values](../analysis/fig2_ORAfdr.png "Figure 2A shows that correcting the FDR bug slightly reduces the number of significant sets.")
+![**Figure 2A. Effect of correcting the FDR problem.**
+Figures represent the mean number of significant sets with and without correction of the FDR problem over seven
+independent RNA-seq datasets.
+Foreground list consisted of 2000 genes with the smallest p-values.
+Mean values are depicted as an “x”.
+“*” indicates that 1 has been added to all values before log transformation.](
+../analysis/fig2_ORAfdr.png "Figure 2A shows that correcting the FDR bug slightly reduces the number of significant
+sets.")
 
-![**Figure 2B. Impact of the FDR problem is worse for shorter foreground gene lists.** Mean Jaccard
-index between original and corrected analysis were calculated for seven RNA-seq datasets and nine
-gene set libraries. Only GO, Reactome, Cellmarkers and TFT GTRD are shown.](
+![**Figure 2B. Impact of the FDR problem is worse for shorter foreground gene lists.**
+Mean Jaccard index between original and corrected analysis were calculated for seven RNA-seq datasets with gene sets
+from GO, Reactome, Cellmarkers and TFT GTRD; whiskers represent the standard deviation.](
 ../analysis/fig2_ORAsz.png "Figure 2B shows that the impact of the FDR bug is worse when
 foreground gene lists are shorter than 500.")
 
@@ -363,46 +380,46 @@ In addition, these data underwent ORA with fora which does not suffer from these
 problems.
 For comparison, fgsea was used to compare the performance of these two ORA methods against a
 prototypical FCS method.
-These methods were tested with different levels of introduced variation and the mean
+These methods were tested with different levels of introduced variation and the
 precision, recall and F1 scores were recorded (**Figure 3A**).
-Mitigating the background problem improved recall (by 1.8%), however it caused
-a similar-sized decrease in precision (1.6% lower).
-Addressing the FDR problem improved precision by 9.9%, but the recall dropped by 7.7%.
-Addressing both problems improved precision by 8.2% but decreased recall by 5.4%.
+Mitigating the background problem improved mean recall (by 2.9%), however it also caused
+a decrease in mean precision (1.3% lower).
+Addressing the FDR problem improved mean precision by 11.7%, but mean recall dropped by 16.6%.
+Addressing both problems improved mean precision by 9.7% but decreased mean recall by 11.7%.
 Under these conditions, the FDR problem affected results more severely than the background
 problem.
 Results obtained for clusterProfiler after implementing the two mitigations were identical to
 fora to three significant figures.
-fgsea recorded precision of 0.940, similar to the ORA methods, but recall was far superior,
-with fgsea scoring 22.9% higher than default clusterProfiler and 28.3% higher than fora.
-As a result, fgsea's overall accuracy as defined by F1 index was 21.0% higher than fora and
-18.6% higher than default clusterProfiler.
+fgsea recorded mean precision of 0.939, similar to the ORA methods, but recall was far superior,
+with fgsea scoring 44.9% higher than default clusterProfiler and 64.2% higher than fora.
+As a result, fgsea's overall accuracy as defined by F1 index was 35.4% higher than fora and
+28.9% higher than default clusterProfiler.
 
 When looking at the accuracy profile at different levels of added noise (**Figure 3B**),
 ORA techniques show high precision when the added noise is low (<0.2), but
 precision drops at higher levels of added noise.
 The rate of drop in precision was more severe for approaches that suffer from the FDR problem.
 The precision of fgsea was relatively stable despite high levels of added noise, ranging from
-0.95 to 0.92.
+0.95 to 0.91.
 The recall of fgsea was superior to all ORA approaches across all levels of added noise.
 
 ![**Figure 3A. Impact of correcting these two problems on accuracy of simulated expression
 data.**
-Precision, recall and F1 scores are the mean of trials at a range of added noise.
+(A) Precision, recall and F1 scores across simulations.
 CP; clusterProfiler, CP BG fix; clusterProfiler with a workaround to the background problem,
 CP FDR fix; clusterProfiler with a workaround to the FDR problem,
 CD BG and FDR fix; clusterProfiler with mitigations for both background and FDR problems,
 fora; ORA function of the fgsea package,
 fgsea; an FCS method similar to GSEA.
+Mean values are depicted as an “x”.
 ](../analysis/sim/fig3_bars.png "Figure 3A shows that fora is more
 precise than clusterProfiler, and fgsea has higher recall than ORA methods.")
 
 ![**Figure 3B. Accuracy of clusterProfiler, fora and fgsea with simulated data with various
 levels of added noise.**
-Precision, recall and F1 score are shown with the addition of different amounts of random
-noise to expression levels.
-The purple line for clusterProfiler with mitigations for both problems is not visible as the
-performance was identical to fora.
+Precision, recall and F1 score are shown with the addition of different amounts of random noise to expression levels.
+The purple line for clusterProfiler with mitigations for both problems is not visible as the performance was
+identical to fora.
 ](../analysis/sim/fig3_sim.png "Figure 3B shows that ORA methods have deteriorating accuracy
 with noisy data as compared to fgsea, a FCS method.")
 
@@ -412,11 +429,11 @@ To understand whether FCS has better sensitivity than ORA in a real setting, we 
 systematic downsampling of a gene expression dataset consisting of normal and tumour samples
 of 37 lung cancer patients.
 In the full set of patient samples, fora (ORA) yielded 375 significantly differentially
-regulated Reactomes, while fgsea (FCS) gave 470 (FDR<0.05).
+regulated Reactomes, while fgsea (FCS) gave 480 (FDR<0.05).
 Fgsea yielded consistently more significant pathways than fora in downsampled data
 (**Figure 4A**).
 Fgsea also identified a larger proportion of pathways in downsampled data compared to fora.
-For example at a sample size of 5, fgsea identified 74.5% of pathways from the full set as
+For example at a sample size of 5, fgsea identified 73.3% (median) of pathways from the full set as
 compared to 41.5% for fora, confirming better recall for FCS over ORA.
 It was noted that fgsea identified more pathways in downsampled data that were
 inconsistent with the full dataset as compared to fora (**Figure 4B**).
@@ -425,15 +442,18 @@ compared to fora (**Figure 4C**), indicating an overall lower false positive rat
 compared to ORA methods.
 
 ![**Figure 4. Downsampling confirms higher sensitivity for FCS over ORA.**
-(A) The number of significant pathways identified in downsampled data that are consistent
-with findings in the full dataset, using FCS (fgsea) and ORA (fora) methods.
+(A) Violin plot showing the number of significant pathways identified in downsampled data that are consistent with
+findings in the full dataset, using FCS (fgsea) and ORA (fora) methods.
+Downsampling was repeated 50 times.
 The blue and red horizontal lines indicate the number of significant pathways identified
 in the full set of 37 patients using fgsea and fora respectively.
 (B) The number of significant pathways identified in downsampled data that are not
 consistent with the full dataset.
 (C) The proportion of pathways in downsampled data that are inconsistent with the full
-dataset.
-All values are the median of 50 simulations.](../analysis/fig4.png "Figure 4A shows that fgsea is more sensitive than fora. Figure 4B shows fgsea has higher absule number of false positives, but Figure 4C shows that as a proportion of all findings fgsea has lower false positive rate than fora.")
+dataset.](
+../analysis/fig4.png "Figure 4A shows that fgsea is more sensitive than fora. Figure 4B shows fgsea has higher
+absule number of false positives, but Figure 4C shows that as a proportion of all findings fgsea has lower false
+positive rate than fora.")
 
 ## Discussion
 
@@ -441,6 +461,8 @@ The background problem came to our attention when a doctoral student in our depa
 was puzzled by results obtained from clusterProfiler when using a custom set of pathways.
 This exact issue was the subject of several posts to online bioinformatics forums dating to
 ~2020 where confused users were wondering why the number of background genes changed so much.
+The effect of excluding genes without functional annotations causes the background list to appear
+smaller than it would otherwise be, causing enrichment scores to appear smaller.
 The results shown here indicate the background problem affects smaller gene set libraries
 like KEGG and HPO more severely as compared to Cellmarkers and GO libraries which describe
 a larger proportion of all genes.
@@ -458,7 +480,7 @@ significant results changing (see Figure 2B).
 So end-users can explore the effect of these two problems on their work, we have developed
 an R/Shiny web application (see "Availability of data and materials" below).
 Users can upload their foreground and background lists, select their preferred gene set
-library and compare results from default and patched analyses.
+library and compare results from default and corrected analyses.
 
 ClusterProfiler is not the only tool to suffer from these problems, they are widespread
 (**Table 2**). Still, there are some tools free of such problems.
@@ -471,8 +493,8 @@ and has a high degree of reproducibility thanks to its stand-alone versioned doc
 container option for local execution.
 One problem that all of these tools listed in Table 2 have is that a background list is optional.
 Sometimes this feature is hidden under "advanced options".
-Given the strong biological and technical biases that are present in contemporary omics like single cell and spatial transcriptomics,
-it should be a mandatory step for users to provide a custom background list.
+Given the strong biological and technical biases that are present in contemporary omics such as single cell
+and spatial transcriptomics, it should be a mandatory step for users to provide a custom background list.
 
 | Tool | Version | Type | Provides FDR values | Provides enrichment score | Proper background handling | Proper FDR | Reference |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -524,6 +546,24 @@ that if the data can be scored/ranked, methods like FCS are strongly recommended
 ORA is better suited to other cases where genes are classified into binary groups.
 For example when investigating the over-represented categories in gene expression modules
 [@Langfelder2008-hu], or with variant-harbouring genes associated with a disease [@White2019-ps].
+In these cases, we would recommend using a tool from Table 2 that reports FDR values and enrichment scores,
+and avoids background and FDR problems.
+Doubts also arise when choosing options and parameters for ORA.
+Most important is to use a background gene list that reflects the true universe of genes detected robustly in the
+assay.
+Secondly, significance of enrichment results must be based on the FDR-corrected p-values.
+Selection criteria for foreground genes is another crucial choice; for this we endorse the approach of
+Tarca et al, [@Tarca2013-xh] which accommodates cases where relatively few individual genes meet the FDR threshold.
+Some ORA tools have a filter for gene set size.
+We’d recommend a minimum size of 5-10 in order to avoid missing small gene sets that exhibit strong enrichments.
+Interpret with caution enrichment results where the intersection of input gene list and pathway is ≤3 genes.
+A maximum gene set filter is not required if end results are interpreted using enrichment scores together with FDR
+values.
+The choice of pathway database also influences the conclusions that can be drawn [@Mubeen2019-gw;@Karp2021-ue].
+Our suggestion is to use comprehensive and open-source pathway databases such as Reactome and Gene Ontology
+Biological Process.
+Proprietary databases like KEGG and Ingenuity are less comprehensive, have restrictive conditions for non-academic
+users and do not provide public access to historical database versions which inhibits future reproducibility.
 
 ## Declarations
 
