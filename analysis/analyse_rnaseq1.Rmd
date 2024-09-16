@@ -39,6 +39,7 @@ suppressPackageStartupMessages({
   library("gplots")
   library("parallel")
   library("RhpcBLASctl")
+  library("Hmisc")
 })
 
 RhpcBLASctl::blas_set_num_threads(1)
@@ -837,6 +838,49 @@ lapply(1:length(gs), function(i) {
   good <- oragood(d[[1]],gs[[i]])
   compare_ora_plots(bad,good,libname=names(gs)[i])
 } )
+
+```
+
+## Focus on dataset 1 down with HPO genesets
+
+This extreme example will help us understand the bias better.
+
+```{r,hpodn}
+
+orig <- orabad(d[[1]],gs[[7]])
+corr <- oragood(d[[1]],gs[[7]])
+orig_dn <- orig[[2]]
+corr_dn <- corr[[2]]
+mg <- merge(orig_dn,corr_dn,by=0)
+
+mg$size <- as.numeric(sapply(strsplit(mg$BgRatio.x,"/"),"[[",1))
+quantiles <- quantile(mg$size, prob = seq(0, 1, length = 6), type = 5)
+mg$levels <- cut2(mg$size, cuts = as.numeric(quantiles))
+cols <- gsub("5","red",gsub("4","orange",gsub("3","yellow",gsub("2","green",gsub("1","blue",as.character(as.numeric(mg$levels)))))))
+
+plot(-log10(mg$pvalue.x),-log10(mg$pvalue.y),
+  ylim=c(0,7), xlim=c(0,7), pch=19,
+  main="SRP128998 HPO down",
+  xlab="-log10 p-value (original)", ylab="-log10 p-value (corrected)")
+
+grid()
+abline(coef = c(0,1))
+
+points(-log10(mg$pvalue.x),-log10(mg$pvalue.y),
+  col=cols, pch=19,cex=0.7)
+
+pdf("fig1_HPOdn.pdf",width=7, height=7)
+plot(-log10(mg$pvalue.x),-log10(mg$pvalue.y),
+  ylim=c(0,7), xlim=c(0,7), pch=19,
+  main="SRP128998 HPO down",
+  xlab="-log10 p-value (original)", ylab="-log10 p-value (corrected)")
+
+grid()
+abline(coef = c(0,1))
+
+points(-log10(mg$pvalue.x),-log10(mg$pvalue.y),
+  col=cols, pch=19,cex=0.7)
+dev.off()
 
 ```
 
