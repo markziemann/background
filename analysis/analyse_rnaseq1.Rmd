@@ -855,6 +855,7 @@ mg <- merge(orig_dn,corr_dn,by=0)
 
 mg$size <- as.numeric(sapply(strsplit(mg$BgRatio.x,"/"),"[[",1))
 quantiles <- quantile(mg$size, prob = seq(0, 1, length = 6), type = 5)
+quantiles
 mg$levels <- cut2(mg$size, cuts = as.numeric(quantiles))
 cols <- gsub("5","red",gsub("4","orange",gsub("3","yellow",gsub("2","green",gsub("1","blue",as.character(as.numeric(mg$levels)))))))
 
