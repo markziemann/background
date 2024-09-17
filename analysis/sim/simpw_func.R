@@ -159,7 +159,7 @@ RepParallel <- function(n, expr, simplify = "array",...) {
       else return(answer)
     }
 # RepParallel usage
-#xxx<-RepParallel(10,simrna(a,5,10000000,0.2,20), simplify=F, mc.cores = detectCores() )
+#xxx<-RepParallel(10,simrna(a,5,10000000,0.2,20), simplify=F, mc.cores = 16 )
 
 
 #################################################
@@ -190,7 +190,7 @@ deseq2<-function(x) {
 # clusterprofiler default function
 ##################################
 # Note that clusterprofiler requires different gene set format
-run_clusterprofiler_default <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32){
+run_clusterprofiler_default <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16){
 
 gsets2 <- stack(gsets)[,c(2,1)]
 colnames(gsets2) <- c("term","gene")
@@ -268,7 +268,7 @@ x
 # clusterprofiler BG fix function
 ##################################
 # Note that clusterprofiler requires different gene set format
-run_clusterprofiler_bgfix <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32){
+run_clusterprofiler_bgfix <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16){
 
 gsets2 <- stack(gsets)[,c(2,1)]
 colnames(gsets2) <- c("term","gene")
@@ -356,7 +356,7 @@ x
 # clusterprofiler FDR fix
 ##################################
 # Note that clusterprofiler requires different gene set format
-run_clusterprofiler_fdrfix <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32){
+run_clusterprofiler_fdrfix <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16){
 
 gsets2 <- stack(gsets)[,c(2,1)]
 colnames(gsets2) <- c("term","gene")
@@ -446,7 +446,7 @@ x
 # clusterprofiler BG and FDR fixes
 ##################################
 # Note that clusterprofiler requires different gene set format
-run_clusterprofiler_bgfdrfix <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32){
+run_clusterprofiler_bgfdrfix <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16){
 
 gsets2 <- stack(gsets)[,c(2,1)]
 colnames(gsets2) <- c("term","gene")
@@ -545,7 +545,7 @@ x
 ##################################
 # FORA function
 ##################################
-run_fora <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32){
+run_fora <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16){
 
 dge <- sapply(x,"[",6)
 
@@ -593,7 +593,7 @@ x
 ##################################
 # FGSEA function
 ##################################
-run_fgsea <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32 ){
+run_fgsea <- function(x,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16 ){
 
 dge <- sapply(x,"[",6)
 
@@ -635,7 +635,7 @@ x
 ##################################
 # aggregate function
 ##################################
-agg_dge <- function(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,gsets, cores = 32) {
+agg_dge <- function(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,gsets, cores = 16) {
 
 #TEST# N_REPS=5 ; SUM_COUNT=30000000 ; VARIANCE=0.45 ; FRAC_DE=0.05 ; FC=1 ; SIMS=8 ; DGE_FUNC="deseq2" ; gsets=gsets
 
@@ -645,22 +645,22 @@ xxx <- RepParallel(SIMS,simrna(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,gsets), si
 xxx <- mclapply(xxx , DGE_FUNC , mc.cores = cores )
 
 # run clusterprofiler default pos 9,10
-xxx <- run_clusterprofiler_default(x=xxx,DGE_FUNC,gsets,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32)
+xxx <- run_clusterprofiler_default(x=xxx,DGE_FUNC,gsets,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16)
 
 # run clusterprofiler bgfix pos 11,12
-xxx <- run_clusterprofiler_bgfix(x=xxx,DGE_FUNC,gsets,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32)
+xxx <- run_clusterprofiler_bgfix(x=xxx,DGE_FUNC,gsets,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16)
 
 # run clusterprofiler fdrfix pos 13,14
-xxx <- run_clusterprofiler_fdrfix(x=xxx,DGE_FUNC,gsets,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32)
+xxx <- run_clusterprofiler_fdrfix(x=xxx,DGE_FUNC,gsets,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16)
 
 # run clusterprofiler fdrfix pos 15,16
-xxx <- run_clusterprofiler_bgfdrfix(x=xxx,DGE_FUNC,gsets,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32)
+xxx <- run_clusterprofiler_bgfdrfix(x=xxx,DGE_FUNC,gsets,N_REPS=N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16)
 
 # run fora pos 17,18
-xxx <- run_fora(xxx,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32)
+xxx <- run_fora(xxx,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16)
 
 # run fgsea pos 19,20
-xxx <- run_fgsea(xxx,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=32)
+xxx <- run_fgsea(xxx,DGE_FUNC,gsets,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,cores=16)
 
 # return the result
 g=list()
