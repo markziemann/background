@@ -133,7 +133,7 @@ res <- lapply(1:nrow(mygrid), function(i) {
   DGE_FUNC=as.character(mygrid[i,"DGE_FUNC"])
   SUM_COUNT=mygrid[i,"SUM_COUNT"]
   VARIANCE=mygrid[i,"VARIANCE"]
-  agg_dge(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,gsets,cores=32)
+  agg_dge(a,N_REPS,SUM_COUNT,VARIANCE,FRAC_DE,FC,SIMS,DGE_FUNC,gsets,cores=16)
 })
 
 saveRDS(res,file="res.Rds")
