@@ -17,6 +17,8 @@ RUN Rscript -e 'install.packages(c("eulerr","gplots","kableExtra","parallel","RC
 # Install bioconductor packages
 RUN Rscript -e 'BiocManager::install(c("biomaRt","clusterProfiler","DESeq2","edgeR","fgsea","getDEE2","limma","mitch"))'
 
+RUN Rscript -e 'install.packages(c("vioplot","Hmisc","rmdformats"))'
+
 # get a clone of the codes
 RUN git clone https://github.com/markziemann/background.git
 
